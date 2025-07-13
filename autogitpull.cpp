@@ -6,19 +6,16 @@
 #include <chrono>
 
 #ifdef _WIN32
-#include <windows.h>
 #define popen _popen
 #define pclose _pclose
-const char* DIR_SEP = "\\";
 const char* QUOTE = "\"";
 #else
-const char* DIR_SEP = "/";
 const char* QUOTE = "'";
 #endif
 
 namespace fs = std::filesystem;
 
-// Run a shell command and capture output
+// Run a shell command and get output
 std::string run_cmd(const std::string& cmd) {
     std::string data;
     char buffer[256];
@@ -50,7 +47,6 @@ std::string get_current_branch(const fs::path& repo) {
 }
 
 std::string get_remote_hash(const fs::path& repo, const std::string& branch) {
-    // Fetch first
     std::string fetch_cmd = "cd " + std::string(QUOTE) + repo.string() + std::string(QUOTE)
         + " && git fetch --quiet 2>&1";
     run_cmd(fetch_cmd);
@@ -81,12 +77,19 @@ void process_repo(const fs::path& repo) {
     }
 }
 
+// Portable function to skip nested repos (no disable_recursion_pending)
 std::vector<fs::path> find_git_repos(const fs::path& root) {
     std::vector<fs::path> repos;
-    for (auto& entry : fs::recursive_directory_iterator(root)) {
-        if (entry.is_directory() && is_git_repo(entry.path())) {
-            repos.push_back(entry.path());
-            entry.disable_recursion_pending(); // Don't scan inside nested repos
+    for (fs::recursive_directory_iterator it(root), end; it != end; ++it) {
+        if (it->is_directory() && is_git_repo(it->path())) {
+            repos.push_back(it->path());
+            // Skip over all subdirs of this repo
+            auto base = it->path();
+            ++it;
+            while (it != end && it->path().string().find(base.string() + fs::path::preferred_separator) == 0) {
+                ++it;
+            }
+            --it; // for-loop will ++it again
         }
     }
     return repos;
