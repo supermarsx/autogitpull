@@ -10,6 +10,7 @@
 #include <map>
 #include <mutex>
 #include <atomic>
+#include <sstream>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -129,18 +130,16 @@ struct RepoInfo {
 };
 
 void draw_tui(const std::vector<fs::path>& all_repos, const std::map<fs::path, RepoInfo>& repo_infos, int interval, int seconds_left, bool scanning) {
-    // Clear terminal and move cursor to top left
-    std::cout << "\033[2J\033[H";
-    std::cout << COLOR_BOLD << "AutoGitPull TUI   " << COLOR_RESET
+    std::ostringstream out;
+    out << "\033[2J\033[H";
+    out << COLOR_BOLD << "AutoGitPull TUI   " << COLOR_RESET
         << COLOR_CYAN << timestamp() << COLOR_RESET
         << "   Monitoring: " << COLOR_YELLOW << (all_repos.empty() ? "" : all_repos[0].parent_path().string()) << COLOR_RESET << "\n";
-    std::cout << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
-	if (scanning) {
-		std::cout << COLOR_YELLOW << "Scan in progress...\n" << COLOR_RESET;
-	}
-    std::cout << "---------------------------------------------------------------------\n";
-    std::cout << COLOR_BOLD << "  Status     Repo" << COLOR_RESET << "\n";
-    std::cout << "---------------------------------------------------------------------\n";
+    out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
+    if (scanning) out << COLOR_YELLOW << "Scan in progress...\n" << COLOR_RESET;
+    out << "---------------------------------------------------------------------\n";
+    out << COLOR_BOLD << "  Status     Repo" << COLOR_RESET << "\n";
+    out << "---------------------------------------------------------------------\n";
     for (const auto& p : all_repos) {
         RepoInfo ri;
         auto it = repo_infos.find(p);
@@ -162,13 +161,14 @@ void draw_tui(const std::vector<fs::path>& all_repos, const std::map<fs::path, R
             case RS_SKIPPED:       color = COLOR_GRAY;   status_s = "Skipped  "; break;
             case RS_HEAD_PROBLEM:  color = COLOR_RED;    status_s = "HEAD/BR  "; break;
         }
-        std::cout << color << " [" << std::left << std::setw(9) << status_s << "]  " << p.filename().string() << COLOR_RESET;
-        if (!ri.branch.empty()) std::cout << "  (" << ri.branch << ")";
-        if (!ri.message.empty()) std::cout << " - " << ri.message;
-        std::cout << "\n";
+        out << color << " [" << std::left << std::setw(9) << status_s << "]  " << p.filename().string() << COLOR_RESET;
+        if (!ri.branch.empty()) out << "  (" << ri.branch << ")";
+        if (!ri.message.empty()) out << " - " << ri.message;
+        out << "\n";
     }
-    std::cout << "---------------------------------------------------------------------\n";
-    std::cout << COLOR_CYAN << "Next scan in " << seconds_left << " seconds..." << COLOR_RESET << std::flush;
+    out << "---------------------------------------------------------------------\n";
+    out << COLOR_CYAN << "Next scan in " << seconds_left << " seconds..." << COLOR_RESET;
+    std::cout << out.str() << std::flush;
 }
 
 // Background thread: scan and update info
@@ -256,45 +256,54 @@ void scan_repos(
 
 int main(int argc, char* argv[]) {
     enable_win_ansi();
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <root-folder>\n";
-        return 1;
-    }
-    fs::path root = argv[1];
-    if (!fs::exists(root) || !fs::is_directory(root)) {
-        std::cerr << "Root path does not exist or is not a directory.\n";
-        return 1;
-    }
-
-    // Grab all first-level subdirs at startup (fixed list)
-    std::vector<fs::path> all_repos;
-    for (const auto& entry : fs::directory_iterator(root)) {
-        all_repos.push_back(entry.path());
-    }
-    std::map<fs::path, RepoInfo> repo_infos;
-    for (const auto& p : all_repos) {
-        repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending..."};
-    }
-
-    const int interval = 60; // seconds
-    std::set<fs::path> skip_repos;
-    std::mutex mtx;
-    std::atomic<bool> scanning(false);
-
-    int countdown = 0; // Run immediately on start
-
-    while (true) {
-        if (countdown <= 0 && !scanning) {
-            scanning = true;
-            std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos), std::ref(mtx), std::ref(scanning)).detach();
-            countdown = interval;
+    std::cout << "\033[?1049h"; // enter alternate buffer
+    try {
+        if (argc != 2) {
+            std::cerr << "Usage: " << argv[0] << " <root-folder>\n";
+            std::cout << "\033[?1049l" << std::flush; // leave alt buffer
+            return 1;
         }
-        {
-            std::lock_guard<std::mutex> lk(mtx);
-            draw_tui(all_repos, repo_infos, interval, countdown, scanning);
+        fs::path root = argv[1];
+        if (!fs::exists(root) || !fs::is_directory(root)) {
+            std::cerr << "Root path does not exist or is not a directory.\n";
+            std::cout << "\033[?1049l" << std::flush; // leave alt buffer
+            return 1;
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        countdown--;
+
+        // Grab all first-level subdirs at startup (fixed list)
+        std::vector<fs::path> all_repos;
+        for (const auto& entry : fs::directory_iterator(root)) {
+            all_repos.push_back(entry.path());
+        }
+        std::map<fs::path, RepoInfo> repo_infos;
+        for (const auto& p : all_repos) {
+            repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending..."};
+        }
+
+        const int interval = 60; // seconds
+        std::set<fs::path> skip_repos;
+        std::mutex mtx;
+        std::atomic<bool> scanning(false);
+
+        int countdown = 0; // Run immediately on start
+
+        while (true) {
+            if (countdown <= 0 && !scanning) {
+                scanning = true;
+                std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos), std::ref(mtx), std::ref(scanning)).detach();
+                countdown = interval;
+            }
+            {
+                std::lock_guard<std::mutex> lk(mtx);
+                draw_tui(all_repos, repo_infos, interval, countdown, scanning);
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            countdown--;
+        }
+    } catch (...) {
+        std::cout << "\033[?1049l" << std::flush; // leave alt buffer on any error
+        throw;
     }
+    std::cout << "\033[?1049l" << std::flush; // leave alt buffer on normal exit
     return 0;
 }
