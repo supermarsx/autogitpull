@@ -2,13 +2,47 @@
 Automatic Git Puller & Monitor
 
 ## Dependencies
-This tool relies on [libgit2](https://libgit2.org/). Run `install_deps.sh` on Linux or macOS, or `install_deps.bat` on Windows to download and install `libgit2` automatically. These scripts are also invoked from the compile scripts when the library is missing.
+This tool relies on [libgit2](https://libgit2.org/). The helper scripts `install_deps.sh`
+(Linux/macOS) and `install_deps.bat` (Windows) automatically download and install
+`libgit2` when needed. If you prefer to install the library yourself, follow the
+instructions below.
+
+### Installing libgit2 on Linux
+```
+sudo apt-get update && sudo apt-get install -y libgit2-dev     # Debian/Ubuntu
+sudo yum install -y libgit2-devel                              # RHEL/Fedora
+```
+
+### Installing libgit2 on Windows
+The easiest route on Windows is to use
+[vcpkg](https://github.com/microsoft/vcpkg):
+
+```
+git clone https://github.com/microsoft/vcpkg
+cd vcpkg && bootstrap-vcpkg.bat
+vcpkg\vcpkg install libgit2
+```
+
+Ensure that the resulting `vcpkg` `installed` folder is on your `LIB` and
+`INCLUDE` paths when compiling.
 
 ## Building
-Run `make` to compile the project using g++ with C++17 and pthread support.
-The resulting executable is named `autogitpull`.
+### Using the provided scripts
+Run `make` (Linux/macOS) or `compile.bat` (MinGW) to build the project. These
+scripts call `install_deps` when `libgit2` is missing. The binary is produced as
+`autogitpull` (or `autogitpull.exe` on Windows).
 
-Use `make clean` to remove the compiled binary and object files.
+Clean up intermediate files with `make clean`.
+
+### Building with CMake
+Alternatively, configure the project with CMake:
+
+```bash
+cmake -S . -B build
+cmake --build build
+```
+
+The resulting executable will be in the `build` directory.
 
 Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--log-dir <path>] [--help]`
 
@@ -24,3 +58,9 @@ By default, repositories whose `origin` remote does not point to GitHub or requi
 
 Provide `--log-dir <path>` to store pull logs for each repository. After every pull operation the log
 is written to a timestamped file inside this directory and its location is shown in the TUI.
+
+## Runtime requirements
+* **Git** must be available in your `PATH` for libgit2 to interact with repositories.
+* Network access is required to contact remote Git servers when pulling updates.
+* The application prints ANSI color codes; on Windows run it in a terminal that
+  supports color (e.g. Windows Terminal or recent PowerShell).
