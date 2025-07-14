@@ -96,12 +96,17 @@ void scan_repos(
                     } else if (local != remote) {
                         ri.status = RS_PULLING;
                         ri.message = "Remote ahead, pulling...";
+                        ri.progress = 0;
                         {
                             std::lock_guard<std::mutex> lk(mtx);
                             repo_infos[p] = ri;
                         }
                         std::string pull_log;
-                        int code = git::try_pull(p, pull_log);
+                        std::function<void(int)> progress_cb = [&](int pct) {
+                            std::lock_guard<std::mutex> lk(mtx);
+                            repo_infos[p].progress = pct;
+                        };
+                        int code = git::try_pull(p, pull_log, &progress_cb);
                         ri.last_pull_log = pull_log;
                         fs::path log_file_path;
                         if (!log_dir.empty()) {

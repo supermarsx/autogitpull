@@ -3,6 +3,7 @@
 
 #include <string>
 #include <filesystem>
+#include <functional>
 
 namespace git {
 namespace fs = std::filesystem;
@@ -20,7 +21,8 @@ std::string get_remote_hash(const fs::path& repo, const std::string& branch);
 std::string get_origin_url(const fs::path& repo);
 bool is_github_url(const std::string& url);
 bool remote_accessible(const fs::path& repo);
-int try_pull(const fs::path& repo, std::string& out_pull_log);
+int try_pull(const fs::path& repo, std::string& out_pull_log,
+             const std::function<void(int)>* progress_cb = nullptr);
 
 } // namespace git
 

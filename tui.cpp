@@ -87,6 +87,8 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             << p.filename().string() << COLOR_RESET;
         if (!ri.branch.empty()) out << "  (" << ri.branch << ")";
         if (!ri.message.empty()) out << " - " << ri.message;
+        if (ri.status == RS_PULLING)
+            out << " (" << ri.progress << "%)";
         out << "\n";
     }
     out << "--------------------------------------------------------------";
