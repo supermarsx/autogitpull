@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <fstream>
 #include <set>
 #include <map>
 #include <mutex>
@@ -38,7 +39,8 @@ void scan_repos(
     std::mutex& mtx,
     std::atomic<bool>& scanning_flag,
     std::atomic<bool>& running,
-    bool include_private
+    bool include_private,
+    const fs::path& log_dir
 ) {
     for (const auto& p : all_repos) {
         if (!running) break;
@@ -101,6 +103,17 @@ void scan_repos(
                         std::string pull_log;
                         int code = git::try_pull(p, pull_log);
                         ri.last_pull_log = pull_log;
+                        fs::path log_file_path;
+                        if (!log_dir.empty()) {
+                            std::string ts = timestamp();
+                            for (char& ch : ts) {
+                                if (ch == ' ' || ch == ':') ch = '_';
+                                else if (ch == '/') ch = '-';
+                            }
+                            log_file_path = log_dir / (p.filename().string() + "_" + ts + ".log");
+                            std::ofstream ofs(log_file_path);
+                            ofs << pull_log;
+                        }
                         if (code == 0) {
                             ri.status = RS_PULL_OK;
                             ri.message = "Pulled successfully";
@@ -111,6 +124,9 @@ void scan_repos(
                             ri.status = RS_ERROR;
                             ri.message = "Pull failed (see log)";
                             skip_repos.insert(p);
+                        }
+                        if (!log_file_path.empty()) {
+                            ri.message += " - " + log_file_path.string();
                         }
                     } else {
                         ri.status = RS_UP_TO_DATE;
@@ -139,11 +155,11 @@ int main(int argc, char* argv[]) {
         ArgParser parser(argc, argv);
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--log-dir <path>]\n";
             return 1;
         }
         for(const auto& f : parser.flags()) {
-            if (f != "--include-private" && f != "--show-skipped" && f != "--interval") {
+            if (f != "--include-private" && f != "--show-skipped" && f != "--interval" && f != "--log-dir") {
                 std::cerr << "Unknown option: " << f << "\n";
                 return 1;
             }
@@ -161,6 +177,25 @@ int main(int argc, char* argv[]) {
                 interval = std::stoi(val);
             } catch (...) {
                 std::cerr << "Invalid value for --interval: " << val << "\n";
+                return 1;
+            }
+        }
+        fs::path log_dir;
+        if (parser.has_flag("--log-dir")) {
+            std::string val = parser.get_option("--log-dir");
+            if (val.empty()) {
+                std::cerr << "--log-dir requires a path\n";
+                return 1;
+            }
+            log_dir = val;
+            try {
+                if (fs::exists(log_dir) && !fs::is_directory(log_dir)) {
+                    std::cerr << "--log-dir path exists and is not a directory\n";
+                    return 1;
+                }
+                fs::create_directories(log_dir);
+            } catch (const std::exception& e) {
+                std::cerr << "Failed to create log directory: " << e.what() << "\n";
                 return 1;
             }
         }
@@ -202,7 +237,8 @@ int main(int argc, char* argv[]) {
                 scanning = true;
                 scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
                                           std::ref(skip_repos), std::ref(mtx),
-                                          std::ref(scanning), std::ref(running), include_private);
+                                          std::ref(scanning), std::ref(running), include_private,
+                                          std::cref(log_dir));
                 countdown = interval;
             }
             {
