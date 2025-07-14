@@ -10,12 +10,24 @@
 #include <mutex>
 #include <atomic>
 #include <sstream>
+#include <csignal>
 #include "arg_parser.hpp"
 #include "git_utils.hpp"
 #include "tui.hpp"
 #include "repo.hpp"
 
 namespace fs = std::filesystem;
+
+struct AltScreenGuard {
+    AltScreenGuard() { enable_win_ansi(); std::cout << "\033[?1049h"; }
+    ~AltScreenGuard() { std::cout << "\033[?1049l" << std::flush; }
+};
+
+std::atomic<bool>* g_running_ptr = nullptr;
+
+void handle_signal(int) {
+    if (g_running_ptr) g_running_ptr->store(false);
+}
 
 
 // Background thread: scan and update info
@@ -25,9 +37,11 @@ void scan_repos(
     std::set<fs::path>& skip_repos,
     std::mutex& mtx,
     std::atomic<bool>& scanning_flag,
+    std::atomic<bool>& running,
     bool include_private
 ) {
     for (const auto& p : all_repos) {
+        if (!running) break;
         RepoInfo ri;
         ri.path = p;
         if (!fs::exists(p)) {
@@ -120,19 +134,16 @@ void scan_repos(
 }
 
 int main(int argc, char* argv[]) {
-    enable_win_ansi();
-    std::cout << "\033[?1049h"; // enter alternate buffer
+    AltScreenGuard guard;
     try {
         ArgParser parser(argc, argv);
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0] << " <root-folder> [--include-private] [--show-skipped]\n";
-            std::cout << "\033[?1049l" << std::flush;
             return 1;
         }
         for(const auto& f : parser.flags()) {
             if (f != "--include-private" && f != "--show-skipped") {
                 std::cerr << "Unknown option: " << f << "\n";
-                std::cout << "\033[?1049l" << std::flush;
                 return 1;
             }
         }
@@ -141,7 +152,6 @@ int main(int argc, char* argv[]) {
         fs::path root = parser.positional().front();
         if (!fs::exists(root) || !fs::is_directory(root)) {
             std::cerr << "Root path does not exist or is not a directory.\n";
-            std::cout << "\033[?1049l" << std::flush; // leave alt buffer
             return 1;
         }
 
@@ -159,13 +169,26 @@ int main(int argc, char* argv[]) {
         std::set<fs::path> skip_repos;
         std::mutex mtx;
         std::atomic<bool> scanning(false);
+        std::atomic<bool> running(true);
 
+        g_running_ptr = &running;
+        std::signal(SIGINT, handle_signal);
+#ifndef _WIN32
+        std::signal(SIGTERM, handle_signal);
+#endif
+
+        std::thread scan_thread;
         int countdown = 0; // Run immediately on start
 
-        while (true) {
-            if (countdown <= 0 && !scanning) {
+        while (running) {
+            if (!scanning && scan_thread.joinable())
+                scan_thread.join();
+
+            if (running && countdown <= 0 && !scanning) {
                 scanning = true;
-                std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos), std::ref(mtx), std::ref(scanning), include_private).detach();
+                scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
+                                          std::ref(skip_repos), std::ref(mtx),
+                                          std::ref(scanning), std::ref(running), include_private);
                 countdown = interval;
             }
             {
@@ -175,10 +198,12 @@ int main(int argc, char* argv[]) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             countdown--;
         }
+
+        running = false;
+        if (scan_thread.joinable())
+            scan_thread.join();
     } catch (...) {
-        std::cout << "\033[?1049l" << std::flush; // leave alt buffer on any error
         throw;
     }
-    std::cout << "\033[?1049l" << std::flush; // leave alt buffer on normal exit
     return 0;
 }
