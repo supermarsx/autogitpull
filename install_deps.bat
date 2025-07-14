@@ -12,7 +12,8 @@ if exist vcpkg (
 )
 
 echo libgit2 not found. Downloading vcpkg to install...
-if not exist git.exe (
+where git >nul 2>nul
+if errorlevel 1 (
     echo Git is required to download vcpkg. Please install Git and retry.
     exit /b 1
 )
