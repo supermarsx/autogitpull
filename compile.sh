@@ -19,6 +19,6 @@ else
     fi
 fi
 
-g++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp -lgit2 -o git_auto_pull_all
+g++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp -lgit2 -o autogitpull
 
 
