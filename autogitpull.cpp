@@ -175,7 +175,8 @@ struct RepoInfo {
     std::string last_pull_log;
 };
 
-void draw_tui(const std::vector<fs::path>& all_repos, const std::map<fs::path, RepoInfo>& repo_infos, int interval, int seconds_left, bool scanning) {
+void draw_tui(const std::vector<fs::path>& all_repos, const std::map<fs::path, RepoInfo>& repo_infos,
+              int interval, int seconds_left, bool scanning, bool show_skipped) {
     std::ostringstream out;
     out << "\033[2J\033[H";
     out << COLOR_BOLD << "AutoGitPull TUI   " << COLOR_RESET
@@ -196,6 +197,8 @@ void draw_tui(const std::vector<fs::path>& all_repos, const std::map<fs::path, R
             ri.status = RS_CHECKING;
             ri.message = "Pending...";
         }
+        if (ri.status == RS_SKIPPED && !show_skipped)
+            continue;
         std::string color = COLOR_GRAY, status_s = "CHECK    ";
         switch (ri.status) {
             case RS_CHECKING:      color = COLOR_CYAN;   status_s = "Checking "; break;
@@ -322,14 +325,25 @@ int main(int argc, char* argv[]) {
     enable_win_ansi();
     std::cout << "\033[?1049h"; // enter alternate buffer
     try {
-        if (argc < 2 || argc > 3) {
-            std::cerr << "Usage: " << argv[0] << " <root-folder> [--include-private]\n";
+        if (argc < 2 || argc > 4) {
+            std::cerr << "Usage: " << argv[0] << " <root-folder> [--include-private] [--show-skipped]\n";
             std::cout << "\033[?1049l" << std::flush; // leave alt buffer
             return 1;
         }
         bool include_private = false;
-        if (argc == 3 && std::string(argv[2]) == "--include-private")
-            include_private = true;
+        bool show_skipped = false;
+        for (int i = 2; i < argc; ++i) {
+            std::string arg = argv[i];
+            if (arg == "--include-private")
+                include_private = true;
+            else if (arg == "--show-skipped")
+                show_skipped = true;
+            else {
+                std::cerr << "Unknown option: " << arg << "\n";
+                std::cout << "\033[?1049l" << std::flush;
+                return 1;
+            }
+        }
         fs::path root = argv[1];
         if (!fs::exists(root) || !fs::is_directory(root)) {
             std::cerr << "Root path does not exist or is not a directory.\n";
@@ -362,7 +376,7 @@ int main(int argc, char* argv[]) {
             }
             {
                 std::lock_guard<std::mutex> lk(mtx);
-                draw_tui(all_repos, repo_infos, interval, countdown, scanning);
+                draw_tui(all_repos, repo_infos, interval, countdown, scanning, show_skipped);
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));
             countdown--;
