@@ -47,12 +47,21 @@ void enable_win_ansi() {
 void enable_win_ansi() {} // No-op on non-Windows
 #endif
 
+
 std::string timestamp() {
     std::time_t now = std::time(nullptr);
     char buf[32];
     std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
     return std::string(buf);
 }
+
+struct PopenHandle {
+    FILE* fp;
+    ~PopenHandle() {
+        if (fp)
+            pclose(fp);
+    }
+};
 
 std::string run_cmd(const std::string& cmd, int timeout_sec = 0) {
 #ifndef _WIN32
@@ -67,14 +76,15 @@ std::string run_cmd(const std::string& cmd, int timeout_sec = 0) {
 
     std::string data;
     char buffer[256];
-    FILE* stream = popen(final_cmd.c_str(), "r");
-    if (stream) {
-        while (fgets(buffer, sizeof(buffer), stream)) {
+    FILE* raw = popen(final_cmd.c_str(), "r");
+    PopenHandle stream{raw};
+    if (stream.fp) {
+        while (fgets(buffer, sizeof(buffer), stream.fp)) {
             data.append(buffer);
         }
-        pclose(stream);
     }
-    if (!data.empty() && data.back() == '\n') data.pop_back();
+    if (!data.empty() && data.back() == '\n')
+        data.pop_back();
     return data;
 }
 
