@@ -8,14 +8,14 @@ if "%VCPKG_ROOT%"=="" (
     )
 )
 
-set "LIBGIT2_INC=%VCPKG_ROOT%\installed\x64-windows\include"
-set "LIBGIT2_LIB=%VCPKG_ROOT%\installed\x64-windows\lib"
+set "LIBGIT2_INC=%VCPKG_ROOT%\installed\x64-windows-static\include"
+set "LIBGIT2_LIB=%VCPKG_ROOT%\installed\x64-windows-static\lib"
 
-if not exist "%LIBGIT2_LIB%\libgit2.lib" (
+if not exist "%LIBGIT2_LIB%\libgit2.a" (
     call install_deps.bat
 )
 
-g++ -std=c++17 -I"%LIBGIT2_INC%" autogitpull.cpp git_utils.cpp tui.cpp -L"%LIBGIT2_LIB%" -lgit2 -o autogitpull.exe
+g++ -std=c++17 -static -I"%LIBGIT2_INC%" autogitpull.cpp git_utils.cpp tui.cpp "%LIBGIT2_LIB%\libgit2.a" -o autogitpull.exe
 
 endlocal
 

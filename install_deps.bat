@@ -1,13 +1,12 @@
 @echo off
-where libgit2.lib >nul 2>nul
-if %ERRORLEVEL%==0 (
+if exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\libgit2.a" (
     echo libgit2 already installed.
     goto :eof
 )
 
 if exist vcpkg (
     echo Installing libgit2 via vcpkg...
-    vcpkg\vcpkg install libgit2
+    vcpkg\vcpkg install libgit2:x64-windows-static
     goto :eof
 )
 
@@ -22,5 +21,5 @@ git clone https://github.com/microsoft/vcpkg
 cd vcpkg
 call bootstrap-vcpkg.bat
 cd ..
-vcpkg\vcpkg install libgit2
+vcpkg\vcpkg install libgit2:x64-windows-static
 
