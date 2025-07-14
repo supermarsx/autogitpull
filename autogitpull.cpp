@@ -11,6 +11,7 @@
 #include <mutex>
 #include <atomic>
 #include <sstream>
+#include <cstdlib>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -102,6 +103,26 @@ std::string get_remote_hash(const fs::path& repo, const std::string& branch) {
     return run_cmd(cmd, 30);
 }
 
+std::string get_origin_url(const fs::path& repo) {
+    std::string cmd = "cd " + std::string(QUOTE) + repo.string() + std::string(QUOTE)
+        + " && git config --get remote.origin.url 2>&1";
+    return run_cmd(cmd, 15);
+}
+
+bool is_github_url(const std::string& url) {
+    return url.find("github.com") != std::string::npos;
+}
+
+bool remote_accessible(const fs::path& repo) {
+    std::string cmd = "cd " + std::string(QUOTE) + repo.string() + std::string(QUOTE)
+        + " && git ls-remote -h origin HEAD 2>&1";
+    std::string out = run_cmd(cmd, 30);
+    if (out.find("fatal") != std::string::npos || out.find("Permission denied") != std::string::npos
+        || out.find("ERROR") != std::string::npos)
+        return false;
+    return true;
+}
+
 // Return codes: 0 = ok, 1 = package-lock reset+pull, 2 = error
 int try_pull(const fs::path& repo, std::string& out_pull_log) {
     std::string pull = run_cmd("cd " + std::string(QUOTE) + repo.string() + std::string(QUOTE) + " && git pull 2>&1", 30);
@@ -187,7 +208,8 @@ void scan_repos(
     std::map<fs::path, RepoInfo>& repo_infos,
     std::set<fs::path>& skip_repos,
     std::mutex& mtx,
-    std::atomic<bool>& scanning_flag
+    std::atomic<bool>& scanning_flag,
+    bool include_private
 ) {
     for (const auto& p : all_repos) {
         RepoInfo ri;
@@ -210,6 +232,23 @@ void scan_repos(
             ri.status = RS_CHECKING;
             ri.message = "";
             if (fs::is_directory(p) && is_git_repo(p)) {
+                std::string origin = get_origin_url(p);
+                if (!include_private) {
+                    if (!is_github_url(origin)) {
+                        ri.status = RS_SKIPPED;
+                        ri.message = "Non-GitHub repo (skipped)";
+                        std::lock_guard<std::mutex> lk(mtx);
+                        repo_infos[p] = ri;
+                        continue;
+                    }
+                    if (!remote_accessible(p)) {
+                        ri.status = RS_SKIPPED;
+                        ri.message = "Private or inaccessible repo";
+                        std::lock_guard<std::mutex> lk(mtx);
+                        repo_infos[p] = ri;
+                        continue;
+                    }
+                }
                 ri.branch = get_current_branch(p);
                 if (ri.branch.empty() || ri.branch == "HEAD") {
                     ri.status = RS_HEAD_PROBLEM;
@@ -268,11 +307,14 @@ int main(int argc, char* argv[]) {
     enable_win_ansi();
     std::cout << "\033[?1049h"; // enter alternate buffer
     try {
-        if (argc != 2) {
-            std::cerr << "Usage: " << argv[0] << " <root-folder>\n";
+        if (argc < 2 || argc > 3) {
+            std::cerr << "Usage: " << argv[0] << " <root-folder> [--include-private]\n";
             std::cout << "\033[?1049l" << std::flush; // leave alt buffer
             return 1;
         }
+        bool include_private = false;
+        if (argc == 3 && std::string(argv[2]) == "--include-private")
+            include_private = true;
         fs::path root = argv[1];
         if (!fs::exists(root) || !fs::is_directory(root)) {
             std::cerr << "Root path does not exist or is not a directory.\n";
@@ -300,7 +342,7 @@ int main(int argc, char* argv[]) {
         while (true) {
             if (countdown <= 0 && !scanning) {
                 scanning = true;
-                std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos), std::ref(mtx), std::ref(scanning)).detach();
+                std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos), std::ref(mtx), std::ref(scanning), include_private).detach();
                 countdown = interval;
             }
             {
