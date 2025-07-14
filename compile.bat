@@ -15,7 +15,7 @@ if not exist "%LIBGIT2_LIB%\libgit2.lib" (
     call install_deps.bat
 )
 
-g++ -std=c++17 -I"%LIBGIT2_INC%" autogitpull.cpp git_utils.cpp tui.cpp -L"%LIBGIT2_LIB%" -lgit2 -o git_auto_pull_all.exe
+g++ -std=c++17 -I"%LIBGIT2_INC%" autogitpull.cpp git_utils.cpp tui.cpp -L"%LIBGIT2_LIB%" -lgit2 -o autogitpull.exe
 
 endlocal
 
