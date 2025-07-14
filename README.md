@@ -2,10 +2,12 @@
 Automatic Git Puller & Monitor
 
 ## Dependencies
-This tool relies on [libgit2](https://libgit2.org/). The helper scripts `install_deps.sh`
-(Linux/macOS) and `install_deps.bat` (Windows) automatically download and install
-`libgit2` when needed. If you prefer to install the library yourself, follow the
-instructions below.
+This tool relies on [libgit2](https://libgit2.org/). The helper scripts
+`install_deps.sh` (Linux/macOS) and `install_deps.bat` (Windows) automatically
+download and install `libgit2` when needed.  The project links against the
+static version of the library so the final executable does not depend on a
+separate `libgit2` DLL.  If you prefer to install the library yourself, follow
+the instructions below.
 
 ### Installing libgit2 on Linux
 ```
@@ -69,3 +71,8 @@ is written to a timestamped file inside this directory and its location is shown
 * Network access is required to contact remote Git servers when pulling updates.
 * The application prints ANSI color codes; on Windows run it in a terminal that
   supports color (e.g. Windows Terminal or recent PowerShell).
+
+## Licensing
+autogitpull is licensed under the MIT license (see `LICENSE`). The project
+bundles the license for the statically linked libgit2 library in
+`LIBGIT2_LICENSE`.
