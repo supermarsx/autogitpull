@@ -138,17 +138,32 @@ int main(int argc, char* argv[]) {
     try {
         ArgParser parser(argc, argv);
         if (parser.positional().size() != 1) {
-            std::cerr << "Usage: " << argv[0] << " <root-folder> [--include-private] [--show-skipped]\n";
+            std::cerr << "Usage: " << argv[0]
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>]\n";
             return 1;
         }
         for(const auto& f : parser.flags()) {
-            if (f != "--include-private" && f != "--show-skipped") {
+            if (f != "--include-private" && f != "--show-skipped" && f != "--interval") {
                 std::cerr << "Unknown option: " << f << "\n";
                 return 1;
             }
         }
         bool include_private = parser.has_flag("--include-private");
         bool show_skipped = parser.has_flag("--show-skipped");
+        int interval = 60;
+        if (parser.has_flag("--interval")) {
+            std::string val = parser.get_option("--interval");
+            if (val.empty()) {
+                std::cerr << "--interval requires a value in seconds\n";
+                return 1;
+            }
+            try {
+                interval = std::stoi(val);
+            } catch (...) {
+                std::cerr << "Invalid value for --interval: " << val << "\n";
+                return 1;
+            }
+        }
         fs::path root = parser.positional().front();
         if (!fs::exists(root) || !fs::is_directory(root)) {
             std::cerr << "Root path does not exist or is not a directory.\n";
@@ -165,7 +180,6 @@ int main(int argc, char* argv[]) {
             repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending..."};
         }
 
-        const int interval = 60; // seconds
         std::set<fs::path> skip_repos;
         std::mutex mtx;
         std::atomic<bool> scanning(false);
