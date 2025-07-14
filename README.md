@@ -26,6 +26,11 @@ vcpkg\vcpkg install libgit2
 Ensure that the resulting `vcpkg` `installed` folder is on your `LIB` and
 `INCLUDE` paths when compiling.
 
+The Windows build scripts (`compile.bat` and `compile-cl.bat`) look for a
+`vcpkg` directory in the project root or use the `VCPKG_ROOT` environment
+variable. Make sure one of these is set so the headers (`git2.h`) and the
+library can be found.
+
 ## Building
 ### Using the provided scripts
 Run `make` (Linux/macOS) or `compile.bat` (MinGW) to build the project. These
