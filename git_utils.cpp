@@ -5,6 +5,14 @@ using namespace std;
 
 namespace git {
 
+GitInitGuard::GitInitGuard() {
+    git_libgit2_init();
+}
+
+GitInitGuard::~GitInitGuard() {
+    git_libgit2_shutdown();
+}
+
 bool is_git_repo(const fs::path& p) {
     return fs::exists(p / ".git") && fs::is_directory(p / ".git");
 }
