@@ -1,6 +1,6 @@
 @echo off
 rem vcpkg places static libraries under .lib
-if exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\libgit2.lib" (
+if exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\git2.lib" (
     echo libgit2 already installed.
     goto :eof
 )

@@ -32,7 +32,7 @@ The Windows build scripts (`compile.bat` and `compile-cl.bat`) look for a
 `vcpkg` directory in the project root or use the `VCPKG_ROOT` environment
 variable. Make sure one of these is set so the headers (`git2.h`) and the
 library can be found. vcpkg names its static libraries using the `.lib`
-extension, and `compile.bat` links against `libgit2.lib` directly.
+extension, and `compile.bat` links against `git2.lib` directly.
 
 ## Building
 ### Using the provided scripts
