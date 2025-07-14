@@ -20,6 +20,7 @@ struct RepoInfo {
     std::string message;
     std::string branch;
     std::string last_pull_log;
+    int progress = 0; // fetch progress percentage
 };
 
 #endif // REPO_HPP
