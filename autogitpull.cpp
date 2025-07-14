@@ -151,6 +151,7 @@ void scan_repos(
 
 int main(int argc, char* argv[]) {
     AltScreenGuard guard;
+    git::GitInitGuard git_guard;
     try {
         const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--log-dir", "--help" };
         ArgParser parser(argc, argv, known);
