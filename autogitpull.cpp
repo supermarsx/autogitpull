@@ -152,17 +152,26 @@ void scan_repos(
 int main(int argc, char* argv[]) {
     AltScreenGuard guard;
     try {
-        ArgParser parser(argc, argv);
+        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--log-dir", "--help" };
+        ArgParser parser(argc, argv, known);
+
+        if (parser.has_flag("--help")) {
+            std::cout << "Usage: " << argv[0]
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--log-dir <path>] [--help]\n";
+            return 0;
+        }
+
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--log-dir <path>]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--log-dir <path>] [--help]\n";
             return 1;
         }
-        for(const auto& f : parser.flags()) {
-            if (f != "--include-private" && f != "--show-skipped" && f != "--interval" && f != "--log-dir") {
+
+        if (!parser.unknown_flags().empty()) {
+            for (const auto& f : parser.unknown_flags()) {
                 std::cerr << "Unknown option: " << f << "\n";
-                return 1;
             }
+            return 1;
         }
         bool include_private = parser.has_flag("--include-private");
         bool show_skipped = parser.has_flag("--show-skipped");
