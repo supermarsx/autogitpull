@@ -1,98 +1,108 @@
 #include "git_utils.hpp"
-#include <boost/process.hpp>
-#include <chrono>
-#include <future>
-#include <sstream>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include <git2.h>
 
 using namespace std;
-namespace bp = boost::process;
 
 namespace git {
-
-CmdResult run_cmd(const string& cmd, int timeout_sec) {
-    CmdResult result;
-    bp::ipstream pipe;
-    bp::child c(cmd, bp::shell, (bp::std_out & bp::std_err) > pipe);
-
-    auto reader = async(std::launch::async, [&]() {
-        string data, line;
-        while (getline(pipe, line)) {
-            data += line + '\n';
-        }
-        return data;
-    });
-
-    if (timeout_sec > 0) {
-        if (!c.wait_for(chrono::seconds(timeout_sec))) {
-            c.terminate();
-            c.wait();
-            result.exit_code = -1;
-            result.output = reader.get();
-            if (!result.output.empty() && result.output.back() == '\n')
-                result.output.pop_back();
-            return result;
-        }
-    } else {
-        c.wait();
-    }
-
-    result.output = reader.get();
-    if (!result.output.empty() && result.output.back() == '\n')
-        result.output.pop_back();
-    result.exit_code = c.exit_code();
-    return result;
-}
-
-string quote_path(const fs::path& p) {
-#ifdef _WIN32
-    string s = p.string();
-    string escaped;
-    for (char ch : s) {
-        if (ch == '"') escaped += "\\\"";
-        else escaped += ch;
-    }
-    return string("\"") + escaped + string("\"");
-#else
-    string s = p.string();
-    string escaped;
-    for (char ch : s) {
-        if (ch == '\'' )
-            escaped += "'\\''";
-        else
-            escaped += ch;
-    }
-    return string("'") + escaped + string("'");
-#endif
-}
 
 bool is_git_repo(const fs::path& p) {
     return fs::exists(p / ".git") && fs::is_directory(p / ".git");
 }
 
+static string oid_to_hex(const git_oid& oid) {
+    char buf[GIT_OID_HEXSZ + 1];
+    git_oid_tostr(buf, sizeof(buf), &oid);
+    return string(buf);
+}
+
 string get_local_hash(const fs::path& repo) {
-    string cmd = "cd " + quote_path(repo) + " && git rev-parse HEAD 2>&1";
-    return run_cmd(cmd, 30).output;
+    git_libgit2_init();
+    git_repository* r = nullptr;
+    if (git_repository_open(&r, repo.string().c_str()) != 0) {
+        git_libgit2_shutdown();
+        return "";
+    }
+    git_oid oid;
+    if (git_reference_name_to_id(&oid, r, "HEAD") != 0) {
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        return "";
+    }
+    string hash = oid_to_hex(oid);
+    git_repository_free(r);
+    git_libgit2_shutdown();
+    return hash;
 }
 
 string get_current_branch(const fs::path& repo) {
-    string cmd = "cd " + quote_path(repo) + " && git rev-parse --abbrev-ref HEAD 2>&1";
-    return run_cmd(cmd, 30).output;
+    git_libgit2_init();
+    git_repository* r = nullptr;
+    if (git_repository_open(&r, repo.string().c_str()) != 0) {
+        git_libgit2_shutdown();
+        return "";
+    }
+    git_reference* head = nullptr;
+    if (git_repository_head(&head, r) != 0) {
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        return "";
+    }
+    const char* name = git_reference_shorthand(head);
+    string branch = name ? name : "";
+    git_reference_free(head);
+    git_repository_free(r);
+    git_libgit2_shutdown();
+    return branch;
 }
 
 string get_remote_hash(const fs::path& repo, const string& branch) {
-    string fetch_cmd = "cd " + quote_path(repo) + " && git fetch --quiet 2>&1";
-    run_cmd(fetch_cmd, 30);
-    string cmd = "cd " + quote_path(repo) + " && git rev-parse origin/" + branch + " 2>&1";
-    return run_cmd(cmd, 30).output;
+    git_libgit2_init();
+    git_repository* r = nullptr;
+    if (git_repository_open(&r, repo.string().c_str()) != 0) {
+        git_libgit2_shutdown();
+        return "";
+    }
+    git_remote* remote = nullptr;
+    if (git_remote_lookup(&remote, r, "origin") != 0) {
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        return "";
+    }
+    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    git_remote_fetch(remote, nullptr, &fetch_opts, nullptr);
+    git_remote_free(remote);
+    git_oid oid;
+    string refname = string("refs/remotes/origin/") + branch;
+    if (git_reference_name_to_id(&oid, r, refname.c_str()) != 0) {
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        return "";
+    }
+    string hash = oid_to_hex(oid);
+    git_repository_free(r);
+    git_libgit2_shutdown();
+    return hash;
 }
 
 string get_origin_url(const fs::path& repo) {
-    string cmd = "cd " + quote_path(repo) + " && git config --get remote.origin.url 2>&1";
-    return run_cmd(cmd, 15).output;
+    git_libgit2_init();
+    git_repository* r = nullptr;
+    if (git_repository_open(&r, repo.string().c_str()) != 0) {
+        git_libgit2_shutdown();
+        return "";
+    }
+    git_remote* remote = nullptr;
+    if (git_remote_lookup(&remote, r, "origin") != 0) {
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        return "";
+    }
+    const char* url = git_remote_url(remote);
+    string result = url ? url : "";
+    git_remote_free(remote);
+    git_repository_free(r);
+    git_libgit2_shutdown();
+    return result;
 }
 
 bool is_github_url(const string& url) {
@@ -100,31 +110,98 @@ bool is_github_url(const string& url) {
 }
 
 bool remote_accessible(const fs::path& repo) {
-    string cmd = "cd " + quote_path(repo) + " && git ls-remote -h origin HEAD 2>&1";
-    string out = run_cmd(cmd, 30).output;
-    if (out.find("fatal") != string::npos || out.find("Permission denied") != string::npos ||
-        out.find("ERROR") != string::npos)
+    git_libgit2_init();
+    git_repository* r = nullptr;
+    if (git_repository_open(&r, repo.string().c_str()) != 0) {
+        git_libgit2_shutdown();
         return false;
-    return true;
+    }
+    git_remote* remote = nullptr;
+    if (git_remote_lookup(&remote, r, "origin") != 0) {
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        return false;
+    }
+    int err = git_remote_connect(remote, GIT_DIRECTION_FETCH, nullptr, nullptr, nullptr);
+    bool ok = err == 0;
+    if (ok)
+        git_remote_disconnect(remote);
+    git_remote_free(remote);
+    git_repository_free(r);
+    git_libgit2_shutdown();
+    return ok;
 }
 
 int try_pull(const fs::path& repo, string& out_pull_log) {
-    auto res = run_cmd("cd " + quote_path(repo) + " && git pull 2>&1", 30);
-    string pull = res.output;
-    out_pull_log = pull;
-    if (pull.find("package-lock.json") != string::npos &&
-        pull.find("Please commit your changes or stash them before you merge") != string::npos) {
-        run_cmd("cd " + quote_path(repo) + " && git checkout -- package-lock.json", 30);
-        pull = run_cmd("cd " + quote_path(repo) + " && git pull 2>&1", 30).output;
-        out_pull_log += "\n[Auto-discarded package-lock.json]\n" + pull;
-        if (pull.find("Already up to date") != string::npos || pull.find("Updating") != string::npos)
-            return 1;
-        else
-            return 2;
+    git_libgit2_init();
+    git_repository* r = nullptr;
+    if (git_repository_open(&r, repo.string().c_str()) != 0) {
+        git_libgit2_shutdown();
+        out_pull_log = "Failed to open repository";
+        return 2;
     }
-    if (pull.find("Already up to date") != string::npos || pull.find("Updating") != string::npos)
+    string branch = get_current_branch(repo);
+    git_remote* remote = nullptr;
+    if (git_remote_lookup(&remote, r, "origin") != 0) {
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        out_pull_log = "No origin remote";
+        return 2;
+    }
+    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    if (git_remote_fetch(remote, nullptr, &fetch_opts, nullptr) != 0) {
+        git_remote_free(remote);
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        out_pull_log = "Fetch failed";
+        return 2;
+    }
+    git_oid remote_oid;
+    string refname = string("refs/remotes/origin/") + branch;
+    if (git_reference_name_to_id(&remote_oid, r, refname.c_str()) != 0) {
+        git_remote_free(remote);
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        out_pull_log = "Remote branch not found";
+        return 2;
+    }
+    git_oid local_oid;
+    if (git_reference_name_to_id(&local_oid, r, "HEAD") != 0) {
+        git_remote_free(remote);
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        out_pull_log = "Local HEAD not found";
+        return 2;
+    }
+    if (git_oid_cmp(&local_oid, &remote_oid) == 0) {
+        out_pull_log = "Already up to date";
+        git_remote_free(remote);
+        git_repository_free(r);
+        git_libgit2_shutdown();
         return 0;
-    return 2;
+    }
+    git_object* target = nullptr;
+    if (git_object_lookup(&target, r, &remote_oid, GIT_OBJECT_COMMIT) != 0) {
+        git_remote_free(remote);
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        out_pull_log = "Lookup failed";
+        return 2;
+    }
+    if (git_reset(r, target, GIT_RESET_HARD, nullptr) != 0) {
+        git_object_free(target);
+        git_remote_free(remote);
+        git_repository_free(r);
+        git_libgit2_shutdown();
+        out_pull_log = "Reset failed";
+        return 2;
+    }
+    git_object_free(target);
+    git_remote_free(remote);
+    git_repository_free(r);
+    git_libgit2_shutdown();
+    out_pull_log = "Fast-forwarded";
+    return 0;
 }
 
 } // namespace git
