@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-if ! pkg-config --exists libgit2; then
+if ! (command -v pkg-config >/dev/null && pkg-config --exists libgit2); then
     echo "libgit2 not found, attempting to install..."
     ./install_deps.sh
 fi
