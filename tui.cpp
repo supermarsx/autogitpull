@@ -21,6 +21,7 @@ const char* COLOR_RED = "\033[31m";
 const char* COLOR_CYAN = "\033[36m";
 const char* COLOR_GRAY = "\033[90m";
 const char* COLOR_BOLD = "\033[1m";
+const char* COLOR_MAGENTA = "\033[35m";
 
 #ifdef _WIN32
 void enable_win_ansi() {
@@ -83,6 +84,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             case RS_ERROR:         color = COLOR_RED;    status_s = "Error    "; break;
             case RS_SKIPPED:       color = COLOR_GRAY;   status_s = "Skipped  "; break;
             case RS_HEAD_PROBLEM:  color = COLOR_RED;    status_s = "HEAD/BR  "; break;
+            case RS_REMOTE_AHEAD:  color = COLOR_MAGENTA;status_s = "RemoteUp"; break;
         }
         out << color << " [" << std::left << std::setw(9) << status_s << "]  "
             << p.filename().string() << COLOR_RESET;
