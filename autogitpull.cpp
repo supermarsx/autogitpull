@@ -38,6 +38,8 @@ void process_repo(const fs::path& p,
                   std::set<fs::path>& skip_repos,
                   std::mutex& mtx,
                   std::atomic<bool>& running,
+                  std::string& action,
+                  std::mutex& action_mtx,
                   bool include_private,
                   const fs::path& log_dir,
                   bool check_only,
@@ -56,6 +58,10 @@ void process_repo(const fs::path& p,
     RepoInfo ri;
     ri.path = p;
     ri.auth_failed = false;
+    {
+        std::lock_guard<std::mutex> lk(action_mtx);
+        action = "Checking " + p.filename().string();
+    }
     if (!fs::exists(p)) {
         ri.status = RS_ERROR;
         ri.message = "Missing";
@@ -74,6 +80,8 @@ void process_repo(const fs::path& p,
         ri.status = RS_CHECKING;
         ri.message = "";
         if (fs::is_directory(p) && git::is_git_repo(p)) {
+            ri.commit = git::get_local_hash(p);
+            if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
             std::string origin = git::get_origin_url(p);
             if (!include_private) {
                 if (!git::is_github_url(origin)) {
@@ -113,6 +121,7 @@ void process_repo(const fs::path& p,
                     } else if (local == remote) {
                         ri.status = RS_UP_TO_DATE;
                         ri.message = "Up to date";
+                        ri.commit = local.substr(0,7);
                         needs_pull = false;
                     }
                 }
@@ -120,10 +129,16 @@ void process_repo(const fs::path& p,
                     if (check_only) {
                         ri.status = RS_REMOTE_AHEAD;
                         ri.message = hash_check ? "Remote ahead" : "Update possible";
+                        ri.commit = git::get_local_hash(p);
+                        if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
                     } else {
                         ri.status = RS_PULLING;
                         ri.message = "Remote ahead, pulling...";
                         ri.progress = 0;
+                        {
+                            std::lock_guard<std::mutex> lk(action_mtx);
+                            action = "Pulling " + p.filename().string();
+                        }
                         {
                             std::lock_guard<std::mutex> lk(mtx);
                             repo_infos[p] = ri;
@@ -153,9 +168,13 @@ void process_repo(const fs::path& p,
                         if (code == 0) {
                             ri.status = RS_PULL_OK;
                             ri.message = "Pulled successfully";
+                            ri.commit = git::get_local_hash(p);
+                            if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
                         } else if (code == 1) {
                             ri.status = RS_PKGLOCK_FIXED;
                             ri.message = "package-lock.json auto-reset & pulled";
+                            ri.commit = git::get_local_hash(p);
+                            if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
                         } else {
                             ri.status = RS_ERROR;
                             ri.message = "Pull failed (see log)";
@@ -177,6 +196,10 @@ void process_repo(const fs::path& p,
         ri.message = e.what();
         skip_repos.insert(p);
     }
+    {
+        std::lock_guard<std::mutex> lk(action_mtx);
+        action = "Idle";
+    }
     std::lock_guard<std::mutex> lk(mtx);
     repo_infos[p] = ri;
 }
@@ -189,6 +212,8 @@ void scan_repos(
     std::mutex& mtx,
     std::atomic<bool>& scanning_flag,
     std::atomic<bool>& running,
+    std::string& action,
+    std::mutex& action_mtx,
     bool include_private,
     const fs::path& log_dir,
     bool check_only,
@@ -205,6 +230,7 @@ void scan_repos(
             if (idx >= all_repos.size()) break;
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running,
+                         action, action_mtx,
                          include_private, log_dir, check_only, hash_check);
         }
     };
@@ -320,13 +346,15 @@ int main(int argc, char* argv[]) {
         }
         std::map<fs::path, RepoInfo> repo_infos;
         for (const auto& p : all_repos) {
-            repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending...", "", "", 0, false};
+            repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending...", "", "", "", 0, false};
         }
 
         std::set<fs::path> skip_repos;
         std::mutex mtx;
         std::atomic<bool> scanning(false);
         std::atomic<bool> running(true);
+        std::string current_action = "Idle";
+        std::mutex action_mtx;
 
         g_running_ptr = &running;
         std::signal(SIGINT, handle_signal);
@@ -347,7 +375,9 @@ int main(int argc, char* argv[]) {
                 scanning = true;
                 scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
                                           std::ref(skip_repos), std::ref(mtx),
-                                          std::ref(scanning), std::ref(running), include_private,
+                                          std::ref(scanning), std::ref(running),
+                                          std::ref(current_action), std::ref(action_mtx),
+                                          include_private,
                                           std::cref(log_dir), check_only, hash_check, concurrency);
                 countdown_ms = std::chrono::seconds(interval);
             }
@@ -355,7 +385,12 @@ int main(int argc, char* argv[]) {
                 std::lock_guard<std::mutex> lk(mtx);
                 int sec_left = (int)std::chrono::duration_cast<std::chrono::seconds>(countdown_ms).count();
                 if (sec_left < 0) sec_left = 0;
-                draw_tui(all_repos, repo_infos, interval, sec_left, scanning, show_skipped);
+                std::string act;
+                {
+                    std::lock_guard<std::mutex> a_lk(action_mtx);
+                    act = current_action;
+                }
+                draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped);
             }
             std::this_thread::sleep_for(refresh_ms);
             countdown_ms -= refresh_ms;

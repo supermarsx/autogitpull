@@ -51,7 +51,8 @@ std::string timestamp() {
 
 void draw_tui(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos,
-              int interval, int seconds_left, bool scanning, bool show_skipped) {
+              int interval, int seconds_left, bool scanning,
+              const std::string& action, bool show_skipped) {
     std::ostringstream out;
     out << "\033[2J\033[H";
     out << COLOR_BOLD << "AutoGitPull TUI   " << COLOR_RESET
@@ -61,7 +62,12 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         << (all_repos.empty() ? "" : all_repos[0].parent_path().string())
         << COLOR_RESET << "\n";
     out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
-    if (scanning) out << COLOR_YELLOW << "Scan in progress...\n" << COLOR_RESET;
+    out << "Status: ";
+    if (scanning)
+        out << COLOR_YELLOW << action << COLOR_RESET;
+    else
+        out << COLOR_GREEN << "Idle" << COLOR_RESET;
+    out << " - Next scan in " << seconds_left << "s\n";
     out << "--------------------------------------------------------------";
     out << "-------------------\n";
     out << COLOR_BOLD << "  Status     Repo" << COLOR_RESET << "\n";
@@ -94,7 +100,11 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         }
         out << color << " [" << std::left << std::setw(9) << status_s << "]  "
             << p.filename().string() << COLOR_RESET;
-        if (!ri.branch.empty()) out << "  (" << ri.branch << ")";
+        if (!ri.branch.empty()) {
+            out << "  (" << ri.branch;
+            if (!ri.commit.empty()) out << "@" << ri.commit;
+            out << ")";
+        }
         if (!ri.message.empty()) out << " - " << ri.message;
         if (ri.auth_failed) out << COLOR_RED << " [AUTH]" << COLOR_RESET;
         if (ri.status == RS_PULLING)
@@ -103,6 +113,5 @@ void draw_tui(const std::vector<fs::path>& all_repos,
     }
     out << "--------------------------------------------------------------";
     out << "-------------------\n";
-    out << COLOR_CYAN << "Next scan in " << seconds_left << " seconds..." << COLOR_RESET;
     std::cout << out.str() << std::flush;
 }

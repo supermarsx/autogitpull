@@ -36,7 +36,8 @@ script installs the static library and headers under `libgit2\_install`.
 `compile-cl.bat` expects a vcpkg installation while `compile.bat` uses the
 library produced by `install_libgit2_mingw.bat` and will call it
 automatically if `libgit2\_install` is missing. When linking with MinGW,
-additional Windows system libraries are required. `compile.bat` already
+additional Windows system libraries are required. `compile.bat` now attempts
+to install MinGW through Chocolatey if `g++` is not found and already
 includes `winhttp`, `ole32`, `rpcrt4` and `crypt32` so that the build
 succeeds without manual tweaks.
 
@@ -47,8 +48,9 @@ build the project. `compile.bat` invokes `install_libgit2_mingw.bat` when
 `libgit2` is missing. The binary is produced as `autogitpull` (or
 `autogitpull.exe` on Windows).
 
-The repository also ships with `compile.sh` for Unix-like environments and a few
-batch files for Windows: `compile.bat`, `compile-cl.bat`,
+The repository also ships with `compile.sh` for Unix-like environments which
+will attempt to install a C++ compiler if one isn't present. Windows users get
+`compile.bat` (MinGW) and `compile-cl.bat` (MSVC) along with
 `install_deps.bat`, `install_libgit2_mingw.bat` and `run.bat`.
 
 Clean up intermediate files with `make clean`.

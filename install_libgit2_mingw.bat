@@ -2,8 +2,13 @@
 REM Check for MinGW g++
 where g++ >nul 2>nul
 if errorlevel 1 (
-    echo MinGW g++ not found in PATH!
-    exit /b 1
+    echo MinGW g++ not found in PATH. Attempting to install...
+    if defined ChocolateyInstall (
+        choco install -y mingw
+    ) else (
+        echo Please install MinGW and ensure g++ is in PATH.
+        exit /b 1
+    )
 )
 
 REM Check for CMake
