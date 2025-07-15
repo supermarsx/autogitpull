@@ -1,6 +1,17 @@
 @echo off
 setlocal
 
+where g++ >nul 2>nul
+if errorlevel 1 (
+    echo MinGW g++ not found. Attempting to install...
+    if defined ChocolateyInstall (
+        choco install -y mingw
+    ) else (
+        echo Please install MinGW and ensure g++ is in PATH.
+        exit /b 1
+    )
+)
+
 rem Path to libgit2 built with install_libgit2_mingw.bat
 set "LIBGIT2_INC=libgit2\_install\include"
 set "LIBGIT2_LIB=libgit2\_install\lib"
