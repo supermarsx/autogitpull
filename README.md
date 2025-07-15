@@ -87,6 +87,18 @@ cmake --build build
 
 The resulting executable will be in the `build` directory.
 
+### Running tests
+Unit tests require [Catch2](https://github.com/catchorg/Catch2), which is
+available on most package managers. After installing the dependency, configure
+and build the project with CMake and run `ctest`:
+
+```bash
+make test
+```
+
+This command generates a `build` directory (if missing), compiles the tests and
+executes them through CMake's `ctest` driver.
+
 Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]`
 
 Available options:
