@@ -1,10 +1,23 @@
 #include "git_utils.hpp"
 #include <git2.h>
 #include <functional>
+#include <cstdlib>
 
 using namespace std;
 
 namespace git {
+
+static int credential_cb(git_credential **out, const char *url,
+                         const char *username_from_url,
+                         unsigned int allowed_types, void *payload)
+{
+    const char *user = getenv("GIT_USERNAME");
+    const char *pass = getenv("GIT_PASSWORD");
+    if ((allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) && user && pass) {
+        return git_credential_userpass_plaintext_new(out, user, pass);
+    }
+    return git_credential_default_new(out);
+}
 
 GitInitGuard::GitInitGuard() {
     git_libgit2_init();
@@ -64,7 +77,8 @@ string get_current_branch(const fs::path& repo) {
     return branch;
 }
 
-string get_remote_hash(const fs::path& repo, const string& branch) {
+string get_remote_hash(const fs::path& repo, const string& branch,
+                       bool use_credentials, bool* auth_failed) {
     git_libgit2_init();
     git_repository* r = nullptr;
     if (git_repository_open(&r, repo.string().c_str()) != 0) {
@@ -78,7 +92,15 @@ string get_remote_hash(const fs::path& repo, const string& branch) {
         return "";
     }
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
-    git_remote_fetch(remote, nullptr, &fetch_opts, nullptr);
+    if (use_credentials)
+        fetch_opts.callbacks.credentials = credential_cb;
+    int err = git_remote_fetch(remote, nullptr, &fetch_opts, nullptr);
+    if (err != 0) {
+        const git_error* e = git_error_last();
+        if (auth_failed && e && e->message &&
+            std::string(e->message).find("auth") != std::string::npos)
+            *auth_failed = true;
+    }
     git_remote_free(remote);
     git_oid oid;
     string refname = string("refs/remotes/origin/") + branch;
@@ -142,7 +164,8 @@ bool remote_accessible(const fs::path& repo) {
 }
 
 int try_pull(const fs::path& repo, string& out_pull_log,
-             const std::function<void(int)>* progress_cb) {
+             const std::function<void(int)>* progress_cb,
+             bool use_credentials, bool* auth_failed) {
     git_libgit2_init();
     if (progress_cb)
         (*progress_cb)(0);
@@ -178,8 +201,15 @@ int try_pull(const fs::path& repo, string& out_pull_log,
             return 0;
         };
     }
+    if (use_credentials)
+        callbacks.credentials = credential_cb;
     fetch_opts.callbacks = callbacks;
-    if (git_remote_fetch(remote, nullptr, &fetch_opts, nullptr) != 0) {
+    int err = git_remote_fetch(remote, nullptr, &fetch_opts, nullptr);
+    if (err != 0) {
+        const git_error* e = git_error_last();
+        if (auth_failed && e && e->message &&
+            std::string(e->message).find("auth") != std::string::npos)
+            *auth_failed = true;
         git_remote_free(remote);
         git_repository_free(r);
         git_libgit2_shutdown();

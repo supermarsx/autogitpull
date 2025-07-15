@@ -69,6 +69,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             ri.status = RS_CHECKING;
             ri.message = "Pending...";
             ri.path = p;
+            ri.auth_failed = false;
         }
         if (ri.status == RS_SKIPPED && !show_skipped)
             continue;
@@ -87,6 +88,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             << p.filename().string() << COLOR_RESET;
         if (!ri.branch.empty()) out << "  (" << ri.branch << ")";
         if (!ri.message.empty()) out << " - " << ri.message;
+        if (ri.auth_failed) out << COLOR_RED << " [AUTH]" << COLOR_RESET;
         if (ri.status == RS_PULLING)
             out << " (" << ri.progress << "%)";
         out << "\n";

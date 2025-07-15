@@ -46,6 +46,7 @@ void scan_repos(
         if (!running) break;
         RepoInfo ri;
         ri.path = p;
+        ri.auth_failed = false;
         if (!fs::exists(p)) {
             ri.status = RS_ERROR;
             ri.message = "Missing";
@@ -88,7 +89,11 @@ void scan_repos(
                     skip_repos.insert(p);
                 } else {
                     std::string local = git::get_local_hash(p);
-                    std::string remote = git::get_remote_hash(p, ri.branch);
+                    bool auth_fail = false;
+                    std::string remote = git::get_remote_hash(p, ri.branch,
+                                                               include_private,
+                                                               &auth_fail);
+                    ri.auth_failed = auth_fail;
                     if (local.empty() || remote.empty()) {
                         ri.status = RS_ERROR;
                         ri.message = "Error getting hashes or remote";
@@ -106,7 +111,11 @@ void scan_repos(
                             std::lock_guard<std::mutex> lk(mtx);
                             repo_infos[p].progress = pct;
                         };
-                        int code = git::try_pull(p, pull_log, &progress_cb);
+                        bool pull_auth_fail = false;
+                        int code = git::try_pull(p, pull_log, &progress_cb,
+                                                 include_private,
+                                                 &pull_auth_fail);
+                        ri.auth_failed = pull_auth_fail;
                         ri.last_pull_log = pull_log;
                         fs::path log_file_path;
                         if (!log_dir.empty()) {
@@ -226,7 +235,7 @@ int main(int argc, char* argv[]) {
         }
         std::map<fs::path, RepoInfo> repo_infos;
         for (const auto& p : all_repos) {
-            repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending..."};
+            repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending...", "", "", 0, false};
         }
 
         std::set<fs::path> skip_repos;
