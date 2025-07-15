@@ -1,0 +1,71 @@
+name: Rolling Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up C++ build environment
+        uses: aminya/setup-cpp@v1
+
+      - name: Install dependencies
+        run: ./install_deps.sh
+
+      - name: Build
+        run: |
+          mkdir build && cd build
+          cmake ..
+          make -j$(nproc)
+
+      - name: Run Tests
+        run: |
+          cd build
+          ctest
+
+      - name: Get next rolling tag
+        id: rolling_tag
+        run: |
+          TODAY=$(date +'%Y.%m.%d')
+          git fetch --tags
+          LAST=$(git tag --list "${TODAY}-*" | grep -E "^${TODAY}-[0-9]+$" | sed "s/^${TODAY}-//" | sort -n | tail -1)
+          if [ -z "$LAST" ]; then
+            NEXT="${TODAY}-1"
+          else
+            NEXT_NUM=$((LAST + 1))
+            NEXT="${TODAY}-${NEXT_NUM}"
+          fi
+          echo "NEXT_TAG=$NEXT" >> $GITHUB_ENV
+          echo "Rolling tag: $NEXT"
+
+      - name: Tag commit
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag $NEXT_TAG
+          git push origin $NEXT_TAG
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.NEXT_TAG }}
+          name: Rolling Release ${{ env.NEXT_TAG }}
+          body: "Automated rolling release for ${{ env.NEXT_TAG }}"
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.NEXT_TAG }}
+          files: build/autogitpull
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
