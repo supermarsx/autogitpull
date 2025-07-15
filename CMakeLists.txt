@@ -14,7 +14,7 @@ pkg_check_modules(LIBGIT2 REQUIRED IMPORTED_TARGET libgit2)
 add_library(autogitpull_lib STATIC git_utils.cpp)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 pthread)
 
-add_executable(autogitpull autogitpull.cpp tui.cpp)
+add_executable(autogitpull autogitpull.cpp tui.cpp logger.cpp)
 target_link_libraries(autogitpull PRIVATE autogitpull_lib)
 if(MSVC)
     target_link_options(autogitpull PRIVATE /MT)
