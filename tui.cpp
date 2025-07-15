@@ -79,24 +79,24 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         if (it != repo_infos.end())
             ri = it->second;
         else {
-            ri.status = RS_CHECKING;
+            ri.status = RepoStatus::RS_CHECKING;
             ri.message = "Pending...";
             ri.path = p;
             ri.auth_failed = false;
         }
-        if (ri.status == RS_SKIPPED && !show_skipped)
+        if (ri.status == RepoStatus::RS_SKIPPED && !show_skipped)
             continue;
         std::string color = COLOR_GRAY, status_s = "CHECK    ";
         switch (ri.status) {
-            case RS_CHECKING:      color = COLOR_CYAN;   status_s = "Checking "; break;
-            case RS_UP_TO_DATE:    color = COLOR_GREEN;  status_s = "UpToDate "; break;
-            case RS_PULLING:       color = COLOR_YELLOW; status_s = "Pulling  "; break;
-            case RS_PULL_OK:       color = COLOR_GREEN;  status_s = "Pulled   "; break;
-            case RS_PKGLOCK_FIXED: color = COLOR_YELLOW; status_s = "PkgLockOk"; break;
-            case RS_ERROR:         color = COLOR_RED;    status_s = "Error    "; break;
-            case RS_SKIPPED:       color = COLOR_GRAY;   status_s = "Skipped  "; break;
-            case RS_HEAD_PROBLEM:  color = COLOR_RED;    status_s = "HEAD/BR  "; break;
-            case RS_REMOTE_AHEAD:  color = COLOR_MAGENTA;status_s = "RemoteUp"; break;
+            case RepoStatus::RS_CHECKING:      color = COLOR_CYAN;   status_s = "Checking "; break;
+            case RepoStatus::RS_UP_TO_DATE:    color = COLOR_GREEN;  status_s = "UpToDate "; break;
+            case RepoStatus::RS_PULLING:       color = COLOR_YELLOW; status_s = "Pulling  "; break;
+            case RepoStatus::RS_PULL_OK:       color = COLOR_GREEN;  status_s = "Pulled   "; break;
+            case RepoStatus::RS_PKGLOCK_FIXED: color = COLOR_YELLOW; status_s = "PkgLockOk"; break;
+            case RepoStatus::RS_ERROR:         color = COLOR_RED;    status_s = "Error    "; break;
+            case RepoStatus::RS_SKIPPED:       color = COLOR_GRAY;   status_s = "Skipped  "; break;
+            case RepoStatus::RS_HEAD_PROBLEM:  color = COLOR_RED;    status_s = "HEAD/BR  "; break;
+            case RepoStatus::RS_REMOTE_AHEAD:  color = COLOR_MAGENTA;status_s = "RemoteUp"; break;
         }
         out << color << " [" << std::left << std::setw(9) << status_s << "]  "
             << p.filename().string() << COLOR_RESET;
@@ -107,7 +107,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         }
         if (!ri.message.empty()) out << " - " << ri.message;
         if (ri.auth_failed) out << COLOR_RED << " [AUTH]" << COLOR_RESET;
-        if (ri.status == RS_PULLING)
+        if (ri.status == RepoStatus::RS_PULLING)
             out << " (" << ri.progress << "%)";
         out << "\n";
     }
