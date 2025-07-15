@@ -63,6 +63,12 @@ On Linux with `g++`:
 g++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp $(pkg-config --cflags --libs libgit2) -pthread -static -o autogitpull
 ```
 
+On macOS with `clang++`:
+
+```bash
+clang++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp $(pkg-config --cflags --libs libgit2) -pthread -o autogitpull
+```
+
 On Windows with MSVC's `cl`:
 
 ```batch
