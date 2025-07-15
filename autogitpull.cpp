@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
         bool check_only = parser.has_flag("--check-only");
         bool hash_check = !parser.has_flag("--no-hash-check");
         size_t concurrency = 3;
-        int interval = 60;
+        int interval = 30;
         std::chrono::milliseconds refresh_ms(500);
         if (parser.has_flag("--interval")) {
             std::string val = parser.get_option("--interval");

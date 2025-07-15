@@ -93,7 +93,7 @@ Available options:
 
 * `--include-private` – include private or non-GitHub repositories in the scan.
 * `--show-skipped` – display repositories that were skipped because they are non-GitHub or require authentication.
-* `--interval <seconds>` – delay between automatic scans (default 60).
+* `--interval <seconds>` – delay between automatic scans (default 30).
 * `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 500).
 * `--log-dir <path>` – directory where pull logs will be written.
 * `--concurrency <n>` – number of repositories processed in parallel (default 3).
