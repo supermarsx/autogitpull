@@ -43,6 +43,16 @@ void process_repo(const fs::path& p,
                   bool check_only,
                   bool hash_check) {
     if (!running) return;
+    {
+        std::lock_guard<std::mutex> lk(mtx);
+        auto it = repo_infos.find(p);
+        if (it != repo_infos.end() &&
+            (it->second.status == RS_PULLING || it->second.status == RS_CHECKING)) {
+            // Repo already being processed elsewhere
+            std::cerr << "Skipping " << p << " - busy\n";
+            return;
+        }
+    }
     RepoInfo ri;
     ri.path = p;
     ri.auth_failed = false;
