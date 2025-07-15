@@ -79,15 +79,16 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         if (it != repo_infos.end())
             ri = it->second;
         else {
-            ri.status = RS_CHECKING;
+            ri.status = RS_PENDING;
             ri.message = "Pending...";
             ri.path = p;
             ri.auth_failed = false;
         }
         if (ri.status == RS_SKIPPED && !show_skipped)
             continue;
-        std::string color = COLOR_GRAY, status_s = "CHECK    ";
+        std::string color = COLOR_GRAY, status_s = "Pending ";
         switch (ri.status) {
+            case RS_PENDING:       color = COLOR_GRAY;   status_s = "Pending "; break;
             case RS_CHECKING:      color = COLOR_CYAN;   status_s = "Checking "; break;
             case RS_UP_TO_DATE:    color = COLOR_GREEN;  status_s = "UpToDate "; break;
             case RS_PULLING:       color = COLOR_YELLOW; status_s = "Pulling  "; break;

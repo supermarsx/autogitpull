@@ -4,6 +4,7 @@
 #include <string>
 
 enum RepoStatus {
+    RS_PENDING,
     RS_CHECKING,
     RS_UP_TO_DATE,
     RS_PULLING,
@@ -17,7 +18,7 @@ enum RepoStatus {
 
 struct RepoInfo {
     std::filesystem::path path;
-    RepoStatus status = RS_CHECKING;
+    RepoStatus status = RS_PENDING;
     std::string message;
     std::string branch;
     std::string commit; // short hash of HEAD
