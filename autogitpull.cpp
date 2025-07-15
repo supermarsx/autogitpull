@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
         }
         std::map<fs::path, RepoInfo> repo_infos;
         for (const auto& p : all_repos) {
-            repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending...", "", "", "", 0, false};
+            repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
         }
 
         std::set<fs::path> skip_repos;

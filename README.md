@@ -123,6 +123,11 @@ is written to a timestamped file inside this directory and its location is shown
 Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
 `./autogitpull myprojects --log-dir logs --log-file autogitpull.log`
 
+### Status labels
+When the program starts, each repository is listed with the **Pending** status
+until it is checked for the first time. Once a scan begins the status switches
+to **Checking** and later reflects the pull result.
+
 ## Runtime requirements
 * **Git** must be available in your `PATH` for libgit2 to interact with repositories.
 * Network access is required to contact remote Git servers when pulling updates.
