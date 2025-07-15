@@ -27,8 +27,19 @@ if(MINGW)
     target_link_libraries(autogitpull PRIVATE winhttp ole32 rpcrt4 crypt32)
 endif()
 
+include(FetchContent)
+
 enable_testing()
-find_package(Catch2 3 REQUIRED)
+find_package(Catch2 3 QUIET)
+if(NOT Catch2_FOUND)
+    message(STATUS "Catch2 not found, fetching via FetchContent...")
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.5.2
+    )
+    FetchContent_MakeAvailable(Catch2)
+endif()
 add_executable(autogitpull_tests tests/tests.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib)

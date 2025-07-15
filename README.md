@@ -90,9 +90,9 @@ cmake --build build
 The resulting executable will be in the `build` directory.
 
 ### Running tests
-Unit tests require [Catch2](https://github.com/catchorg/Catch2), which is
-available on most package managers. After installing the dependency, configure
-and build the project with CMake and run `ctest`:
+Unit tests use [Catch2](https://github.com/catchorg/Catch2). If the library is
+not installed, CMake will automatically download it using `FetchContent`. After
+configuring and building the project, run `ctest`:
 
 ```bash
 make test
