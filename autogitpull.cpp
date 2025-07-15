@@ -420,6 +420,17 @@ int main(int argc, char* argv[]) {
                 scan_thread.join();
 
             if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
+                {
+                    std::lock_guard<std::mutex> lk(mtx);
+                    for (auto& [p, info] : repo_infos) {
+                        if (info.status == RS_PULLING || info.status == RS_CHECKING) {
+                            std::cerr << "Manually clearing stale busy state for "
+                                      << p << "\n";
+                            info.status = RS_PENDING;
+                            info.message = "Pending...";
+                        }
+                    }
+                }
                 scanning = true;
                 scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
                                           std::ref(skip_repos), std::ref(mtx),
