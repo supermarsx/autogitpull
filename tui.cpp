@@ -48,8 +48,8 @@ void draw_tui(const std::vector<fs::path>& all_repos,
     std::ostringstream out;
     out << "\033[2J\033[H";
     out << COLOR_BOLD << "AutoGitPull TUI   " << COLOR_RESET
-        << COLOR_CYAN << timestamp() << COLOR_RESET
-        << "   Monitoring: "
+        << COLOR_CYAN << timestamp() << COLOR_RESET << "\n";
+    out << "Monitoring: "
         << COLOR_YELLOW
         << (all_repos.empty() ? "" : all_repos[0].parent_path().string())
         << COLOR_RESET << "\n";
