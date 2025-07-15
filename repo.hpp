@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <string>
 
-enum class RepoStatus {
+enum RepoStatus {
     RS_CHECKING,
     RS_UP_TO_DATE,
     RS_PULLING,
@@ -17,7 +17,7 @@ enum class RepoStatus {
 
 struct RepoInfo {
     std::filesystem::path path;
-    RepoStatus status = RepoStatus::RS_CHECKING;
+    RepoStatus status = RS_CHECKING;
     std::string message;
     std::string branch;
     std::string commit; // short hash of HEAD
