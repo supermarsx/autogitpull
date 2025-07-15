@@ -21,4 +21,9 @@ autogitpull: $(OBJ)
 clean:
 	rm -f $(OBJ) autogitpull
 
-.PHONY: all clean
+test:
+	cmake -S . -B build
+	cmake --build build
+	cd build && ctest --output-on-failure
+
+.PHONY: all clean test
