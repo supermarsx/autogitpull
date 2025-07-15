@@ -12,6 +12,7 @@
 #include <atomic>
 #include <sstream>
 #include <csignal>
+#include <cstdlib>
 #include "arg_parser.hpp"
 #include "git_utils.hpp"
 #include "tui.hpp"
@@ -31,6 +32,132 @@ void handle_signal(int) {
 }
 
 
+// Process a single repository
+void process_repo(const fs::path& p,
+                  std::map<fs::path, RepoInfo>& repo_infos,
+                  std::set<fs::path>& skip_repos,
+                  std::mutex& mtx,
+                  std::atomic<bool>& running,
+                  bool include_private,
+                  const fs::path& log_dir) {
+    if (!running) return;
+    RepoInfo ri;
+    ri.path = p;
+    ri.auth_failed = false;
+    if (!fs::exists(p)) {
+        ri.status = RS_ERROR;
+        ri.message = "Missing";
+        std::lock_guard<std::mutex> lk(mtx);
+        repo_infos[p] = ri;
+        return;
+    }
+    if (skip_repos.count(p)) {
+        ri.status = RS_SKIPPED;
+        ri.message = "Skipped after fatal error";
+        std::lock_guard<std::mutex> lk(mtx);
+        repo_infos[p] = ri;
+        return;
+    }
+    try {
+        ri.status = RS_CHECKING;
+        ri.message = "";
+        if (fs::is_directory(p) && git::is_git_repo(p)) {
+            std::string origin = git::get_origin_url(p);
+            if (!include_private) {
+                if (!git::is_github_url(origin)) {
+                    ri.status = RS_SKIPPED;
+                    ri.message = "Non-GitHub repo (skipped)";
+                    std::lock_guard<std::mutex> lk(mtx);
+                    repo_infos[p] = ri;
+                    return;
+                }
+                if (!git::remote_accessible(p)) {
+                    ri.status = RS_SKIPPED;
+                    ri.message = "Private or inaccessible repo";
+                    std::lock_guard<std::mutex> lk(mtx);
+                    repo_infos[p] = ri;
+                    return;
+                }
+            }
+            ri.branch = git::get_current_branch(p);
+            if (ri.branch.empty() || ri.branch == "HEAD") {
+                ri.status = RS_HEAD_PROBLEM;
+                ri.message = "Detached HEAD or branch error";
+                skip_repos.insert(p);
+            } else {
+                std::string local = git::get_local_hash(p);
+                bool auth_fail = false;
+                std::string remote = git::get_remote_hash(p, ri.branch,
+                                                           include_private,
+                                                           &auth_fail);
+                ri.auth_failed = auth_fail;
+                if (local.empty() || remote.empty()) {
+                    ri.status = RS_ERROR;
+                    ri.message = "Error getting hashes or remote";
+                    skip_repos.insert(p);
+                } else if (local != remote) {
+                    ri.status = RS_PULLING;
+                    ri.message = "Remote ahead, pulling...";
+                    ri.progress = 0;
+                    {
+                        std::lock_guard<std::mutex> lk(mtx);
+                        repo_infos[p] = ri;
+                    }
+                    std::string pull_log;
+                    std::function<void(int)> progress_cb = [&](int pct) {
+                        std::lock_guard<std::mutex> lk(mtx);
+                        repo_infos[p].progress = pct;
+                    };
+                    bool pull_auth_fail = false;
+                    int code = git::try_pull(p, pull_log, &progress_cb,
+                                             include_private,
+                                             &pull_auth_fail);
+                    ri.auth_failed = pull_auth_fail;
+                    ri.last_pull_log = pull_log;
+                    fs::path log_file_path;
+                    if (!log_dir.empty()) {
+                        std::string ts = timestamp();
+                        for (char& ch : ts) {
+                            if (ch == ' ' || ch == ':') ch = '_';
+                            else if (ch == '/') ch = '-';
+                        }
+                        log_file_path = log_dir / (p.filename().string() + "_" + ts + ".log");
+                        std::ofstream ofs(log_file_path);
+                        ofs << pull_log;
+                    }
+                    if (code == 0) {
+                        ri.status = RS_PULL_OK;
+                        ri.message = "Pulled successfully";
+                    } else if (code == 1) {
+                        ri.status = RS_PKGLOCK_FIXED;
+                        ri.message = "package-lock.json auto-reset & pulled";
+                    } else {
+                        ri.status = RS_ERROR;
+                        ri.message = "Pull failed (see log)";
+                        skip_repos.insert(p);
+                    }
+                    if (!log_file_path.empty()) {
+                        ri.message += " - " + log_file_path.string();
+                    }
+                } else {
+                    ri.status = RS_UP_TO_DATE;
+                    ri.message = "Up to date";
+                }
+            }
+        } else {
+            ri.status = RS_SKIPPED;
+            ri.message = "Not a git repo (skipped)";
+            skip_repos.insert(p);
+        }
+    } catch (const fs::filesystem_error& e) {
+        ri.status = RS_ERROR;
+        ri.message = e.what();
+        skip_repos.insert(p);
+    }
+    std::lock_guard<std::mutex> lk(mtx);
+    repo_infos[p] = ri;
+}
+
 // Background thread: scan and update info
 void scan_repos(
     const std::vector<fs::path>& all_repos,
@@ -40,125 +167,36 @@ void scan_repos(
     std::atomic<bool>& scanning_flag,
     std::atomic<bool>& running,
     bool include_private,
-    const fs::path& log_dir
+    const fs::path& log_dir,
+    bool thread_per_repo
 ) {
-    for (const auto& p : all_repos) {
-        if (!running) break;
-        RepoInfo ri;
-        ri.path = p;
-        ri.auth_failed = false;
-        if (!fs::exists(p)) {
-            ri.status = RS_ERROR;
-            ri.message = "Missing";
-            std::lock_guard<std::mutex> lk(mtx);
-            repo_infos[p] = ri;
-            continue;
+    if (thread_per_repo) {
+        size_t limit = 0;
+        const char* env_lim = std::getenv("AUTOGITPULL_MAX_THREADS");
+        if (env_lim) {
+            try { limit = static_cast<size_t>(std::stoul(env_lim)); } catch (...) {}
         }
-        if (skip_repos.count(p)) {
-            ri.status = RS_SKIPPED;
-            ri.message = "Skipped after fatal error";
-            std::lock_guard<std::mutex> lk(mtx);
-            repo_infos[p] = ri;
-            continue;
-        }
-        try {
-            ri.status = RS_CHECKING;
-            ri.message = "";
-            if (fs::is_directory(p) && git::is_git_repo(p)) {
-                std::string origin = git::get_origin_url(p);
-                if (!include_private) {
-                    if (!git::is_github_url(origin)) {
-                        ri.status = RS_SKIPPED;
-                        ri.message = "Non-GitHub repo (skipped)";
-                        std::lock_guard<std::mutex> lk(mtx);
-                        repo_infos[p] = ri;
-                        continue;
-                    }
-                    if (!git::remote_accessible(p)) {
-                        ri.status = RS_SKIPPED;
-                        ri.message = "Private or inaccessible repo";
-                        std::lock_guard<std::mutex> lk(mtx);
-                        repo_infos[p] = ri;
-                        continue;
-                    }
-                }
-                ri.branch = git::get_current_branch(p);
-                if (ri.branch.empty() || ri.branch == "HEAD") {
-                    ri.status = RS_HEAD_PROBLEM;
-                    ri.message = "Detached HEAD or branch error";
-                    skip_repos.insert(p);
-                } else {
-                    std::string local = git::get_local_hash(p);
-                    bool auth_fail = false;
-                    std::string remote = git::get_remote_hash(p, ri.branch,
-                                                               include_private,
-                                                               &auth_fail);
-                    ri.auth_failed = auth_fail;
-                    if (local.empty() || remote.empty()) {
-                        ri.status = RS_ERROR;
-                        ri.message = "Error getting hashes or remote";
-                        skip_repos.insert(p);
-                    } else if (local != remote) {
-                        ri.status = RS_PULLING;
-                        ri.message = "Remote ahead, pulling...";
-                        ri.progress = 0;
-                        {
-                            std::lock_guard<std::mutex> lk(mtx);
-                            repo_infos[p] = ri;
-                        }
-                        std::string pull_log;
-                        std::function<void(int)> progress_cb = [&](int pct) {
-                            std::lock_guard<std::mutex> lk(mtx);
-                            repo_infos[p].progress = pct;
-                        };
-                        bool pull_auth_fail = false;
-                        int code = git::try_pull(p, pull_log, &progress_cb,
-                                                 include_private,
-                                                 &pull_auth_fail);
-                        ri.auth_failed = pull_auth_fail;
-                        ri.last_pull_log = pull_log;
-                        fs::path log_file_path;
-                        if (!log_dir.empty()) {
-                            std::string ts = timestamp();
-                            for (char& ch : ts) {
-                                if (ch == ' ' || ch == ':') ch = '_';
-                                else if (ch == '/') ch = '-';
-                            }
-                            log_file_path = log_dir / (p.filename().string() + "_" + ts + ".log");
-                            std::ofstream ofs(log_file_path);
-                            ofs << pull_log;
-                        }
-                        if (code == 0) {
-                            ri.status = RS_PULL_OK;
-                            ri.message = "Pulled successfully";
-                        } else if (code == 1) {
-                            ri.status = RS_PKGLOCK_FIXED;
-                            ri.message = "package-lock.json auto-reset & pulled";
-                        } else {
-                            ri.status = RS_ERROR;
-                            ri.message = "Pull failed (see log)";
-                            skip_repos.insert(p);
-                        }
-                        if (!log_file_path.empty()) {
-                            ri.message += " - " + log_file_path.string();
-                        }
-                    } else {
-                        ri.status = RS_UP_TO_DATE;
-                        ri.message = "Up to date";
-                    }
-                }
-            } else {
-                ri.status = RS_SKIPPED;
-                ri.message = "Not a git repo (skipped)";
-                skip_repos.insert(p);
+        if (limit == 0) limit = std::thread::hardware_concurrency();
+        if (limit == 0) limit = all_repos.size();
+        std::vector<std::thread> threads;
+        for (const auto& p : all_repos) {
+            if (!running) break;
+            while (running && threads.size() >= limit) {
+                threads.front().join();
+                threads.erase(threads.begin());
             }
-        } catch (const fs::filesystem_error& e) {
-            ri.status = RS_ERROR;
-            ri.message = e.what();
-            skip_repos.insert(p);
+            threads.emplace_back(process_repo, p, std::ref(repo_infos),
+                                 std::ref(skip_repos), std::ref(mtx),
+                                 std::ref(running), include_private,
+                                 std::cref(log_dir));
         }
-        std::lock_guard<std::mutex> lk(mtx);
-        repo_infos[p] = ri;
+        for (auto& t : threads) t.join();
+    } else {
+        for (const auto& p : all_repos) {
+            if (!running) break;
+            process_repo(p, repo_infos, skip_repos, mtx, running,
+                         include_private, log_dir);
+        }
     }
     scanning_flag = false;
 }
@@ -166,18 +204,18 @@ void scan_repos(
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--help" };
+        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--thread-per-repo", "--help" };
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
             std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--thread-per-repo] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--thread-per-repo] [--help]\n";
             return 1;
         }
 
@@ -189,6 +227,7 @@ int main(int argc, char* argv[]) {
         }
         bool include_private = parser.has_flag("--include-private");
         bool show_skipped = parser.has_flag("--show-skipped");
+        bool thread_per_repo = parser.has_flag("--thread-per-repo");
         int interval = 60;
         std::chrono::milliseconds refresh_ms(500);
         if (parser.has_flag("--interval")) {
@@ -277,7 +316,7 @@ int main(int argc, char* argv[]) {
                 scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
                                           std::ref(skip_repos), std::ref(mtx),
                                           std::ref(scanning), std::ref(running), include_private,
-                                          std::cref(log_dir));
+                                          std::cref(log_dir), thread_per_repo);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {
