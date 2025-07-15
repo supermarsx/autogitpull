@@ -196,10 +196,6 @@ void process_repo(const fs::path& p,
         ri.message = e.what();
         skip_repos.insert(p);
     }
-    {
-        std::lock_guard<std::mutex> lk(action_mtx);
-        action = "Idle";
-    }
     std::lock_guard<std::mutex> lk(mtx);
     repo_infos[p] = ri;
 }
@@ -241,6 +237,10 @@ void scan_repos(
         threads.emplace_back(worker);
     for (auto& t : threads) t.join();
     scanning_flag = false;
+    {
+        std::lock_guard<std::mutex> lk(action_mtx);
+        action = "Idle";
+    }
 }
 
 int main(int argc, char* argv[]) {
