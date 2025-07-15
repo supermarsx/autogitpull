@@ -21,6 +21,7 @@ struct RepoInfo {
     std::string branch;
     std::string last_pull_log;
     int progress = 0; // fetch progress percentage
+    bool auth_failed = false; // authentication error flag
 };
 
 #endif // REPO_HPP
