@@ -20,6 +20,7 @@ struct RepoInfo {
     RepoStatus status = RS_CHECKING;
     std::string message;
     std::string branch;
+    std::string commit;
     std::string last_pull_log;
     int progress = 0; // fetch progress percentage
     bool auth_failed = false; // authentication error flag

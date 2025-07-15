@@ -2,8 +2,13 @@
 REM Check for MinGW g++
 where g++ >nul 2>nul
 if errorlevel 1 (
-    echo MinGW g++ not found in PATH!
-    exit /b 1
+    echo MinGW g++ not found in PATH! Attempting to install via winget...
+    winget install -e --id "GNU.Mingw" || (
+        echo Failed to install MinGW automatically. Please install it manually.
+        exit /b 1
+    )
+    where g++ >nul 2>nul
+    if errorlevel 1 exit /b 1
 )
 
 REM Check for CMake
@@ -49,3 +54,4 @@ if errorlevel 1 (
 
 echo libgit2 built and installed to libgit2\_install
 cd ..\..
+

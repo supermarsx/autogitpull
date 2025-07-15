@@ -27,7 +27,8 @@ vcpkg\vcpkg install libgit2
 ```
 
 Ensure the resulting `installed` folder is on your `LIB` and `INCLUDE`
-paths when compiling with `compile-cl.bat`.
+paths when compiling with `compile-cl.bat`. The script will invoke
+`install_deps.bat` automatically if libgit2 is missing.
 
 #### MinGW
 Run `install_libgit2_mingw.bat` to build libgit2 natively with MinGW. The
@@ -35,7 +36,8 @@ script installs the static library and headers under `libgit2\_install`.
 
 `compile-cl.bat` expects a vcpkg installation while `compile.bat` uses the
 library produced by `install_libgit2_mingw.bat` and will call it
-automatically if `libgit2\_install` is missing. When linking with MinGW,
+automatically if `libgit2\_install` is missing. `compile.bat` also attempts
+to install MinGW via `winget` when the compiler is not available. When linking with MinGW,
 additional Windows system libraries are required. `compile.bat` already
 includes `winhttp`, `ole32`, `rpcrt4` and `crypt32` so that the build
 succeeds without manual tweaks.
