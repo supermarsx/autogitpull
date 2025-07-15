@@ -16,8 +16,9 @@ sudo yum install -y libgit2-devel                              # RHEL/Fedora
 ```
 
 ### Installing libgit2 on Windows
-The easiest route on Windows is to use
-[vcpkg](https://github.com/microsoft/vcpkg):
+
+#### MSVC (Visual Studio)
+Use [vcpkg](https://github.com/microsoft/vcpkg):
 
 ```
 git clone https://github.com/microsoft/vcpkg
@@ -25,20 +26,23 @@ cd vcpkg && bootstrap-vcpkg.bat
 vcpkg\vcpkg install libgit2
 ```
 
-Ensure that the resulting `vcpkg` `installed` folder is on your `LIB` and
-`INCLUDE` paths when compiling.
+Ensure the resulting `installed` folder is on your `LIB` and `INCLUDE`
+paths when compiling with `compile-cl.bat`.
 
-The Windows build scripts (`compile.bat` and `compile-cl.bat`) look for a
-`vcpkg` directory in the project root or use the `VCPKG_ROOT` environment
-variable. Make sure one of these is set so the headers (`git2.h`) and the
-library can be found. vcpkg names its static libraries using the `.lib`
-extension, and `compile.bat` links against `git2.lib` directly.
+#### MinGW
+Run `install_libgit2_mingw.bat` to build libgit2 natively with MinGW. The
+script installs the static library and headers under `libgit2\_install`.
+
+`compile-cl.bat` expects a vcpkg installation while `compile.bat` uses the
+library produced by `install_libgit2_mingw.bat` and will call it
+automatically if `libgit2\_install` is missing.
 
 ## Building
 ### Using the provided scripts
-Run `make` (Linux/macOS) or `compile.bat` (MinGW) to build the project. These
-scripts call `install_deps` when `libgit2` is missing. The binary is produced as
-`autogitpull` (or `autogitpull.exe` on Windows).
+Run `make` (Linux/macOS), `compile.bat` (MinGW) or `compile-cl.bat` (MSVC) to
+build the project. `compile.bat` invokes `install_libgit2_mingw.bat` when
+`libgit2` is missing. The binary is produced as `autogitpull` (or
+`autogitpull.exe` on Windows).
 
 Clean up intermediate files with `make clean`.
 

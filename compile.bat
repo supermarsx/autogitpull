@@ -1,23 +1,17 @@
 @echo off
 setlocal
 
-rem Determine the vcpkg root (either via environment or local folder)
-if "%VCPKG_ROOT%"=="" (
-    if exist vcpkg (
-        set "VCPKG_ROOT=%CD%\vcpkg"
-    )
+rem Path to libgit2 built with install_libgit2_mingw.bat
+set "LIBGIT2_INC=libgit2\_install\include"
+set "LIBGIT2_LIB=libgit2\_install\lib"
+
+rem Build libgit2 if not already installed
+if not exist "%LIBGIT2_LIB%\libgit2.a" (
+    call install_libgit2_mingw.bat
+    if errorlevel 1 exit /b 1
 )
 
-set "LIBGIT2_INC=%VCPKG_ROOT%\installed\x64-windows-static\include"
-set "LIBGIT2_LIB=%VCPKG_ROOT%\installed\x64-windows-static\lib"
-
-rem Check for the static libgit2 archive (vcpkg uses .lib on Windows)
-rem Newer versions may name the library git2.lib
-if not exist "%LIBGIT2_LIB%\git2.lib" (
-    call install_deps.bat
-)
-
-g++ -std=c++17 -static -I"%LIBGIT2_INC%" autogitpull.cpp git_utils.cpp tui.cpp "%LIBGIT2_LIB%\git2.lib" -o autogitpull.exe
+g++ -std=c++17 -static -I"%LIBGIT2_INC%" autogitpull.cpp git_utils.cpp tui.cpp "%LIBGIT2_LIB%\libgit2.a" -lz -lssh2 -lws2_32 -o autogitpull.exe
 
 endlocal
 
