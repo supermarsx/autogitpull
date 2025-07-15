@@ -17,6 +17,7 @@
 #include "git_utils.hpp"
 #include "tui.hpp"
 #include "repo.hpp"
+#include "logger.hpp"
 
 namespace fs = std::filesystem;
 
@@ -45,6 +46,8 @@ void process_repo(const fs::path& p,
                   bool check_only,
                   bool hash_check) {
     if (!running) return;
+    if (logger_initialized())
+        log_info("Checking repo " + p.string());
     {
         std::lock_guard<std::mutex> lk(mtx);
         auto it = repo_infos.find(p);
@@ -52,6 +55,8 @@ void process_repo(const fs::path& p,
             (it->second.status == RS_PULLING || it->second.status == RS_CHECKING)) {
             // Repo already being processed elsewhere
             std::cerr << "Skipping " << p << " - busy\n";
+            if (logger_initialized())
+                log_info("Skipping " + p.string() + " - busy");
             return;
         }
     }
@@ -65,6 +70,8 @@ void process_repo(const fs::path& p,
     if (!fs::exists(p)) {
         ri.status = RS_ERROR;
         ri.message = "Missing";
+        if (logger_initialized())
+            log_error(p.string() + " missing");
         std::lock_guard<std::mutex> lk(mtx);
         repo_infos[p] = ri;
         return;
@@ -72,6 +79,8 @@ void process_repo(const fs::path& p,
     if (skip_repos.count(p)) {
         ri.status = RS_SKIPPED;
         ri.message = "Skipped after fatal error";
+        if (logger_initialized())
+            log_info(p.string() + " skipped after fatal error");
         std::lock_guard<std::mutex> lk(mtx);
         repo_infos[p] = ri;
         return;
@@ -87,6 +96,8 @@ void process_repo(const fs::path& p,
                 if (!git::is_github_url(origin)) {
                     ri.status = RS_SKIPPED;
                     ri.message = "Non-GitHub repo (skipped)";
+                    if (logger_initialized())
+                        log_info(p.string() + " skipped: non-GitHub repo");
                     std::lock_guard<std::mutex> lk(mtx);
                     repo_infos[p] = ri;
                     return;
@@ -94,6 +105,8 @@ void process_repo(const fs::path& p,
                 if (!git::remote_accessible(p)) {
                     ri.status = RS_SKIPPED;
                     ri.message = "Private or inaccessible repo";
+                    if (logger_initialized())
+                        log_info(p.string() + " skipped: private or inaccessible");
                     std::lock_guard<std::mutex> lk(mtx);
                     repo_infos[p] = ri;
                     return;
@@ -131,6 +144,8 @@ void process_repo(const fs::path& p,
                         ri.message = hash_check ? "Remote ahead" : "Update possible";
                         ri.commit = git::get_local_hash(p);
                         if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
+                        if (logger_initialized())
+                            log_info(p.string() + " remote ahead");
                     } else {
                         ri.status = RS_PULLING;
                         ri.message = "Remote ahead, pulling...";
@@ -170,15 +185,21 @@ void process_repo(const fs::path& p,
                             ri.message = "Pulled successfully";
                             ri.commit = git::get_local_hash(p);
                             if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
+                            if (logger_initialized())
+                                log_info(p.string() + " pulled successfully");
                         } else if (code == 1) {
                             ri.status = RS_PKGLOCK_FIXED;
                             ri.message = "package-lock.json auto-reset & pulled";
                             ri.commit = git::get_local_hash(p);
                             if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
+                            if (logger_initialized())
+                                log_info(p.string() + " package-lock reset and pulled");
                         } else {
                             ri.status = RS_ERROR;
                             ri.message = "Pull failed (see log)";
                             skip_repos.insert(p);
+                            if (logger_initialized())
+                                log_error(p.string() + " pull failed");
                         }
                         if (!log_file_path.empty()) {
                             ri.message += " - " + log_file_path.string();
@@ -190,14 +211,20 @@ void process_repo(const fs::path& p,
             ri.status = RS_SKIPPED;
             ri.message = "Not a git repo (skipped)";
             skip_repos.insert(p);
+            if (logger_initialized())
+                log_info(p.string() + " skipped: not a git repo");
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
         ri.message = e.what();
         skip_repos.insert(p);
+        if (logger_initialized())
+            log_error(p.string() + " error: " + ri.message);
     }
     std::lock_guard<std::mutex> lk(mtx);
     repo_infos[p] = ri;
+    if (logger_initialized())
+        log_info(p.string() + " -> " + ri.message);
 }
 
 // Background thread: scan and update info
@@ -218,6 +245,8 @@ void scan_repos(
 ) {
     if (concurrency == 0) concurrency = 1;
     concurrency = std::min(concurrency, all_repos.size());
+    if (logger_initialized())
+        log_info("Scanning repositories");
 
     std::atomic<size_t> next_index{0};
     auto worker = [&]() {
@@ -241,23 +270,25 @@ void scan_repos(
         std::lock_guard<std::mutex> lk(action_mtx);
         action = "Idle";
     }
+    if (logger_initialized())
+        log_info("Scan complete");
 }
 
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--concurrency", "--check-only", "--no-hash-check", "--help" };
+        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--log-file", "--concurrency", "--check-only", "--no-hash-check", "--help" };
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
             std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
             return 1;
         }
 
@@ -333,10 +364,27 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
+        std::string log_file;
+        if (parser.has_flag("--log-file")) {
+            std::string val = parser.get_option("--log-file");
+            if (val.empty()) {
+                std::cerr << "--log-file requires a path\n";
+                return 1;
+            }
+            log_file = val;
+        }
         fs::path root = parser.positional().front();
         if (!fs::exists(root) || !fs::is_directory(root)) {
             std::cerr << "Root path does not exist or is not a directory.\n";
             return 1;
+        }
+
+        if (!log_file.empty()) {
+            init_logger(log_file);
+            if (logger_initialized())
+                log_info("Program started");
+            else
+                std::cerr << "Failed to open log file: " << log_file << "\n";
         }
 
         // Grab all first-level subdirs at startup (fixed list)
@@ -399,6 +447,8 @@ int main(int argc, char* argv[]) {
         running = false;
         if (scan_thread.joinable())
             scan_thread.join();
+        if (logger_initialized())
+            log_info("Program exiting");
     } catch (...) {
         throw;
     }
