@@ -155,7 +155,6 @@ void scan_repos(
 }
 
 int main(int argc, char* argv[]) {
-    AltScreenGuard guard;
     git::GitInitGuard git_guard;
     try {
         const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--log-dir", "--help" };
@@ -243,6 +242,8 @@ int main(int argc, char* argv[]) {
 
         std::thread scan_thread;
         int countdown = 0; // Run immediately on start
+
+        AltScreenGuard guard;
 
         while (running) {
             if (!scanning && scan_thread.joinable())
