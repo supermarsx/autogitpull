@@ -87,7 +87,7 @@ cmake --build build
 
 The resulting executable will be in the `build` directory.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--thread-per-repo] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--help]`
 
 Available options:
 
@@ -96,7 +96,7 @@ Available options:
 * `--interval <seconds>` – delay between automatic scans (default 60).
 * `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 500).
 * `--log-dir <path>` – directory where pull logs will be written.
-* `--thread-per-repo` – spawn a separate thread for each repository (honors `AUTOGITPULL_MAX_THREADS` if set).
+* `--concurrency <n>` – number of repositories processed in parallel (default 3).
 * `--help` – show the usage information and exit.
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
