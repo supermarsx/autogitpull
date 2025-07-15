@@ -20,7 +20,12 @@ else
 fi
 
 PKG_CFLAGS="$(pkg-config --cflags libgit2 2>/dev/null || echo '')"
-PKG_LIBS="$(pkg-config --static --libs libgit2 2>/dev/null || echo '-lgit2')"
-g++ -std=c++17 -static ${PKG_CFLAGS} autogitpull.cpp git_utils.cpp tui.cpp ${PKG_LIBS} -o autogitpull
+if [[ "$os" == "Darwin" ]]; then
+    PKG_LIBS="$(pkg-config --libs libgit2 2>/dev/null || echo '-lgit2')"
+    g++ -std=c++17 ${PKG_CFLAGS} autogitpull.cpp git_utils.cpp tui.cpp ${PKG_LIBS} -o autogitpull
+else
+    PKG_LIBS="$(pkg-config --static --libs libgit2 2>/dev/null || echo '-lgit2')"
+    g++ -std=c++17 -static ${PKG_CFLAGS} autogitpull.cpp git_utils.cpp tui.cpp ${PKG_LIBS} -o autogitpull
+fi
 
 
