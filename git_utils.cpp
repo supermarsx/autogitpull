@@ -38,57 +38,43 @@ static string oid_to_hex(const git_oid& oid) {
 }
 
 string get_local_hash(const fs::path& repo) {
-    git_libgit2_init();
     git_repository* r = nullptr;
-    if (git_repository_open(&r, repo.string().c_str()) != 0) {
-        git_libgit2_shutdown();
+    if (git_repository_open(&r, repo.string().c_str()) != 0)
         return "";
-    }
     git_oid oid;
     if (git_reference_name_to_id(&oid, r, "HEAD") != 0) {
         git_repository_free(r);
-        git_libgit2_shutdown();
         return "";
     }
     string hash = oid_to_hex(oid);
     git_repository_free(r);
-    git_libgit2_shutdown();
     return hash;
 }
 
 string get_current_branch(const fs::path& repo) {
-    git_libgit2_init();
     git_repository* r = nullptr;
-    if (git_repository_open(&r, repo.string().c_str()) != 0) {
-        git_libgit2_shutdown();
+    if (git_repository_open(&r, repo.string().c_str()) != 0)
         return "";
-    }
     git_reference* head = nullptr;
     if (git_repository_head(&head, r) != 0) {
         git_repository_free(r);
-        git_libgit2_shutdown();
         return "";
     }
     const char* name = git_reference_shorthand(head);
     string branch = name ? name : "";
     git_reference_free(head);
     git_repository_free(r);
-    git_libgit2_shutdown();
     return branch;
 }
 
 string get_remote_hash(const fs::path& repo, const string& branch,
                        bool use_credentials, bool* auth_failed) {
-    git_libgit2_init();
     git_repository* r = nullptr;
-    if (git_repository_open(&r, repo.string().c_str()) != 0) {
-        git_libgit2_shutdown();
+    if (git_repository_open(&r, repo.string().c_str()) != 0)
         return "";
-    }
     git_remote* remote = nullptr;
     if (git_remote_lookup(&remote, r, "origin") != 0) {
         git_repository_free(r);
-        git_libgit2_shutdown();
         return "";
     }
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
@@ -106,33 +92,26 @@ string get_remote_hash(const fs::path& repo, const string& branch,
     string refname = string("refs/remotes/origin/") + branch;
     if (git_reference_name_to_id(&oid, r, refname.c_str()) != 0) {
         git_repository_free(r);
-        git_libgit2_shutdown();
         return "";
     }
     string hash = oid_to_hex(oid);
     git_repository_free(r);
-    git_libgit2_shutdown();
     return hash;
 }
 
 string get_origin_url(const fs::path& repo) {
-    git_libgit2_init();
     git_repository* r = nullptr;
-    if (git_repository_open(&r, repo.string().c_str()) != 0) {
-        git_libgit2_shutdown();
+    if (git_repository_open(&r, repo.string().c_str()) != 0)
         return "";
-    }
     git_remote* remote = nullptr;
     if (git_remote_lookup(&remote, r, "origin") != 0) {
         git_repository_free(r);
-        git_libgit2_shutdown();
         return "";
     }
     const char* url = git_remote_url(remote);
     string result = url ? url : "";
     git_remote_free(remote);
     git_repository_free(r);
-    git_libgit2_shutdown();
     return result;
 }
 
@@ -141,16 +120,12 @@ bool is_github_url(const string& url) {
 }
 
 bool remote_accessible(const fs::path& repo) {
-    git_libgit2_init();
     git_repository* r = nullptr;
-    if (git_repository_open(&r, repo.string().c_str()) != 0) {
-        git_libgit2_shutdown();
+    if (git_repository_open(&r, repo.string().c_str()) != 0)
         return false;
-    }
     git_remote* remote = nullptr;
     if (git_remote_lookup(&remote, r, "origin") != 0) {
         git_repository_free(r);
-        git_libgit2_shutdown();
         return false;
     }
     int err = git_remote_connect(remote, GIT_DIRECTION_FETCH, nullptr, nullptr, nullptr);
@@ -159,20 +134,18 @@ bool remote_accessible(const fs::path& repo) {
         git_remote_disconnect(remote);
     git_remote_free(remote);
     git_repository_free(r);
-    git_libgit2_shutdown();
     return ok;
 }
 
 int try_pull(const fs::path& repo, string& out_pull_log,
              const std::function<void(int)>* progress_cb,
              bool use_credentials, bool* auth_failed) {
-    git_libgit2_init();
+    
     if (progress_cb)
         (*progress_cb)(0);
     auto finalize = [&]() { if (progress_cb) (*progress_cb)(100); };
     git_repository* r = nullptr;
     if (git_repository_open(&r, repo.string().c_str()) != 0) {
-        git_libgit2_shutdown();
         out_pull_log = "Failed to open repository";
         finalize();
         return 2;
@@ -181,7 +154,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     git_remote* remote = nullptr;
     if (git_remote_lookup(&remote, r, "origin") != 0) {
         git_repository_free(r);
-        git_libgit2_shutdown();
         out_pull_log = "No origin remote";
         finalize();
         return 2;
@@ -212,7 +184,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
             *auth_failed = true;
         git_remote_free(remote);
         git_repository_free(r);
-        git_libgit2_shutdown();
         out_pull_log = "Fetch failed";
         finalize();
         return 2;
@@ -222,7 +193,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     if (git_reference_name_to_id(&remote_oid, r, refname.c_str()) != 0) {
         git_remote_free(remote);
         git_repository_free(r);
-        git_libgit2_shutdown();
         out_pull_log = "Remote branch not found";
         finalize();
         return 2;
@@ -231,7 +201,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     if (git_reference_name_to_id(&local_oid, r, "HEAD") != 0) {
         git_remote_free(remote);
         git_repository_free(r);
-        git_libgit2_shutdown();
         out_pull_log = "Local HEAD not found";
         finalize();
         return 2;
@@ -240,7 +209,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         out_pull_log = "Already up to date";
         git_remote_free(remote);
         git_repository_free(r);
-        git_libgit2_shutdown();
         finalize();
         return 0;
     }
@@ -248,7 +216,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     if (git_object_lookup(&target, r, &remote_oid, GIT_OBJECT_COMMIT) != 0) {
         git_remote_free(remote);
         git_repository_free(r);
-        git_libgit2_shutdown();
         out_pull_log = "Lookup failed";
         finalize();
         return 2;
@@ -257,7 +224,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         git_object_free(target);
         git_remote_free(remote);
         git_repository_free(r);
-        git_libgit2_shutdown();
         out_pull_log = "Reset failed";
         finalize();
         return 2;
@@ -265,7 +231,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     git_object_free(target);
     git_remote_free(remote);
     git_repository_free(r);
-    git_libgit2_shutdown();
     out_pull_log = "Fast-forwarded";
     finalize();
     return 0;

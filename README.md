@@ -87,7 +87,7 @@ cmake --build build
 
 The resulting executable will be in the `build` directory.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]`
 
 Available options:
 
@@ -98,6 +98,7 @@ Available options:
 * `--log-dir <path>` – directory where pull logs will be written.
 * `--concurrency <n>` – number of repositories processed in parallel (default 3).
 * `--check-only` – only check for updates without pulling.
+* `--no-hash-check` – always pull without comparing commit hashes first.
 * `--help` – show the usage information and exit.
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.

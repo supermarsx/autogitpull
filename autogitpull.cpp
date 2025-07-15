@@ -40,7 +40,8 @@ void process_repo(const fs::path& p,
                   std::atomic<bool>& running,
                   bool include_private,
                   const fs::path& log_dir,
-                  bool check_only) {
+                  bool check_only,
+                  bool hash_check) {
     if (!running) return;
     RepoInfo ri;
     ri.path = p;
@@ -86,20 +87,29 @@ void process_repo(const fs::path& p,
                 ri.message = "Detached HEAD or branch error";
                 skip_repos.insert(p);
             } else {
-                std::string local = git::get_local_hash(p);
-                bool auth_fail = false;
-                std::string remote = git::get_remote_hash(p, ri.branch,
-                                                           include_private,
-                                                           &auth_fail);
-                ri.auth_failed = auth_fail;
-                if (local.empty() || remote.empty()) {
-                    ri.status = RS_ERROR;
-                    ri.message = "Error getting hashes or remote";
-                    skip_repos.insert(p);
-                } else if (local != remote) {
+                bool needs_pull = true;
+                if (hash_check) {
+                    std::string local = git::get_local_hash(p);
+                    bool auth_fail = false;
+                    std::string remote = git::get_remote_hash(p, ri.branch,
+                                                               include_private,
+                                                               &auth_fail);
+                    ri.auth_failed = auth_fail;
+                    if (local.empty() || remote.empty()) {
+                        ri.status = RS_ERROR;
+                        ri.message = "Error getting hashes or remote";
+                        skip_repos.insert(p);
+                        needs_pull = false;
+                    } else if (local == remote) {
+                        ri.status = RS_UP_TO_DATE;
+                        ri.message = "Up to date";
+                        needs_pull = false;
+                    }
+                }
+                if (needs_pull) {
                     if (check_only) {
                         ri.status = RS_REMOTE_AHEAD;
-                        ri.message = "Remote ahead";
+                        ri.message = hash_check ? "Remote ahead" : "Update possible";
                     } else {
                         ri.status = RS_PULLING;
                         ri.message = "Remote ahead, pulling...";
@@ -145,9 +155,6 @@ void process_repo(const fs::path& p,
                             ri.message += " - " + log_file_path.string();
                         }
                     }
-                } else {
-                    ri.status = RS_UP_TO_DATE;
-                    ri.message = "Up to date";
                 }
             }
         } else {
@@ -175,6 +182,7 @@ void scan_repos(
     bool include_private,
     const fs::path& log_dir,
     bool check_only,
+    bool hash_check,
     size_t concurrency
 ) {
     if (concurrency == 0) concurrency = 1;
@@ -187,7 +195,7 @@ void scan_repos(
             if (idx >= all_repos.size()) break;
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running,
-                         include_private, log_dir, check_only);
+                         include_private, log_dir, check_only, hash_check);
         }
     };
 
@@ -202,18 +210,18 @@ void scan_repos(
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--concurrency", "--check-only", "--help" };
+        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--concurrency", "--check-only", "--no-hash-check", "--help" };
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
             std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
             return 1;
         }
 
@@ -226,6 +234,7 @@ int main(int argc, char* argv[]) {
         bool include_private = parser.has_flag("--include-private");
         bool show_skipped = parser.has_flag("--show-skipped");
         bool check_only = parser.has_flag("--check-only");
+        bool hash_check = !parser.has_flag("--no-hash-check");
         size_t concurrency = 3;
         int interval = 60;
         std::chrono::milliseconds refresh_ms(500);
@@ -329,7 +338,7 @@ int main(int argc, char* argv[]) {
                 scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
                                           std::ref(skip_repos), std::ref(mtx),
                                           std::ref(scanning), std::ref(running), include_private,
-                                          std::cref(log_dir), check_only, concurrency);
+                                          std::cref(log_dir), check_only, hash_check, concurrency);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {
