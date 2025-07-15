@@ -47,7 +47,29 @@ build the project. `compile.bat` invokes `install_libgit2_mingw.bat` when
 `libgit2` is missing. The binary is produced as `autogitpull` (or
 `autogitpull.exe` on Windows).
 
+The repository also ships with `compile.sh` for Unix-like environments and a few
+batch files for Windows: `compile.bat`, `compile-cl.bat`,
+`install_deps.bat`, `install_libgit2_mingw.bat` and `run.bat`.
+
 Clean up intermediate files with `make clean`.
+
+### Manual compilation
+If you prefer to build without the helper scripts, the following commands show
+the bare minimum required to compile the program.
+
+On Linux with `g++`:
+
+```bash
+g++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp $(pkg-config --cflags --libs libgit2) -pthread -static -o autogitpull
+```
+
+On Windows with MSVC's `cl`:
+
+```batch
+cl /std:c++17 /EHsc /MT /Ipath\to\libgit2\include autogitpull.cpp git_utils.cpp tui.cpp /link /LIBPATH:path\to\libgit2\lib git2.lib
+```
+
+These commands mirror what the scripts do internally.
 
 ### Building with CMake
 Alternatively, configure the project with CMake:
