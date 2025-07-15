@@ -39,7 +39,8 @@ void process_repo(const fs::path& p,
                   std::mutex& mtx,
                   std::atomic<bool>& running,
                   bool include_private,
-                  const fs::path& log_dir) {
+                  const fs::path& log_dir,
+                  bool check_only) {
     if (!running) return;
     RepoInfo ri;
     ri.path = p;
@@ -96,48 +97,53 @@ void process_repo(const fs::path& p,
                     ri.message = "Error getting hashes or remote";
                     skip_repos.insert(p);
                 } else if (local != remote) {
-                    ri.status = RS_PULLING;
-                    ri.message = "Remote ahead, pulling...";
-                    ri.progress = 0;
-                    {
-                        std::lock_guard<std::mutex> lk(mtx);
-                        repo_infos[p] = ri;
-                    }
-                    std::string pull_log;
-                    std::function<void(int)> progress_cb = [&](int pct) {
-                        std::lock_guard<std::mutex> lk(mtx);
-                        repo_infos[p].progress = pct;
-                    };
-                    bool pull_auth_fail = false;
-                    int code = git::try_pull(p, pull_log, &progress_cb,
-                                             include_private,
-                                             &pull_auth_fail);
-                    ri.auth_failed = pull_auth_fail;
-                    ri.last_pull_log = pull_log;
-                    fs::path log_file_path;
-                    if (!log_dir.empty()) {
-                        std::string ts = timestamp();
-                        for (char& ch : ts) {
-                            if (ch == ' ' || ch == ':') ch = '_';
-                            else if (ch == '/') ch = '-';
-                        }
-                        log_file_path = log_dir / (p.filename().string() + "_" + ts + ".log");
-                        std::ofstream ofs(log_file_path);
-                        ofs << pull_log;
-                    }
-                    if (code == 0) {
-                        ri.status = RS_PULL_OK;
-                        ri.message = "Pulled successfully";
-                    } else if (code == 1) {
-                        ri.status = RS_PKGLOCK_FIXED;
-                        ri.message = "package-lock.json auto-reset & pulled";
+                    if (check_only) {
+                        ri.status = RS_REMOTE_AHEAD;
+                        ri.message = "Remote ahead";
                     } else {
-                        ri.status = RS_ERROR;
-                        ri.message = "Pull failed (see log)";
-                        skip_repos.insert(p);
-                    }
-                    if (!log_file_path.empty()) {
-                        ri.message += " - " + log_file_path.string();
+                        ri.status = RS_PULLING;
+                        ri.message = "Remote ahead, pulling...";
+                        ri.progress = 0;
+                        {
+                            std::lock_guard<std::mutex> lk(mtx);
+                            repo_infos[p] = ri;
+                        }
+                        std::string pull_log;
+                        std::function<void(int)> progress_cb = [&](int pct) {
+                            std::lock_guard<std::mutex> lk(mtx);
+                            repo_infos[p].progress = pct;
+                        };
+                        bool pull_auth_fail = false;
+                        int code = git::try_pull(p, pull_log, &progress_cb,
+                                                 include_private,
+                                                 &pull_auth_fail);
+                        ri.auth_failed = pull_auth_fail;
+                        ri.last_pull_log = pull_log;
+                        fs::path log_file_path;
+                        if (!log_dir.empty()) {
+                            std::string ts = timestamp();
+                            for (char& ch : ts) {
+                                if (ch == ' ' || ch == ':') ch = '_';
+                                else if (ch == '/') ch = '-';
+                            }
+                            log_file_path = log_dir / (p.filename().string() + "_" + ts + ".log");
+                            std::ofstream ofs(log_file_path);
+                            ofs << pull_log;
+                        }
+                        if (code == 0) {
+                            ri.status = RS_PULL_OK;
+                            ri.message = "Pulled successfully";
+                        } else if (code == 1) {
+                            ri.status = RS_PKGLOCK_FIXED;
+                            ri.message = "package-lock.json auto-reset & pulled";
+                        } else {
+                            ri.status = RS_ERROR;
+                            ri.message = "Pull failed (see log)";
+                            skip_repos.insert(p);
+                        }
+                        if (!log_file_path.empty()) {
+                            ri.message += " - " + log_file_path.string();
+                        }
                     }
                 } else {
                     ri.status = RS_UP_TO_DATE;
@@ -168,6 +174,7 @@ void scan_repos(
     std::atomic<bool>& running,
     bool include_private,
     const fs::path& log_dir,
+    bool check_only,
     size_t concurrency
 ) {
     if (concurrency == 0) concurrency = 1;
@@ -180,7 +187,7 @@ void scan_repos(
             if (idx >= all_repos.size()) break;
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running,
-                         include_private, log_dir);
+                         include_private, log_dir, check_only);
         }
     };
 
@@ -195,18 +202,18 @@ void scan_repos(
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--concurrency", "--help" };
+        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--concurrency", "--check-only", "--help" };
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
             std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--check-only] [--help]\n";
             return 1;
         }
 
@@ -218,6 +225,7 @@ int main(int argc, char* argv[]) {
         }
         bool include_private = parser.has_flag("--include-private");
         bool show_skipped = parser.has_flag("--show-skipped");
+        bool check_only = parser.has_flag("--check-only");
         size_t concurrency = 3;
         int interval = 60;
         std::chrono::milliseconds refresh_ms(500);
@@ -321,7 +329,7 @@ int main(int argc, char* argv[]) {
                 scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
                                           std::ref(skip_repos), std::ref(mtx),
                                           std::ref(scanning), std::ref(running), include_private,
-                                          std::cref(log_dir), concurrency);
+                                          std::cref(log_dir), check_only, concurrency);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {

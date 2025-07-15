@@ -11,7 +11,8 @@ enum RepoStatus {
     RS_PKGLOCK_FIXED,
     RS_ERROR,
     RS_SKIPPED,
-    RS_HEAD_PROBLEM
+    RS_HEAD_PROBLEM,
+    RS_REMOTE_AHEAD
 };
 
 struct RepoInfo {
