@@ -8,11 +8,11 @@
 #include <fstream>
 #include <set>
 #include <map>
+#include <algorithm>
 #include <mutex>
 #include <atomic>
 #include <sstream>
 #include <csignal>
-#include <cstdlib>
 #include "arg_parser.hpp"
 #include "git_utils.hpp"
 #include "tui.hpp"
@@ -168,54 +168,45 @@ void scan_repos(
     std::atomic<bool>& running,
     bool include_private,
     const fs::path& log_dir,
-    bool thread_per_repo
+    size_t concurrency
 ) {
-    if (thread_per_repo) {
-        size_t limit = 0;
-        const char* env_lim = std::getenv("AUTOGITPULL_MAX_THREADS");
-        if (env_lim) {
-            try { limit = static_cast<size_t>(std::stoul(env_lim)); } catch (...) {}
-        }
-        if (limit == 0) limit = std::thread::hardware_concurrency();
-        if (limit == 0) limit = all_repos.size();
-        std::vector<std::thread> threads;
-        for (const auto& p : all_repos) {
-            if (!running) break;
-            while (running && threads.size() >= limit) {
-                threads.front().join();
-                threads.erase(threads.begin());
-            }
-            threads.emplace_back(process_repo, p, std::ref(repo_infos),
-                                 std::ref(skip_repos), std::ref(mtx),
-                                 std::ref(running), include_private,
-                                 std::cref(log_dir));
-        }
-        for (auto& t : threads) t.join();
-    } else {
-        for (const auto& p : all_repos) {
-            if (!running) break;
+    if (concurrency == 0) concurrency = 1;
+    concurrency = std::min(concurrency, all_repos.size());
+
+    std::atomic<size_t> next_index{0};
+    auto worker = [&]() {
+        while (running) {
+            size_t idx = next_index.fetch_add(1);
+            if (idx >= all_repos.size()) break;
+            const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running,
                          include_private, log_dir);
         }
-    }
+    };
+
+    std::vector<std::thread> threads;
+    threads.reserve(concurrency);
+    for (size_t i = 0; i < concurrency; ++i)
+        threads.emplace_back(worker);
+    for (auto& t : threads) t.join();
     scanning_flag = false;
 }
 
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--thread-per-repo", "--help" };
+        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--concurrency", "--help" };
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
             std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--thread-per-repo] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--thread-per-repo] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--concurrency <n>] [--help]\n";
             return 1;
         }
 
@@ -227,7 +218,7 @@ int main(int argc, char* argv[]) {
         }
         bool include_private = parser.has_flag("--include-private");
         bool show_skipped = parser.has_flag("--show-skipped");
-        bool thread_per_repo = parser.has_flag("--thread-per-repo");
+        size_t concurrency = 3;
         int interval = 60;
         std::chrono::milliseconds refresh_ms(500);
         if (parser.has_flag("--interval")) {
@@ -253,6 +244,20 @@ int main(int argc, char* argv[]) {
                 refresh_ms = std::chrono::milliseconds(std::stoi(val));
             } catch (...) {
                 std::cerr << "Invalid value for --refresh-rate: " << val << "\n";
+                return 1;
+            }
+        }
+        if (parser.has_flag("--concurrency")) {
+            std::string val = parser.get_option("--concurrency");
+            if (val.empty()) {
+                std::cerr << "--concurrency requires a numeric value\n";
+                return 1;
+            }
+            try {
+                concurrency = static_cast<size_t>(std::stoul(val));
+                if (concurrency == 0) concurrency = 1;
+            } catch (...) {
+                std::cerr << "Invalid value for --concurrency: " << val << "\n";
                 return 1;
             }
         }
@@ -316,7 +321,7 @@ int main(int argc, char* argv[]) {
                 scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
                                           std::ref(skip_repos), std::ref(mtx),
                                           std::ref(scanning), std::ref(running), include_private,
-                                          std::cref(log_dir), thread_per_repo);
+                                          std::cref(log_dir), concurrency);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {
