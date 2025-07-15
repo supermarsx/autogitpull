@@ -166,18 +166,18 @@ void scan_repos(
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--log-dir", "--help" };
+        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--help" };
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
             std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--log-dir <path>] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--log-dir <path>] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--help]\n";
             return 1;
         }
 
@@ -190,6 +190,7 @@ int main(int argc, char* argv[]) {
         bool include_private = parser.has_flag("--include-private");
         bool show_skipped = parser.has_flag("--show-skipped");
         int interval = 60;
+        std::chrono::milliseconds refresh_ms(500);
         if (parser.has_flag("--interval")) {
             std::string val = parser.get_option("--interval");
             if (val.empty()) {
@@ -200,6 +201,19 @@ int main(int argc, char* argv[]) {
                 interval = std::stoi(val);
             } catch (...) {
                 std::cerr << "Invalid value for --interval: " << val << "\n";
+                return 1;
+            }
+        }
+        if (parser.has_flag("--refresh-rate")) {
+            std::string val = parser.get_option("--refresh-rate");
+            if (val.empty()) {
+                std::cerr << "--refresh-rate requires a value in milliseconds\n";
+                return 1;
+            }
+            try {
+                refresh_ms = std::chrono::milliseconds(std::stoi(val));
+            } catch (...) {
+                std::cerr << "Invalid value for --refresh-rate: " << val << "\n";
                 return 1;
             }
         }
@@ -250,7 +264,7 @@ int main(int argc, char* argv[]) {
 #endif
 
         std::thread scan_thread;
-        int countdown = 0; // Run immediately on start
+        std::chrono::milliseconds countdown_ms(0); // Run immediately on start
 
         AltScreenGuard guard;
 
@@ -258,20 +272,22 @@ int main(int argc, char* argv[]) {
             if (!scanning && scan_thread.joinable())
                 scan_thread.join();
 
-            if (running && countdown <= 0 && !scanning) {
+            if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
                 scanning = true;
                 scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
                                           std::ref(skip_repos), std::ref(mtx),
                                           std::ref(scanning), std::ref(running), include_private,
                                           std::cref(log_dir));
-                countdown = interval;
+                countdown_ms = std::chrono::seconds(interval);
             }
             {
                 std::lock_guard<std::mutex> lk(mtx);
-                draw_tui(all_repos, repo_infos, interval, countdown, scanning, show_skipped);
+                int sec_left = (int)std::chrono::duration_cast<std::chrono::seconds>(countdown_ms).count();
+                if (sec_left < 0) sec_left = 0;
+                draw_tui(all_repos, repo_infos, interval, sec_left, scanning, show_skipped);
             }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            countdown--;
+            std::this_thread::sleep_for(refresh_ms);
+            countdown_ms -= refresh_ms;
         }
 
         running = false;
