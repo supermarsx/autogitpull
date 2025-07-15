@@ -65,7 +65,7 @@ TEST_CASE("Git utils GitHub url detection") {
 
 TEST_CASE("RepoInfo defaults") {
     RepoInfo ri;
-    REQUIRE(ri.status == RepoStatus::RS_CHECKING);
+    REQUIRE(ri.status == RS_CHECKING);
     REQUIRE(ri.progress == 0);
     REQUIRE_FALSE(ri.auth_failed);
 }
