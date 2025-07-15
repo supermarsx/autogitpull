@@ -35,7 +35,10 @@ script installs the static library and headers under `libgit2\_install`.
 
 `compile-cl.bat` expects a vcpkg installation while `compile.bat` uses the
 library produced by `install_libgit2_mingw.bat` and will call it
-automatically if `libgit2\_install` is missing.
+automatically if `libgit2\_install` is missing. When linking with MinGW,
+additional Windows system libraries are required. `compile.bat` already
+includes `winhttp`, `ole32`, `rpcrt4` and `crypt32` so that the build
+succeeds without manual tweaks.
 
 ## Building
 ### Using the provided scripts
