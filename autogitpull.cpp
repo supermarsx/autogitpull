@@ -49,7 +49,7 @@ void process_repo(const fs::path& p,
         std::lock_guard<std::mutex> lk(mtx);
         auto it = repo_infos.find(p);
         if (it != repo_infos.end() &&
-            (it->second.status == RS_PULLING || it->second.status == RS_CHECKING)) {
+            (it->second.status == RepoStatus::RS_PULLING || it->second.status == RepoStatus::RS_CHECKING)) {
             // Repo already being processed elsewhere
             std::cerr << "Skipping " << p << " - busy\n";
             return;
@@ -63,21 +63,21 @@ void process_repo(const fs::path& p,
         action = "Checking " + p.filename().string();
     }
     if (!fs::exists(p)) {
-        ri.status = RS_ERROR;
+        ri.status = RepoStatus::RS_ERROR;
         ri.message = "Missing";
         std::lock_guard<std::mutex> lk(mtx);
         repo_infos[p] = ri;
         return;
     }
     if (skip_repos.count(p)) {
-        ri.status = RS_SKIPPED;
+        ri.status = RepoStatus::RS_SKIPPED;
         ri.message = "Skipped after fatal error";
         std::lock_guard<std::mutex> lk(mtx);
         repo_infos[p] = ri;
         return;
     }
     try {
-        ri.status = RS_CHECKING;
+        ri.status = RepoStatus::RS_CHECKING;
         ri.message = "";
         if (fs::is_directory(p) && git::is_git_repo(p)) {
             ri.commit = git::get_local_hash(p);
@@ -85,14 +85,14 @@ void process_repo(const fs::path& p,
             std::string origin = git::get_origin_url(p);
             if (!include_private) {
                 if (!git::is_github_url(origin)) {
-                    ri.status = RS_SKIPPED;
+                    ri.status = RepoStatus::RS_SKIPPED;
                     ri.message = "Non-GitHub repo (skipped)";
                     std::lock_guard<std::mutex> lk(mtx);
                     repo_infos[p] = ri;
                     return;
                 }
                 if (!git::remote_accessible(p)) {
-                    ri.status = RS_SKIPPED;
+                    ri.status = RepoStatus::RS_SKIPPED;
                     ri.message = "Private or inaccessible repo";
                     std::lock_guard<std::mutex> lk(mtx);
                     repo_infos[p] = ri;
@@ -101,7 +101,7 @@ void process_repo(const fs::path& p,
             }
             ri.branch = git::get_current_branch(p);
             if (ri.branch.empty() || ri.branch == "HEAD") {
-                ri.status = RS_HEAD_PROBLEM;
+                ri.status = RepoStatus::RS_HEAD_PROBLEM;
                 ri.message = "Detached HEAD or branch error";
                 skip_repos.insert(p);
             } else {
@@ -114,12 +114,12 @@ void process_repo(const fs::path& p,
                                                                &auth_fail);
                     ri.auth_failed = auth_fail;
                     if (local.empty() || remote.empty()) {
-                        ri.status = RS_ERROR;
+                        ri.status = RepoStatus::RS_ERROR;
                         ri.message = "Error getting hashes or remote";
                         skip_repos.insert(p);
                         needs_pull = false;
                     } else if (local == remote) {
-                        ri.status = RS_UP_TO_DATE;
+                        ri.status = RepoStatus::RS_UP_TO_DATE;
                         ri.message = "Up to date";
                         ri.commit = local.substr(0,7);
                         needs_pull = false;
@@ -127,12 +127,12 @@ void process_repo(const fs::path& p,
                 }
                 if (needs_pull) {
                     if (check_only) {
-                        ri.status = RS_REMOTE_AHEAD;
+                        ri.status = RepoStatus::RS_REMOTE_AHEAD;
                         ri.message = hash_check ? "Remote ahead" : "Update possible";
                         ri.commit = git::get_local_hash(p);
                         if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
                     } else {
-                        ri.status = RS_PULLING;
+                        ri.status = RepoStatus::RS_PULLING;
                         ri.message = "Remote ahead, pulling...";
                         ri.progress = 0;
                         {
@@ -166,17 +166,17 @@ void process_repo(const fs::path& p,
                             ofs << pull_log;
                         }
                         if (code == 0) {
-                            ri.status = RS_PULL_OK;
+                            ri.status = RepoStatus::RS_PULL_OK;
                             ri.message = "Pulled successfully";
                             ri.commit = git::get_local_hash(p);
                             if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
                         } else if (code == 1) {
-                            ri.status = RS_PKGLOCK_FIXED;
+                            ri.status = RepoStatus::RS_PKGLOCK_FIXED;
                             ri.message = "package-lock.json auto-reset & pulled";
                             ri.commit = git::get_local_hash(p);
                             if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
                         } else {
-                            ri.status = RS_ERROR;
+                            ri.status = RepoStatus::RS_ERROR;
                             ri.message = "Pull failed (see log)";
                             skip_repos.insert(p);
                         }
@@ -187,12 +187,12 @@ void process_repo(const fs::path& p,
                 }
             }
         } else {
-            ri.status = RS_SKIPPED;
+            ri.status = RepoStatus::RS_SKIPPED;
             ri.message = "Not a git repo (skipped)";
             skip_repos.insert(p);
         }
     } catch (const fs::filesystem_error& e) {
-        ri.status = RS_ERROR;
+        ri.status = RepoStatus::RS_ERROR;
         ri.message = e.what();
         skip_repos.insert(p);
     }
@@ -346,7 +346,7 @@ int main(int argc, char* argv[]) {
         }
         std::map<fs::path, RepoInfo> repo_infos;
         for (const auto& p : all_repos) {
-            repo_infos[p] = RepoInfo{p, RS_CHECKING, "Pending...", "", "", "", 0, false};
+            repo_infos[p] = RepoInfo{p, RepoStatus::RS_CHECKING, "Pending...", "", "", "", 0, false};
         }
 
         std::set<fs::path> skip_repos;
