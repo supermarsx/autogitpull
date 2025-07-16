@@ -23,6 +23,7 @@
 #include "time_utils.hpp"
 #include "resource_utils.hpp"
 #include "system_utils.hpp"
+#include "version.hpp"
 
 namespace fs = std::filesystem;
 
@@ -356,42 +357,32 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{"--include-private",
-                                          "--show-skipped",
-                                          "--show-version",
-                                          "--interval",
-                                          "--refresh-rate",
-                                          "--log-dir",
-                                          "--log-file",
-                                          "--concurrency",
-                                          "--check-only",
-                                          "--no-hash-check",
-                                          "--log-level",
-                                          "--verbose",
-                                          "--max-threads",
-                                          "--cpu-percent",
-                                          "--cpu-cores",
-                                          "--mem-limit",
-                                          "--no-cpu-tracker",
-                                          "--no-mem-tracker",
-                                          "--no-thread-tracker",
-                                          "--help",
-                                          "--threads",
-                                          "--single-thread",
-                                          "--net-tracker",
-                                          "--download-limit",
-                                          "--upload-limit",
-                                          "--cli",
-                                          "--silent"};
+        const std::set<std::string> known{
+            "--include-private", "--show-skipped",      "--show-version",
+            "--version",         "--interval",          "--refresh-rate",
+            "--log-dir",         "--log-file",          "--concurrency",
+            "--check-only",      "--no-hash-check",     "--log-level",
+            "--verbose",         "--max-threads",       "--cpu-percent",
+            "--cpu-cores",       "--mem-limit",         "--no-cpu-tracker",
+            "--no-mem-tracker",  "--no-thread-tracker", "--help",
+            "--threads",         "--single-thread",     "--net-tracker",
+            "--download-limit",  "--upload-limit",      "--cli",
+            "--silent"};
         ArgParser parser(argc, argv, known);
 
         bool cli = parser.has_flag("--cli");
         bool silent = parser.has_flag("--silent");
 
+        if (parser.has_flag("--version")) {
+            std::cout << AUTOGITPULL_VERSION << "\n";
+            return 0;
+        }
+
         if (parser.has_flag("--help")) {
             std::cout
                 << "Usage: " << argv[0]
-                << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
+                << " <root-folder> [--include-private] [--show-skipped] [--show-version] "
+                   "[--version]"
                 << " [--interval <seconds>] [--refresh-rate <ms>]"
                 << " [--log-dir <path>] [--log-file <path>]"
                 << " [--log-level <level>] [--verbose]"
@@ -409,7 +400,8 @@ int main(int argc, char* argv[]) {
             if (!silent)
                 std::cerr
                     << "Usage: " << argv[0]
-                    << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
+                    << " <root-folder> [--include-private] [--show-skipped] [--show-version] "
+                       "[--version]"
                     << " [--interval <seconds>] [--refresh-rate <ms>]"
                     << " [--log-dir <path>] [--log-file <path>]"
                     << " [--log-level <level>] [--verbose]"
@@ -772,8 +764,8 @@ int main(int argc, char* argv[]) {
                 }
                 if (!silent && !cli) {
                     draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped,
-                         show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker,
-                         cpu_core_mask != 0);
+                             show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker,
+                             cpu_core_mask != 0);
                 } else if (!silent && cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
                     draw_cli(all_repos, repo_infos, sec_left, scanning, act, show_skipped);
                     cli_countdown_ms = std::chrono::milliseconds(1000);
