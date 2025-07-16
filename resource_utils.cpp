@@ -71,6 +71,8 @@ static long prev_jiffies = 0;
 static ULONGLONG prev_proc_time = 0;
 #endif
 static auto prev_time = std::chrono::steady_clock::now();
+static std::chrono::seconds cpu_poll_interval(5);
+static double last_cpu_percent = 0.0;
 #ifdef __linux__
 static std::pair<std::size_t, std::size_t> read_net_bytes() {
     std::ifstream net("/proc/self/net/dev");
@@ -102,40 +104,55 @@ static std::pair<std::size_t, std::size_t> read_net_bytes() { return {0, 0}; }
 static std::size_t base_down = 0;
 static std::size_t base_up = 0;
 
+void set_cpu_poll_interval(unsigned int seconds) {
+    cpu_poll_interval = std::chrono::seconds(seconds);
+    if (cpu_poll_interval.count() < 1)
+        cpu_poll_interval = std::chrono::seconds(1);
+}
+
 double get_cpu_percent() {
 #ifdef __linux__
-    long jiff = read_proc_jiffies();
     auto now = std::chrono::steady_clock::now();
+    if (now - prev_time < cpu_poll_interval)
+        return last_cpu_percent;
+    long jiff = read_proc_jiffies();
     long diff_jiff = jiff - prev_jiffies;
     double diff_time =
         std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count();
     prev_jiffies = jiff;
     prev_time = now;
     if (diff_time <= 0)
-        return 0.0;
+        return last_cpu_percent;
     long hz = sysconf(_SC_CLK_TCK);
     double cpu_sec = static_cast<double>(diff_jiff) / hz;
-    return 100.0 * cpu_sec / (diff_time / 1e6);
+    last_cpu_percent = 100.0 * cpu_sec / (diff_time / 1e6);
+    return last_cpu_percent;
 #elif defined(_WIN32)
-    ULONGLONG proc = get_process_time();
     auto now = std::chrono::steady_clock::now();
+    if (now - prev_time < cpu_poll_interval)
+        return last_cpu_percent;
+    ULONGLONG proc = get_process_time();
     ULONGLONG diff_proc = proc - prev_proc_time;
     double diff_time =
         std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count();
     prev_proc_time = proc;
     prev_time = now;
     if (diff_time <= 0)
-        return 0.0;
+        return last_cpu_percent;
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     double cpu_sec = static_cast<double>(diff_proc) / 1e7;
-    return 100.0 * cpu_sec / (diff_time / 1e6) / si.dwNumberOfProcessors;
+    last_cpu_percent = 100.0 * cpu_sec / (diff_time / 1e6) / si.dwNumberOfProcessors;
+    return last_cpu_percent;
 #elif defined(__APPLE__)
+    auto now = std::chrono::steady_clock::now();
+    if (now - prev_time < cpu_poll_interval)
+        return last_cpu_percent;
     host_cpu_load_info_data_t info;
     mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
     if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, reinterpret_cast<host_info_t>(&info),
                         &count) != KERN_SUCCESS)
-        return 0.0;
+        return last_cpu_percent;
     static natural_t prev_user = 0, prev_system = 0, prev_idle = 0, prev_nice = 0;
     natural_t user = info.cpu_ticks[CPU_STATE_USER];
     natural_t system = info.cpu_ticks[CPU_STATE_SYSTEM];
@@ -151,18 +168,19 @@ double get_cpu_percent() {
     prev_nice = nice;
     natural_t total = user_diff + system_diff + idle_diff + nice_diff;
     if (total == 0)
-        return 0.0;
-    return 100.0 * static_cast<double>(total - idle_diff) / total;
+        return last_cpu_percent;
+    last_cpu_percent = 100.0 * static_cast<double>(total - idle_diff) / total;
+    return last_cpu_percent;
 #else
-    return 0.0;
+    return last_cpu_percent;
 #endif
 }
 
 std::size_t get_memory_usage_mb() {
 #ifdef __linux__
-    struct rusage usage;
-    if (getrusage(RUSAGE_SELF, &usage) == 0)
-        return static_cast<std::size_t>(usage.ru_maxrss) / 1024;
+    std::size_t rss_kb = read_status_value("VmRSS:");
+    if (rss_kb > 0)
+        return rss_kb / 1024;
     return 0;
 #elif defined(_WIN32)
     PROCESS_MEMORY_COUNTERS pmc;
