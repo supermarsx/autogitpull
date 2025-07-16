@@ -1,0 +1,11 @@
+{
+  "name": "autogitpull",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  },
+  "scripts": {
+    "format": "prettier --write \"**/*.{md,json}\""
+  }
+}

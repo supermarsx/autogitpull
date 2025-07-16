@@ -30,7 +30,7 @@ static long read_proc_jiffies() {
     return utime + stime;
 }
 
-static std::size_t read_status_value(const std::string &key) {
+static std::size_t read_status_value(const std::string& key) {
     std::ifstream status("/proc/self/status");
     std::string k;
     std::size_t val = 0;

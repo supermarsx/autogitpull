@@ -32,7 +32,7 @@ struct AltScreenGuard {
     ~AltScreenGuard() { std::cout << "\033[?1049l" << std::flush; }
 };
 
-std::atomic<bool> *g_running_ptr = nullptr;
+std::atomic<bool>* g_running_ptr = nullptr;
 
 void handle_signal(int) {
     if (g_running_ptr)
@@ -40,10 +40,10 @@ void handle_signal(int) {
 }
 
 // Process a single repository
-void process_repo(const fs::path &p, std::map<fs::path, RepoInfo> &repo_infos,
-                  std::set<fs::path> &skip_repos, std::mutex &mtx, std::atomic<bool> &running,
-                  std::string &action, std::mutex &action_mtx, bool include_private,
-                  const fs::path &log_dir, bool check_only, bool hash_check) {
+void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
+                  std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
+                  std::string& action, std::mutex& action_mtx, bool include_private,
+                  const fs::path& log_dir, bool check_only, bool hash_check) {
     if (!running)
         return;
     if (logger_initialized())
@@ -172,7 +172,7 @@ void process_repo(const fs::path &p, std::map<fs::path, RepoInfo> &repo_infos,
                         fs::path log_file_path;
                         if (!log_dir.empty()) {
                             std::string ts = timestamp();
-                            for (char &ch : ts) {
+                            for (char& ch : ts) {
                                 if (ch == ' ' || ch == ':')
                                     ch = '_';
                                 else if (ch == '/')
@@ -218,7 +218,7 @@ void process_repo(const fs::path &p, std::map<fs::path, RepoInfo> &repo_infos,
             if (logger_initialized())
                 log_debug(p.string() + " skipped: not a git repo");
         }
-    } catch (const fs::filesystem_error &e) {
+    } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
         ri.message = e.what();
         skip_repos.insert(p);
@@ -232,10 +232,10 @@ void process_repo(const fs::path &p, std::map<fs::path, RepoInfo> &repo_infos,
 }
 
 // Background thread: scan and update info
-void scan_repos(const std::vector<fs::path> &all_repos, std::map<fs::path, RepoInfo> &repo_infos,
-                std::set<fs::path> &skip_repos, std::mutex &mtx, std::atomic<bool> &scanning_flag,
-                std::atomic<bool> &running, std::string &action, std::mutex &action_mtx,
-                bool include_private, const fs::path &log_dir, bool check_only, bool hash_check,
+void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoInfo>& repo_infos,
+                std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
+                std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
+                bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit) {
     if (concurrency == 0)
         concurrency = 1;
@@ -249,7 +249,7 @@ void scan_repos(const std::vector<fs::path> &all_repos, std::map<fs::path, RepoI
             size_t idx = next_index.fetch_add(1);
             if (idx >= all_repos.size())
                 break;
-            const auto &p = all_repos[idx];
+            const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                          include_private, log_dir, check_only, hash_check);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
@@ -272,7 +272,7 @@ void scan_repos(const std::vector<fs::path> &all_repos, std::map<fs::path, RepoI
     threads.reserve(concurrency);
     for (size_t i = 0; i < concurrency; ++i)
         threads.emplace_back(worker);
-    for (auto &t : threads)
+    for (auto& t : threads)
         t.join();
     scanning_flag = false;
     {
@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (!parser.unknown_flags().empty()) {
-            for (const auto &f : parser.unknown_flags()) {
+            for (const auto& f : parser.unknown_flags()) {
                 std::cerr << "Unknown option: " << f << "\n";
             }
             return 1;
@@ -347,7 +347,7 @@ int main(int argc, char *argv[]) {
                 std::cerr << "--log-level requires a value\n";
                 return 1;
             }
-            for (auto &c : val)
+            for (auto& c : val)
                 c = toupper(static_cast<unsigned char>(c));
             if (val == "DEBUG")
                 log_level = LogLevel::DEBUG;
@@ -512,7 +512,7 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
                 fs::create_directories(log_dir);
-            } catch (const std::exception &e) {
+            } catch (const std::exception& e) {
                 std::cerr << "Failed to create log directory: " << e.what() << "\n";
                 return 1;
             }
@@ -522,7 +522,7 @@ int main(int argc, char *argv[]) {
             std::string val = parser.get_option("--log-file");
             if (val.empty()) {
                 std::string ts = timestamp();
-                for (char &ch : ts) {
+                for (char& ch : ts) {
                     if (ch == ' ' || ch == ':')
                         ch = '_';
                     else if (ch == '/')
@@ -554,11 +554,11 @@ int main(int argc, char *argv[]) {
 
         // Grab all first-level subdirs at startup (fixed list)
         std::vector<fs::path> all_repos;
-        for (const auto &entry : fs::directory_iterator(root)) {
+        for (const auto& entry : fs::directory_iterator(root)) {
             all_repos.push_back(entry.path());
         }
         std::map<fs::path, RepoInfo> repo_infos;
-        for (const auto &p : all_repos) {
+        for (const auto& p : all_repos) {
             repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
         }
 
@@ -587,7 +587,7 @@ int main(int argc, char *argv[]) {
             if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
                 {
                     std::lock_guard<std::mutex> lk(mtx);
-                    for (auto &[p, info] : repo_infos) {
+                    for (auto& [p, info] : repo_infos) {
                         if (info.status == RS_PULLING || info.status == RS_CHECKING) {
                             std::cerr << "Manually clearing stale busy state for " << p << "\n";
                             info.status = RS_PENDING;

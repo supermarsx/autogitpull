@@ -1,10 +1,15 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -pthread $(shell pkg-config --cflags libgit2 2>/dev/null)
 UNAME_S := $(shell uname -s)
+LIBGIT2_STATIC_AVAILABLE := $(shell pkg-config --static --libs libgit2 >/dev/null 2>&1 && echo yes)
 ifeq ($(UNAME_S),Darwin)
 LDFLAGS = $(shell pkg-config --libs libgit2 2>/dev/null || echo -lgit2)
 else
-LDFLAGS = $(shell pkg-config --static --libs libgit2 2>/dev/null || echo -lgit2) -static
+ifeq ($(LIBGIT2_STATIC_AVAILABLE),yes)
+LDFLAGS = $(shell pkg-config --static --libs libgit2) -static
+else
+LDFLAGS = $(shell pkg-config --libs libgit2 2>/dev/null || echo -lgit2)
+endif
 endif
 
 SRC = autogitpull.cpp git_utils.cpp tui.cpp logger.cpp resource_utils.cpp time_utils.cpp
@@ -24,7 +29,8 @@ clean:
 
 lint:
 	clang-format --dry-run --Werror $(FORMAT_FILES)
-	cpplint $(FORMAT_FILES)
+	cpplint --linelength=100 $(FORMAT_FILES)
+	npx prettier --check "**/*.{md,json}"
 
 deps:
 	./install_deps.sh
