@@ -44,7 +44,7 @@ string get_local_hash(const fs::path& repo) {
     git_repository* raw = nullptr;
     if (git_repository_open(&raw, repo.string().c_str()) != 0)
         return "";
-    repo_ptr r(raw, git_repository_free);
+    repo_ptr r(raw);
     git_oid oid;
     if (git_reference_name_to_id(&oid, r.get(), "HEAD") != 0)
         return "";
@@ -55,13 +55,13 @@ string get_current_branch(const fs::path& repo) {
     git_repository* raw = nullptr;
     if (git_repository_open(&raw, repo.string().c_str()) != 0)
         return "";
-    repo_ptr r(raw, git_repository_free);
+    repo_ptr r(raw);
     git_reference* head = nullptr;
     if (git_repository_head(&head, r.get()) != 0)
         return "";
-    const char* name = git_reference_shorthand(head);
+    reference_ptr ref(head);
+    const char* name = git_reference_shorthand(ref.get());
     string branch = name ? name : "";
-    git_reference_free(head);
     return branch;
 }
 
@@ -71,11 +71,11 @@ string get_remote_hash(const fs::path& repo, const string& branch, bool use_cred
 
     if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
         return "";
-    repo_ptr r(raw_repo, git_repository_free);
+    repo_ptr r(raw_repo);
     git_remote* raw_remote = nullptr;
     if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0)
         return "";
-    remote_ptr remote(raw_remote, git_remote_free);
+    remote_ptr remote(raw_remote);
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
     if (use_credentials)
         fetch_opts.callbacks.credentials = credential_cb;
@@ -97,11 +97,11 @@ string get_origin_url(const fs::path& repo) {
     git_repository* raw_repo = nullptr;
     if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
         return "";
-    repo_ptr r(raw_repo, git_repository_free);
+    repo_ptr r(raw_repo);
     git_remote* raw_remote = nullptr;
     if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0)
         return "";
-    remote_ptr remote(raw_remote, git_remote_free);
+    remote_ptr remote(raw_remote);
     const char* url = git_remote_url(remote.get());
     return url ? url : "";
 }
@@ -112,11 +112,11 @@ bool remote_accessible(const fs::path& repo) {
     git_repository* raw_repo = nullptr;
     if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
         return false;
-    repo_ptr r(raw_repo, git_repository_free);
+    repo_ptr r(raw_repo);
     git_remote* raw_remote = nullptr;
     if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0)
         return false;
-    remote_ptr remote(raw_remote, git_remote_free);
+    remote_ptr remote(raw_remote);
     int err = git_remote_connect(remote.get(), GIT_DIRECTION_FETCH, nullptr, nullptr, nullptr);
     bool ok = err == 0;
     if (ok)
@@ -142,7 +142,7 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         finalize();
         return 2;
     }
-    repo_ptr r(raw_repo, git_repository_free);
+    repo_ptr r(raw_repo);
     string branch = get_current_branch(repo);
     git_remote* raw_remote = nullptr;
     if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0) {
@@ -150,7 +150,7 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         finalize();
         return 2;
     }
-    remote_ptr remote(raw_remote, git_remote_free);
+    remote_ptr remote(raw_remote);
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
     ProgressData progress{progress_cb, std::chrono::steady_clock::now(), down_limit_kbps,
@@ -225,7 +225,7 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         finalize();
         return 2;
     }
-    object_ptr target(raw_target, git_object_free);
+    object_ptr target(raw_target);
     if (git_reset(r.get(), target.get(), GIT_RESET_HARD, nullptr) != 0) {
         out_pull_log = "Reset failed";
         finalize();

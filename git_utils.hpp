@@ -22,9 +22,20 @@ struct GitInitGuard {
 };
 
 // RAII wrappers for libgit2 resources
-using repo_ptr = std::unique_ptr<git_repository, decltype(&git_repository_free)>;
-using remote_ptr = std::unique_ptr<git_remote, decltype(&git_remote_free)>;
-using object_ptr = std::unique_ptr<git_object, decltype(&git_object_free)>;
+template <typename T, void (*Free)(T*)> struct GitHandle {
+    T* h;
+    explicit GitHandle(T* h_ = nullptr) : h(h_) {}
+    ~GitHandle() {
+        if (h)
+            Free(h);
+    }
+    T* get() const { return h; }
+};
+
+using repo_ptr = GitHandle<git_repository, git_repository_free>;
+using remote_ptr = GitHandle<git_remote, git_remote_free>;
+using object_ptr = GitHandle<git_object, git_object_free>;
+using reference_ptr = GitHandle<git_reference, git_reference_free>;
 
 // The utility functions below assume libgit2 is already initialized.
 
