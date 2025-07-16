@@ -1,0 +1,18 @@
+#ifndef THREAD_UTILS_HPP
+#define THREAD_UTILS_HPP
+#include <thread>
+
+/**
+ * @brief RAII wrapper that joins the thread on destruction.
+ */
+struct ThreadGuard {
+    std::thread t;
+    ThreadGuard() = default;
+    explicit ThreadGuard(std::thread&& t_) : t(std::move(t_)) {}
+    ~ThreadGuard() {
+        if (t.joinable())
+            t.join();
+    }
+};
+
+#endif // THREAD_UTILS_HPP
