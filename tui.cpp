@@ -14,16 +14,16 @@
 
 namespace fs = std::filesystem;
 
-const char *COLOR_RESET = "\033[0m";
-const char *COLOR_GREEN = "\033[32m";
-const char *COLOR_YELLOW = "\033[33m";
-const char *COLOR_RED = "\033[31m";
-const char *COLOR_CYAN = "\033[36m";
-const char *COLOR_GRAY = "\033[90m";
-const char *COLOR_BOLD = "\033[1m";
-const char *COLOR_MAGENTA = "\033[35m";
+const char* COLOR_RESET = "\033[0m";
+const char* COLOR_GREEN = "\033[32m";
+const char* COLOR_YELLOW = "\033[33m";
+const char* COLOR_RED = "\033[31m";
+const char* COLOR_CYAN = "\033[36m";
+const char* COLOR_GRAY = "\033[90m";
+const char* COLOR_BOLD = "\033[1m";
+const char* COLOR_MAGENTA = "\033[35m";
 
-const char *APP_VERSION = "0.1.0";
+const char* APP_VERSION = "0.1.0";
 
 #ifdef _WIN32
 void enable_win_ansi() {
@@ -40,9 +40,9 @@ void enable_win_ansi() {
 void enable_win_ansi() {}
 #endif
 
-void draw_tui(const std::vector<fs::path> &all_repos,
-              const std::map<fs::path, RepoInfo> &repo_infos, int interval, int seconds_left,
-              bool scanning, const std::string &action, bool show_skipped, bool show_version,
+void draw_tui(const std::vector<fs::path>& all_repos,
+              const std::map<fs::path, RepoInfo>& repo_infos, int interval, int seconds_left,
+              bool scanning, const std::string& action, bool show_skipped, bool show_version,
               bool track_cpu, bool track_mem, bool track_threads, bool track_net) {
     std::ostringstream out;
     out << "\033[2J\033[H";
@@ -94,7 +94,7 @@ void draw_tui(const std::vector<fs::path> &all_repos,
     out << COLOR_BOLD << "  Status     Repo" << COLOR_RESET << "\n";
     out << "--------------------------------------------------------------";
     out << "-------------------\n";
-    for (const auto &p : all_repos) {
+    for (const auto& p : all_repos) {
         RepoInfo ri;
         auto it = repo_infos.find(p);
         if (it != repo_infos.end())

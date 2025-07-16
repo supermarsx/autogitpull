@@ -57,8 +57,7 @@ std::string get_current_branch(const fs::path& repo);
  * @return Commit hash of the remote branch, or empty string on failure.
  */
 std::string get_remote_hash(const fs::path& repo, const std::string& branch,
-                            bool use_credentials = false,
-                            bool* auth_failed = nullptr);
+                            bool use_credentials = false, bool* auth_failed = nullptr);
 
 /**
  * @brief Obtain the URL of the `origin` remote.
@@ -100,8 +99,8 @@ bool remote_accessible(const fs::path& repo);
  * @return `0` on success or when already up to date, `2` on failure.
  */
 int try_pull(const fs::path& repo, std::string& out_pull_log,
-             const std::function<void(int)>* progress_cb = nullptr,
-             bool use_credentials = false, bool* auth_failed = nullptr);
+             const std::function<void(int)>* progress_cb = nullptr, bool use_credentials = false,
+             bool* auth_failed = nullptr);
 
 } // namespace git
 

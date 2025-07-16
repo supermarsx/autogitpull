@@ -23,7 +23,7 @@ enum RepoStatus {
  * @brief Runtime information about a repository.
  */
 struct RepoInfo {
-    std::filesystem::path path;   ///< Filesystem location of the repository
+    std::filesystem::path path;     ///< Filesystem location of the repository
     RepoStatus status = RS_PENDING; ///< Current status code
     std::string message;            ///< Human readable status message
     std::string branch;             ///< Currently checked-out branch
