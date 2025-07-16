@@ -240,6 +240,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit) {
+    git::GitInitGuard guard;
     if (concurrency == 0)
         concurrency = 1;
     concurrency = std::min(concurrency, all_repos.size());
