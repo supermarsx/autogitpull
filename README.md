@@ -117,6 +117,18 @@ make test
 This command generates a `build` directory (if missing), compiles the tests and
 executes them through CMake's `ctest` driver.
 
+### Leak test
+
+To run the memory leak regression test you need both the `valgrind` tool and the
+`libgit2-dev` package installed. After building the tests with `make test`, run:
+
+```bash
+valgrind ./build/memory_leak_test
+```
+
+Valgrind should finish with the message `All heap blocks were freed -- no leaks
+are possible`.
+
 Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--help]`
 
 Available options:
