@@ -142,7 +142,7 @@ valgrind ./build/memory_leak_test
 Valgrind should finish with the message `All heap blocks were freed -- no leaks
 are possible`.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--cli] [--silent] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--cli] [--silent] [--help]`
 
 Available options:
 
@@ -163,6 +163,8 @@ Available options:
 - `--cpu-percent <n>` – approximate CPU usage limit (1–100).
 - `--cpu-cores <mask>` – set CPU affinity mask (e.g. `0x3` binds to cores 0 and 1).
 - `--cpu-poll <s>` – how often to sample CPU usage in seconds (default 5).
+- `--mem-poll <s>` – how often to sample memory usage in seconds (default 5).
+- `--thread-poll <s>` – how often to sample thread count in seconds (default 5).
 - `--mem-limit <MB>` – abort if memory usage exceeds this amount.
 - `--check-only` – only check for updates without pulling.
 - `--no-hash-check` – always pull without comparing commit hashes first.

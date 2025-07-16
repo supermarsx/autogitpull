@@ -73,6 +73,12 @@ static ULONGLONG prev_proc_time = 0;
 static auto prev_time = std::chrono::steady_clock::now();
 static std::chrono::seconds cpu_poll_interval(5);
 static double last_cpu_percent = 0.0;
+static auto prev_mem_time = std::chrono::steady_clock::now();
+static std::chrono::seconds mem_poll_interval(5);
+static std::size_t last_mem_usage = 0;
+static auto prev_thread_time = std::chrono::steady_clock::now();
+static std::chrono::seconds thread_poll_interval(5);
+static std::size_t last_thread_count = 0;
 #ifdef __linux__
 static std::pair<std::size_t, std::size_t> read_net_bytes() {
     std::ifstream net("/proc/self/net/dev");
@@ -108,6 +114,18 @@ void set_cpu_poll_interval(unsigned int seconds) {
     cpu_poll_interval = std::chrono::seconds(seconds);
     if (cpu_poll_interval.count() < 1)
         cpu_poll_interval = std::chrono::seconds(1);
+}
+
+void set_memory_poll_interval(unsigned int seconds) {
+    mem_poll_interval = std::chrono::seconds(seconds);
+    if (mem_poll_interval.count() < 1)
+        mem_poll_interval = std::chrono::seconds(1);
+}
+
+void set_thread_poll_interval(unsigned int seconds) {
+    thread_poll_interval = std::chrono::seconds(seconds);
+    if (thread_poll_interval.count() < 1)
+        thread_poll_interval = std::chrono::seconds(1);
 }
 
 double get_cpu_percent() {
@@ -177,58 +195,75 @@ double get_cpu_percent() {
 }
 
 std::size_t get_memory_usage_mb() {
+    auto now = std::chrono::steady_clock::now();
+    if (now - prev_mem_time < mem_poll_interval)
+        return last_mem_usage;
+    prev_mem_time = now;
 #ifdef __linux__
     std::size_t rss_kb = read_status_value("VmRSS:");
     if (rss_kb > 0)
-        return rss_kb / 1024;
-    return 0;
+        last_mem_usage = rss_kb / 1024;
+    else
+        last_mem_usage = 0;
 #elif defined(_WIN32)
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
-        return static_cast<std::size_t>(pmc.WorkingSetSize / (1024 * 1024));
-    return 0;
+        last_mem_usage = static_cast<std::size_t>(pmc.WorkingSetSize / (1024 * 1024));
+    else
+        last_mem_usage = 0;
 #elif defined(__APPLE__)
     mach_task_basic_info info;
     mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
     if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info),
                   &count) == KERN_SUCCESS)
-        return static_cast<std::size_t>(info.resident_size / (1024 * 1024));
-    return 0;
+        last_mem_usage = static_cast<std::size_t>(info.resident_size / (1024 * 1024));
+    else
+        last_mem_usage = 0;
 #else
-    return 0;
+    last_mem_usage = 0;
 #endif
+    return last_mem_usage;
 }
 
 std::size_t get_thread_count() {
+    auto now = std::chrono::steady_clock::now();
+    if (now - prev_thread_time < thread_poll_interval)
+        return last_thread_count;
+    prev_thread_time = now;
 #ifdef __linux__
-    return read_status_value("Threads:");
+    last_thread_count = read_status_value("Threads:");
 #elif defined(_WIN32)
     DWORD pid = GetCurrentProcessId();
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (snap == INVALID_HANDLE_VALUE)
-        return 0;
-    THREADENTRY32 te;
-    te.dwSize = sizeof(te);
-    std::size_t count = 0;
-    if (Thread32First(snap, &te)) {
-        do {
-            if (te.th32OwnerProcessID == pid)
-                ++count;
-        } while (Thread32Next(snap, &te));
+    if (snap == INVALID_HANDLE_VALUE) {
+        last_thread_count = 0;
+    } else {
+        THREADENTRY32 te;
+        te.dwSize = sizeof(te);
+        std::size_t count = 0;
+        if (Thread32First(snap, &te)) {
+            do {
+                if (te.th32OwnerProcessID == pid)
+                    ++count;
+            } while (Thread32Next(snap, &te));
+        }
+        CloseHandle(snap);
+        last_thread_count = count;
     }
-    CloseHandle(snap);
-    return count;
 #elif defined(__APPLE__)
     thread_act_array_t threads;
     mach_msg_type_number_t count;
-    if (task_threads(mach_task_self(), &threads, &count) != KERN_SUCCESS)
-        return 1;
-    vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threads),
-                  count * sizeof(thread_act_t));
-    return static_cast<std::size_t>(count);
+    if (task_threads(mach_task_self(), &threads, &count) != KERN_SUCCESS) {
+        last_thread_count = 1;
+    } else {
+        vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threads),
+                      count * sizeof(thread_act_t));
+        last_thread_count = static_cast<std::size_t>(count);
+    }
 #else
-    return 1;
+    last_thread_count = 1;
 #endif
+    return last_thread_count;
 }
 
 void init_network_usage() {

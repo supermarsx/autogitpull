@@ -370,35 +370,18 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{"--include-private",
-                                          "--show-skipped",
-                                          "--show-version",
-                                          "--version",
-                                          "--interval",
-                                          "--refresh-rate",
-                                          "--cpu-poll",
-                                          "--log-dir",
-                                          "--log-file",
-                                          "--concurrency",
-                                          "--check-only",
-                                          "--no-hash-check",
-                                          "--log-level",
-                                          "--verbose",
-                                          "--max-threads",
-                                          "--cpu-percent",
-                                          "--cpu-cores",
-                                          "--mem-limit",
-                                          "--no-cpu-tracker",
-                                          "--no-mem-tracker",
-                                          "--no-thread-tracker",
-                                          "--help",
-                                          "--threads",
-                                          "--single-thread",
-                                          "--net-tracker",
-                                          "--download-limit",
-                                          "--upload-limit",
-                                          "--cli",
-                                          "--silent"};
+        const std::set<std::string> known{
+            "--include-private", "--show-skipped",      "--show-version",
+            "--version",         "--interval",          "--refresh-rate",
+            "--cpu-poll",        "--mem-poll",          "--thread-poll",
+            "--log-dir",         "--log-file",          "--concurrency",
+            "--check-only",      "--no-hash-check",     "--log-level",
+            "--verbose",         "--max-threads",       "--cpu-percent",
+            "--cpu-cores",       "--mem-limit",         "--no-cpu-tracker",
+            "--no-mem-tracker",  "--no-thread-tracker", "--help",
+            "--threads",         "--single-thread",     "--net-tracker",
+            "--download-limit",  "--upload-limit",      "--cli",
+            "--silent"};
         ArgParser parser(argc, argv, known);
 
         bool cli = parser.has_flag("--cli");
@@ -415,6 +398,7 @@ int main(int argc, char* argv[]) {
                 << " <root-folder> [--include-private] [--show-skipped] [--show-version] "
                    "[--version]"
                 << " [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>]"
+                << " [--mem-poll <s>] [--thread-poll <s>]"
                 << " [--log-dir <path>] [--log-file <path>]"
                 << " [--log-level <level>] [--verbose]"
                 << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
@@ -434,6 +418,7 @@ int main(int argc, char* argv[]) {
                     << " <root-folder> [--include-private] [--show-skipped] [--show-version] "
                        "[--version]"
                     << " [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>]"
+                    << " [--mem-poll <s>] [--thread-poll <s>]"
                     << " [--log-dir <path>] [--log-file <path>]"
                     << " [--log-level <level>] [--verbose]"
                     << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
@@ -500,6 +485,8 @@ int main(int argc, char* argv[]) {
         int interval = 30;
         std::chrono::milliseconds refresh_ms(250);
         unsigned int cpu_poll_sec = 5;
+        unsigned int mem_poll_sec = 5;
+        unsigned int thread_poll_sec = 5;
         if (parser.has_flag("--interval")) {
             std::string val = parser.get_option("--interval");
             if (val.empty()) {
@@ -542,6 +529,36 @@ int main(int argc, char* argv[]) {
             } catch (...) {
                 if (!silent)
                     std::cerr << "Invalid value for --cpu-poll: " << val << "\n";
+                return 1;
+            }
+        }
+        if (parser.has_flag("--mem-poll")) {
+            std::string val = parser.get_option("--mem-poll");
+            if (val.empty()) {
+                if (!silent)
+                    std::cerr << "--mem-poll requires a value in seconds\n";
+                return 1;
+            }
+            try {
+                mem_poll_sec = static_cast<unsigned int>(std::stoul(val));
+            } catch (...) {
+                if (!silent)
+                    std::cerr << "Invalid value for --mem-poll: " << val << "\n";
+                return 1;
+            }
+        }
+        if (parser.has_flag("--thread-poll")) {
+            std::string val = parser.get_option("--thread-poll");
+            if (val.empty()) {
+                if (!silent)
+                    std::cerr << "--thread-poll requires a value in seconds\n";
+                return 1;
+            }
+            try {
+                thread_poll_sec = static_cast<unsigned int>(std::stoul(val));
+            } catch (...) {
+                if (!silent)
+                    std::cerr << "Invalid value for --thread-poll: " << val << "\n";
                 return 1;
             }
         }
@@ -732,6 +749,8 @@ int main(int argc, char* argv[]) {
             procutil::set_cpu_affinity(cpu_core_mask);
 
         procutil::set_cpu_poll_interval(cpu_poll_sec);
+        procutil::set_memory_poll_interval(mem_poll_sec);
+        procutil::set_thread_poll_interval(thread_poll_sec);
 
         if (net_tracker)
             procutil::init_network_usage();
