@@ -155,8 +155,9 @@ CPU, memory and thread usage are tracked and shown by default. Disable them indi
 
 ## Linting
 
-The project uses `clang-format` and `cpplint` to enforce a consistent code style.
-Run `make lint` before committing to ensure formatting and style rules pass:
+The project uses `clang-format` and `cpplint` (configured via `CPPLINT.cfg`) to
+enforce a consistent code style. Run `make lint` before committing to ensure
+formatting and style rules pass:
 
 ```bash
 make lint
@@ -164,8 +165,8 @@ make lint
 
 The CI workflow also executes this command and will fail on formatting or lint errors.
 
-Markdown and JSON files are formatted with [Prettier](https://prettier.io/).
-Format them with:
+Markdown and JSON files are formatted with [Prettier](https://prettier.io/) using
+the settings in `.prettierrc`. Format them with:
 
 ```bash
 npm run format

@@ -7,25 +7,19 @@ using namespace std;
 
 namespace git {
 
-static int credential_cb(git_credential **out, const char *url,
-                         const char *username_from_url,
-                         unsigned int allowed_types, void *payload)
-{
-    const char *user = getenv("GIT_USERNAME");
-    const char *pass = getenv("GIT_PASSWORD");
+static int credential_cb(git_credential** out, const char* url, const char* username_from_url,
+                         unsigned int allowed_types, void* payload) {
+    const char* user = getenv("GIT_USERNAME");
+    const char* pass = getenv("GIT_PASSWORD");
     if ((allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) && user && pass) {
         return git_credential_userpass_plaintext_new(out, user, pass);
     }
     return git_credential_default_new(out);
 }
 
-GitInitGuard::GitInitGuard() {
-    git_libgit2_init();
-}
+GitInitGuard::GitInitGuard() { git_libgit2_init(); }
 
-GitInitGuard::~GitInitGuard() {
-    git_libgit2_shutdown();
-}
+GitInitGuard::~GitInitGuard() { git_libgit2_shutdown(); }
 
 bool is_git_repo(const fs::path& p) {
     return fs::exists(p / ".git") && fs::is_directory(p / ".git");
@@ -67,8 +61,8 @@ string get_current_branch(const fs::path& repo) {
     return branch;
 }
 
-string get_remote_hash(const fs::path& repo, const string& branch,
-                       bool use_credentials, bool* auth_failed) {
+string get_remote_hash(const fs::path& repo, const string& branch, bool use_credentials,
+                       bool* auth_failed) {
     git_repository* r = nullptr;
     if (git_repository_open(&r, repo.string().c_str()) != 0)
         return "";
@@ -115,9 +109,7 @@ string get_origin_url(const fs::path& repo) {
     return result;
 }
 
-bool is_github_url(const string& url) {
-    return url.find("github.com") != string::npos;
-}
+bool is_github_url(const string& url) { return url.find("github.com") != string::npos; }
 
 bool remote_accessible(const fs::path& repo) {
     git_repository* r = nullptr;
@@ -138,12 +130,14 @@ bool remote_accessible(const fs::path& repo) {
 }
 
 int try_pull(const fs::path& repo, string& out_pull_log,
-             const std::function<void(int)>* progress_cb,
-             bool use_credentials, bool* auth_failed) {
-    
+             const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed) {
+
     if (progress_cb)
         (*progress_cb)(0);
-    auto finalize = [&]() { if (progress_cb) (*progress_cb)(100); };
+    auto finalize = [&]() {
+        if (progress_cb)
+            (*progress_cb)(100);
+    };
     git_repository* r = nullptr;
     if (git_repository_open(&r, repo.string().c_str()) != 0) {
         out_pull_log = "Failed to open repository";
@@ -163,7 +157,8 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     if (progress_cb) {
         callbacks.payload = const_cast<std::function<void(int)>*>(progress_cb);
         callbacks.transfer_progress = [](const git_transfer_progress* stats, void* payload) -> int {
-            if (!payload) return 0;
+            if (!payload)
+                return 0;
             auto cb = static_cast<std::function<void(int)>*>(payload);
             int pct = 0;
             if (stats->total_objects > 0) {

@@ -14,13 +14,13 @@
  * `--opt=value`.
  */
 class ArgParser {
-    std::set<std::string> flags_;                 ///< Flags present on the command line
-    std::map<std::string, std::string> options_;  ///< Option values keyed by flag
-    std::vector<std::string> positional_;         ///< Positional arguments in order
-    std::vector<std::string> unknown_flags_;      ///< Flags not present in known_flags
-    std::set<std::string> known_flags_;           ///< List of accepted flags
+    std::set<std::string> flags_;                ///< Flags present on the command line
+    std::map<std::string, std::string> options_; ///< Option values keyed by flag
+    std::vector<std::string> positional_;        ///< Positional arguments in order
+    std::vector<std::string> unknown_flags_;     ///< Flags not present in known_flags
+    std::set<std::string> known_flags_;          ///< List of accepted flags
 
-public:
+  public:
     /**
      * @brief Parse the given command line arguments.
      *
@@ -84,7 +84,8 @@ public:
      */
     std::string get_option(const std::string& opt) const {
         auto it = options_.find(opt);
-        if (it != options_.end()) return it->second;
+        if (it != options_.end())
+            return it->second;
         return "";
     }
 
