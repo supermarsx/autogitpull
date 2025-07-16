@@ -71,7 +71,7 @@ the bare minimum required to compile the program.
 On Linux with `g++`:
 
 ```bash
-g++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp \
+g++ -std=c++20 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp \
     $(pkg-config --cflags libgit2) \
     $(pkg-config --static --libs libgit2 2>/dev/null || pkg-config --libs libgit2) \
     -pthread -o autogitpull
@@ -80,13 +80,13 @@ g++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp \
 On macOS with `clang++`:
 
 ```bash
-clang++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp $(pkg-config --cflags --libs libgit2) -pthread -o autogitpull
+clang++ -std=c++20 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp $(pkg-config --cflags --libs libgit2) -pthread -o autogitpull
 ```
 
 On Windows with MSVC's `cl`:
 
 ```batch
-cl /std:c++17 /EHsc /MT /Ipath\to\libgit2\include autogitpull.cpp git_utils.cpp tui.cpp logger.cpp /link /LIBPATH:path\to\libgit2\lib git2.lib
+cl /std:c++20 /EHsc /MT /Ipath\to\libgit2\include autogitpull.cpp git_utils.cpp tui.cpp logger.cpp /link /LIBPATH:path\to\libgit2\lib git2.lib
 ```
 
 These commands mirror what the scripts do internally.

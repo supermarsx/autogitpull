@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -pthread $(shell pkg-config --cflags libgit2 2>/dev/null)
+CXXFLAGS = -std=c++20 -pthread $(shell pkg-config --cflags libgit2 2>/dev/null)
 UNAME_S := $(shell uname -s)
 LIBGIT2_STATIC_AVAILABLE := $(shell pkg-config --static --libs libgit2 >/dev/null 2>&1 && echo yes)
 ifeq ($(UNAME_S),Darwin)
