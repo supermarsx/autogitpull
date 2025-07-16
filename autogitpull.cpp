@@ -660,7 +660,7 @@ int main(int argc, char* argv[]) {
             scan_thread.join();
         if (logger_initialized())
             log_info("Program exiting");
-        close_logger();
+        shutdown_logger();
     } catch (...) {
         throw;
     }

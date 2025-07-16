@@ -9,6 +9,10 @@ static LogLevel g_min_level = LogLevel::INFO;
 
 void init_logger(const std::string& path, LogLevel level) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
+    if (g_log_ofs.is_open()) {
+        g_log_ofs.flush();
+        g_log_ofs.close();
+    }
     g_log_ofs.open(path, std::ios::app);
     g_min_level = level;
 }
@@ -38,6 +42,14 @@ void log_warning(const std::string& msg) { log(LogLevel::WARNING, "WARNING", msg
 void log_error(const std::string& msg) { log(LogLevel::ERROR, "ERROR", msg); }
 
 void close_logger() {
+    std::lock_guard<std::mutex> lk(g_log_mtx);
+    if (g_log_ofs.is_open()) {
+        g_log_ofs.flush();
+        g_log_ofs.close();
+    }
+}
+
+void shutdown_logger() {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     if (g_log_ofs.is_open()) {
         g_log_ofs.flush();

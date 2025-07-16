@@ -12,5 +12,6 @@ void log_info(const std::string& msg);
 void log_warning(const std::string& msg);
 void log_error(const std::string& msg);
 void close_logger();
+void shutdown_logger();
 
 #endif // LOGGER_HPP

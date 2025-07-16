@@ -141,7 +141,7 @@ TEST_CASE("Logger appends messages") {
         REQUIRE(lines.size() == count_before + 1);
         REQUIRE(lines.back().find("third entry") != std::string::npos);
     }
-    close_logger();
+    shutdown_logger();
 }
 
 TEST_CASE("--log-file without value creates file") {
@@ -162,7 +162,7 @@ TEST_CASE("--log-file without value creates file") {
     init_logger(log.string());
     REQUIRE(logger_initialized());
     log_info("test entry");
-    close_logger();
+    shutdown_logger();
     REQUIRE(fs::exists(log));
     fs::remove(log);
 }
