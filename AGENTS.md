@@ -21,3 +21,5 @@ clang-format -i <file.cpp> <file.hpp>
 ```
 
 If any command fails, fix the issues before committing. Pull requests failing any of these checks will be rejected.
+
+When adding new C++ source files, update all build scripts (`compile.sh`, `compile.bat`, and `compile-cl.bat`) so they compile the new files. Build script changes are mandatory.
