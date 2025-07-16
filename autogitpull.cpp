@@ -54,9 +54,7 @@ void process_repo(const fs::path& p,
         if (it != repo_infos.end() &&
             (it->second.status == RS_PULLING || it->second.status == RS_CHECKING)) {
             // Repo already being processed elsewhere
-            std::cerr << "Skipping " << p << " - busy\n";
-            if (logger_initialized())
-                log_info("Skipping " + p.string() + " - busy");
+            log_warning("Skipping " + p.string() + " - busy");
             return;
         }
     }
@@ -287,14 +285,14 @@ int main(int argc, char* argv[]) {
         }
 
         if (parser.positional().size() != 1) {
-            std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
+            log_error(std::string("Usage: ") + argv[0] +
+                      " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]");
             return 1;
         }
 
         if (!parser.unknown_flags().empty()) {
             for (const auto& f : parser.unknown_flags()) {
-                std::cerr << "Unknown option: " << f << "\n";
+                log_error("Unknown option: " + f);
             }
             return 1;
         }
@@ -308,40 +306,40 @@ int main(int argc, char* argv[]) {
         if (parser.has_flag("--interval")) {
             std::string val = parser.get_option("--interval");
             if (val.empty()) {
-                std::cerr << "--interval requires a value in seconds\n";
+                log_error("--interval requires a value in seconds");
                 return 1;
             }
             try {
                 interval = std::stoi(val);
             } catch (...) {
-                std::cerr << "Invalid value for --interval: " << val << "\n";
+                log_error("Invalid value for --interval: " + val);
                 return 1;
             }
         }
         if (parser.has_flag("--refresh-rate")) {
             std::string val = parser.get_option("--refresh-rate");
             if (val.empty()) {
-                std::cerr << "--refresh-rate requires a value in milliseconds\n";
+                log_error("--refresh-rate requires a value in milliseconds");
                 return 1;
             }
             try {
                 refresh_ms = std::chrono::milliseconds(std::stoi(val));
             } catch (...) {
-                std::cerr << "Invalid value for --refresh-rate: " << val << "\n";
+                log_error("Invalid value for --refresh-rate: " + val);
                 return 1;
             }
         }
         if (parser.has_flag("--concurrency")) {
             std::string val = parser.get_option("--concurrency");
             if (val.empty()) {
-                std::cerr << "--concurrency requires a numeric value\n";
+                log_error("--concurrency requires a numeric value");
                 return 1;
             }
             try {
                 concurrency = static_cast<size_t>(std::stoul(val));
                 if (concurrency == 0) concurrency = 1;
             } catch (...) {
-                std::cerr << "Invalid value for --concurrency: " << val << "\n";
+                log_error("Invalid value for --concurrency: " + val);
                 return 1;
             }
         }
@@ -349,18 +347,18 @@ int main(int argc, char* argv[]) {
         if (parser.has_flag("--log-dir")) {
             std::string val = parser.get_option("--log-dir");
             if (val.empty()) {
-                std::cerr << "--log-dir requires a path\n";
+                log_error("--log-dir requires a path");
                 return 1;
             }
             log_dir = val;
             try {
                 if (fs::exists(log_dir) && !fs::is_directory(log_dir)) {
-                    std::cerr << "--log-dir path exists and is not a directory\n";
+                    log_error("--log-dir path exists and is not a directory");
                     return 1;
                 }
                 fs::create_directories(log_dir);
             } catch (const std::exception& e) {
-                std::cerr << "Failed to create log directory: " << e.what() << "\n";
+                log_error(std::string("Failed to create log directory: ") + e.what());
                 return 1;
             }
         }
@@ -368,23 +366,23 @@ int main(int argc, char* argv[]) {
         if (parser.has_flag("--log-file")) {
             std::string val = parser.get_option("--log-file");
             if (val.empty()) {
-                std::cerr << "--log-file requires a path\n";
+                log_error("--log-file requires a path");
                 return 1;
             }
             log_file = val;
         }
         fs::path root = parser.positional().front();
         if (!fs::exists(root) || !fs::is_directory(root)) {
-            std::cerr << "Root path does not exist or is not a directory.\n";
+            log_error("Root path does not exist or is not a directory.");
             return 1;
         }
 
         if (!log_file.empty()) {
-            init_logger(log_file);
+            init_logger(log_file, LogLevel::Info);
             if (logger_initialized())
                 log_info("Program started");
             else
-                std::cerr << "Failed to open log file: " << log_file << "\n";
+                log_error("Failed to open log file: " + log_file);
         }
 
         // Grab all first-level subdirs at startup (fixed list)
@@ -424,8 +422,7 @@ int main(int argc, char* argv[]) {
                     std::lock_guard<std::mutex> lk(mtx);
                     for (auto& [p, info] : repo_infos) {
                         if (info.status == RS_PULLING || info.status == RS_CHECKING) {
-                            std::cerr << "Manually clearing stale busy state for "
-                                      << p << "\n";
+                            log_warning("Manually clearing stale busy state for " + p.string());
                             info.status = RS_PENDING;
                             info.message = "Pending...";
                         }

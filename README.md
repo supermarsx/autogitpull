@@ -123,6 +123,18 @@ is written to a timestamped file inside this directory and its location is shown
 Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
 `./autogitpull myprojects --log-dir logs --log-file autogitpull.log`
 
+### Logging API
+If you embed the source into another program you can enable logging manually:
+
+```cpp
+init_logger("autogitpull.log", LogLevel::Info);
+log_info("message");
+log_warning("something odd happened");
+log_error("something failed");
+```
+
+`init_logger` accepts the log file path and the minimum `LogLevel` to record.
+
 ### Status labels
 When the program starts, each repository is listed with the **Pending** status
 until it is checked for the first time. Once a scan begins the status switches

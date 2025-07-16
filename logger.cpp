@@ -7,10 +7,12 @@
 
 static std::ofstream g_log_ofs;
 static std::mutex g_log_mtx;
+static LogLevel g_level = LogLevel::Info;
 
-void init_logger(const std::string& path) {
+void init_logger(const std::string& path, LogLevel level) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     g_log_ofs.open(path, std::ios::app);
+    g_level = level;
 }
 
 bool logger_initialized() {
@@ -32,16 +34,21 @@ static std::string timestamp() {
     return buf;
 }
 
-static void log(const std::string& level, const std::string& msg) {
+static void log(LogLevel lvl, const char* label, const std::string& msg) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     if (!g_log_ofs.is_open()) return;
-    g_log_ofs << "[" << timestamp() << "] [" << level << "] " << msg << std::endl;
+    if (static_cast<int>(lvl) > static_cast<int>(g_level)) return;
+    g_log_ofs << "[" << timestamp() << "] [" << label << "] " << msg << std::endl;
 }
 
 void log_info(const std::string& msg) {
-    log("INFO", msg);
+    log(LogLevel::Info, "INFO", msg);
+}
+
+void log_warning(const std::string& msg) {
+    log(LogLevel::Warning, "WARN", msg);
 }
 
 void log_error(const std::string& msg) {
-    log("ERROR", msg);
+    log(LogLevel::Error, "ERROR", msg);
 }
