@@ -18,6 +18,12 @@ jobs:
       - name: Install dependencies
         run: ./install_deps.sh
 
+      - name: Install lint tools
+        run: pip install cpplint
+
+      - name: Lint
+        run: make lint
+
       - name: Build
         run: |
           mkdir build && cd build

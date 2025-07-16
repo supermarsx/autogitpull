@@ -125,6 +125,16 @@ is written to a timestamped file inside this directory and its location is shown
 Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
 `./autogitpull myprojects --log-dir logs --log-file autogitpull.log --log-level DEBUG`
 
+## Linting
+The project uses `clang-format` and `cpplint` to enforce a consistent code style.
+Run `make lint` before committing to ensure formatting and style rules pass:
+
+```bash
+make lint
+```
+
+The CI workflow also executes this command and will fail on formatting or lint errors.
+
 ### Status labels
 When the program starts, each repository is listed with the **Pending** status
 until it is checked for the first time. Once a scan begins the status switches
