@@ -63,6 +63,14 @@ TEST_CASE("ArgParser option with equals") {
     REQUIRE(parser.get_option("--opt") == "val");
 }
 
+TEST_CASE("ArgParser short options") {
+    const char* argv[] = {"prog", "-h", "-o", "42"};
+    ArgParser parser(4, const_cast<char**>(argv), {"--help", "--opt"},
+                     {{'h', "--help"}, {'o', "--opt"}});
+    REQUIRE(parser.has_flag("--help"));
+    REQUIRE(parser.get_option("--opt") == std::string("42"));
+}
+
 TEST_CASE("ArgParser unknown flag detection") {
     const char* argv[] = {"prog", "--foo"};
     ArgParser parser(2, const_cast<char**>(argv), {"--bar"});
@@ -263,8 +271,8 @@ TEST_CASE("scan_repos respects concurrency limit") {
     std::size_t max_seen = baseline;
 
     std::thread t([&]() {
-        scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false,
-                   fs::path(), true, true, concurrency, 0, 0, 0, 0, true);
+        scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false, fs::path(),
+                   true, true, concurrency, 0, 0, 0, 0, true);
     });
     while (scanning) {
         max_seen = std::max(max_seen, read_thread_count());

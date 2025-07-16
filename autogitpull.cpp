@@ -69,6 +69,23 @@ std::string status_label(RepoStatus status) {
     return "";
 }
 
+/** Print the command line help text. */
+void print_help(const char* prog) {
+    std::cout << "Usage: " << prog << " <root-folder> [options]\n\n"
+              << "Options:\n"
+              << "  -p, --include-private   Include private repositories\n"
+              << "  -k, --show-skipped      Show skipped repositories\n"
+              << "  -v, --show-version      Display program version in TUI\n"
+              << "  -V, --version           Print program version and exit\n"
+              << "  -i, --interval <sec>    Delay between scans\n"
+              << "  -r, --refresh-rate <ms> TUI refresh rate\n"
+              << "  -d, --log-dir <path>    Directory for pull logs\n"
+              << "  -l, --log-file <path>   File for general logs\n"
+              << "  -c, --cli               Use console output\n"
+              << "  -s, --silent            Disable console output\n"
+              << "  -h, --help              Show this message\n";
+}
+
 void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
               const std::string& action, bool show_skipped) {
@@ -386,7 +403,12 @@ int main(int argc, char* argv[]) {
             "--threads",         "--single-thread",     "--net-tracker",
             "--download-limit",  "--upload-limit",      "--cli",
             "--silent"};
-        ArgParser parser(argc, argv, known);
+        const std::map<char, std::string> short_opts{
+            {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
+            {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
+            {'d', "--log-dir"},         {'l', "--log-file"},     {'c', "--cli"},
+            {'s', "--silent"},          {'h', "--help"}};
+        ArgParser parser(argc, argv, known, short_opts);
 
         bool cli = parser.has_flag("--cli");
         bool silent = parser.has_flag("--silent");
@@ -397,40 +419,13 @@ int main(int argc, char* argv[]) {
         }
 
         if (parser.has_flag("--help")) {
-            std::cout
-                << "Usage: " << argv[0]
-                << " <root-folder> [--include-private] [--show-skipped] [--show-version] "
-                   "[--version]"
-                << " [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>]"
-                << " [--mem-poll <s>] [--thread-poll <s>]"
-                << " [--log-dir <path>] [--log-file <path>]"
-                << " [--log-level <level>] [--verbose]"
-                << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
-                << " [--cpu-percent <n>] [--cpu-cores <mask>]"
-                << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
-                << " [--no-cpu-tracker] [--no-mem-tracker]"
-                << " [--no-thread-tracker] [--net-tracker]"
-                << " [--download-limit <KB/s>] [--upload-limit <KB/s>]"
-                << " [--cli] [--silent] [--help]\n";
+            print_help(argv[0]);
             return 0;
         }
 
         if (parser.positional().size() != 1) {
             if (!silent)
-                std::cerr
-                    << "Usage: " << argv[0]
-                    << " <root-folder> [--include-private] [--show-skipped] [--show-version] "
-                       "[--version]"
-                    << " [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>]"
-                    << " [--mem-poll <s>] [--thread-poll <s>]"
-                    << " [--log-dir <path>] [--log-file <path>]"
-                    << " [--log-level <level>] [--verbose]"
-                    << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
-                    << " [--cpu-percent <n>] [--cpu-cores <mask>]"
-                    << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
-                    << " [--no-cpu-tracker] [--no-mem-tracker]"
-                    << " [--no-thread-tracker] [--net-tracker]"
-                    << " [--download-limit <KB/s>] [--upload-limit <KB/s>] [--help]\n";
+                print_help(argv[0]);
             return 1;
         }
 

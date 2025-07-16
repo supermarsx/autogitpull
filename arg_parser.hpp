@@ -11,7 +11,8 @@
  * The parser recognizes long style options (e.g. `--flag` or `--opt value`).
  * A list of known flags can be provided so that unknown flags are collected
  * and reported separately. Options may also be specified using the form
- * `--opt=value`.
+ * `--opt=value`. A mapping of short options (like `-h`) to their long
+ * counterparts can optionally be supplied.
  */
 class ArgParser {
     std::set<std::string> flags_;                ///< Flags present on the command line
@@ -19,6 +20,7 @@ class ArgParser {
     std::vector<std::string> positional_;        ///< Positional arguments in order
     std::vector<std::string> unknown_flags_;     ///< Flags not present in known_flags
     std::set<std::string> known_flags_;          ///< List of accepted flags
+    std::map<char, std::string> short_map_;      ///< Mapping of short to long flags
 
   public:
     /**
@@ -28,9 +30,12 @@ class ArgParser {
      * @param argv Argument vector from `main`.
      * @param known_flags Optional set of flags that are considered valid. If
      *        empty, all flags are treated as known.
+     * @param short_map Mapping from single character options (e.g. '-h') to
+     *        their long form (e.g. '--help').
      */
-    ArgParser(int argc, char* argv[], const std::set<std::string>& known_flags = {})
-        : known_flags_(known_flags) {
+    ArgParser(int argc, char* argv[], const std::set<std::string>& known_flags = {},
+              const std::map<char, std::string>& short_map = {})
+        : known_flags_(known_flags), short_map_(short_map) {
         for (int i = 1; i < argc; ++i) {
             std::string arg = argv[i];
             if (arg.rfind("--", 0) == 0) {
@@ -58,6 +63,30 @@ class ArgParser {
                         flags_.insert(arg);
                     } else {
                         unknown_flags_.push_back(arg);
+                    }
+                }
+            } else if (arg.rfind('-', 0) == 0 && arg.size() >= 2 && short_map_.count(arg[1])) {
+                std::string long_opt = short_map_.at(arg[1]);
+                std::string key = long_opt;
+                std::string val;
+                size_t eq = arg.find('=');
+                if (eq != std::string::npos)
+                    val = arg.substr(eq + 1);
+                else if (i + 1 < argc && std::string(argv[i + 1]).rfind('-', 0) != 0) {
+                    val = argv[++i];
+                }
+                if (!val.empty()) {
+                    if (known_flags_.empty() || known_flags_.count(key)) {
+                        flags_.insert(key);
+                        options_[key] = val;
+                    } else {
+                        unknown_flags_.push_back(key);
+                    }
+                } else {
+                    if (known_flags_.empty() || known_flags_.count(key)) {
+                        flags_.insert(key);
+                    } else {
+                        unknown_flags_.push_back(key);
                     }
                 }
             } else {
