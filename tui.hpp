@@ -14,10 +14,6 @@
  */
 void enable_win_ansi();
 
-/**
- * @brief Get the current local time formatted as `YYYY-MM-DD HH:MM:SS`.
- */
-std::string timestamp();
 
 /**
  * @brief Render the text user interface.

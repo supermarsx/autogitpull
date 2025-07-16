@@ -2,10 +2,9 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <ctime>
-#include <chrono>
 #include <filesystem>
 #include <string>
+#include "time_utils.hpp"
 #include "git_utils.hpp"
 #include "resource_utils.hpp"
 
@@ -39,18 +38,6 @@ void enable_win_ansi() {
 void enable_win_ansi() {}
 #endif
 
-std::string timestamp() {
-    std::time_t now = std::time(nullptr);
-    std::tm tm{};
-#ifdef _WIN32
-    localtime_s(&tm, &now);
-#else
-    localtime_r(&now, &tm);
-#endif
-    char buf[32];
-    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
-    return std::string(buf);
-}
 
 void draw_tui(const std::vector<fs::path> &all_repos,
               const std::map<fs::path, RepoInfo> &repo_infos, int interval, int seconds_left,
