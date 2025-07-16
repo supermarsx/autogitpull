@@ -5,6 +5,7 @@
 #include <thread>
 #include <sstream>
 #include <utility>
+#include <filesystem>
 #ifdef __linux__
 #include <sched.h>
 #include <unistd.h>
@@ -46,6 +47,16 @@ static std::size_t read_status_value(const std::string& key) {
         std::getline(status, rest);
     }
     return val;
+}
+
+static std::size_t count_task_threads() {
+    namespace fs = std::filesystem;
+    try {
+        return static_cast<std::size_t>(
+            std::distance(fs::directory_iterator("/proc/self/task"), fs::directory_iterator()));
+    } catch (...) {
+        return 0;
+    }
 }
 
 #elif defined(_WIN32)
@@ -231,7 +242,10 @@ std::size_t get_thread_count() {
         return last_thread_count;
     prev_thread_time = now;
 #ifdef __linux__
-    last_thread_count = read_status_value("Threads:");
+    std::size_t count = count_task_threads();
+    if (count == 0)
+        count = read_status_value("Threads:");
+    last_thread_count = count;
 #elif defined(_WIN32)
     DWORD pid = GetCurrentProcessId();
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
