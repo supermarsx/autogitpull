@@ -4,7 +4,8 @@ Automatic Git Puller & Monitor
 ## Dependencies
 This tool relies on [libgit2](https://libgit2.org/). The helper scripts
 `install_deps.sh` (Linux/macOS) and `install_deps.bat` (Windows) automatically
-download and install `libgit2` when needed.  The project links against the
+download and install `libgit2` when needed.  You can also run `make deps` on
+Unix-like systems to invoke the installer.  The project links against the
 static version of the library so the final executable does not depend on a
 separate `libgit2` DLL.  If you prefer to install the library yourself, follow
 the instructions below.
@@ -91,8 +92,10 @@ The resulting executable will be in the `build` directory.
 
 ### Running tests
 Unit tests use [Catch2](https://github.com/catchorg/Catch2). If the library is
-not installed, CMake will automatically download it using `FetchContent`. After
-configuring and building the project, run `ctest`:
+not installed, CMake will automatically download it using `FetchContent`. **Make
+sure `libgit2` is installed** (run `./install_deps.sh` on Linux/macOS or
+`install_deps.bat` on Windows) before configuring and building the tests.
+Once the dependencies are in place, run `ctest`:
 
 ```bash
 make test
