@@ -40,11 +40,10 @@ void enable_win_ansi() {
 void enable_win_ansi() {}
 #endif
 
-
 void draw_tui(const std::vector<fs::path> &all_repos,
               const std::map<fs::path, RepoInfo> &repo_infos, int interval, int seconds_left,
               bool scanning, const std::string &action, bool show_skipped, bool show_version,
-              bool track_cpu, bool track_mem, bool track_threads) {
+              bool track_cpu, bool track_mem, bool track_threads, bool track_net) {
     std::ostringstream out;
     out << "\033[2J\033[H";
     out << COLOR_BOLD << "AutoGitPull TUI";
@@ -77,6 +76,18 @@ void draw_tui(const std::vector<fs::path> &all_repos,
         else
             out << "N/A";
         out << "\n";
+    }
+    if (track_net) {
+        auto usage = procutil::get_network_usage();
+        auto fmt = [](std::size_t b) {
+            std::ostringstream ss;
+            if (b >= 1024 * 1024)
+                ss << b / (1024 * 1024) << " MB";
+            else
+                ss << b / 1024 << " KB";
+            return ss.str();
+        };
+        out << "Net: D " << fmt(usage.download_bytes) << "  U " << fmt(usage.upload_bytes) << "\n";
     }
     out << "--------------------------------------------------------------";
     out << "-------------------\n";
