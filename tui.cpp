@@ -7,6 +7,7 @@
 #include "time_utils.hpp"
 #include "git_utils.hpp"
 #include "resource_utils.hpp"
+#include "system_utils.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -43,7 +44,8 @@ void enable_win_ansi() {}
 void draw_tui(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int interval, int seconds_left,
               bool scanning, const std::string& action, bool show_skipped, bool show_version,
-              bool track_cpu, bool track_mem, bool track_threads, bool track_net) {
+              bool track_cpu, bool track_mem, bool track_threads, bool track_net,
+              bool show_affinity) {
     std::ostringstream out;
     out << "\033[2J\033[H";
     out << COLOR_BOLD << "AutoGitPull TUI";
@@ -60,7 +62,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
     else
         out << COLOR_GREEN << "Idle" << COLOR_RESET;
     out << " - Next scan in " << seconds_left << "s\n";
-    if (track_cpu || track_mem || track_threads) {
+    if (track_cpu || track_mem || track_threads || show_affinity) {
         out << "CPU: ";
         if (track_cpu)
             out << std::fixed << std::setprecision(1) << procutil::get_cpu_percent() << "% ";
@@ -76,6 +78,11 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             out << procutil::get_thread_count();
         else
             out << "N/A";
+        if (show_affinity) {
+            std::string mask = procutil::get_cpu_affinity();
+            if (!mask.empty())
+                out << "  Core: " << mask;
+        }
         out << "\n";
     }
     if (track_net) {

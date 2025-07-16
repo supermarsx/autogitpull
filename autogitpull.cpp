@@ -772,7 +772,8 @@ int main(int argc, char* argv[]) {
                 }
                 if (!silent && !cli) {
                     draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped,
-                             show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker);
+                         show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker,
+                         cpu_core_mask != 0);
                 } else if (!silent && cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
                     draw_cli(all_repos, repo_infos, sec_left, scanning, act, show_skipped);
                     cli_countdown_ms = std::chrono::milliseconds(1000);
