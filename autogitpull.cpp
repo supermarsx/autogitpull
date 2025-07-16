@@ -291,7 +291,8 @@ int main(int argc, char *argv[]) {
             "--refresh-rate",    "--log-dir",        "--log-file",          "--concurrency",
             "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
             "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
-            "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help"};
+            "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
+            "--threads",         "--single-thread"};
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
@@ -300,7 +301,7 @@ int main(int argc, char *argv[]) {
                       << " [--interval <seconds>] [--refresh-rate <ms>]"
                       << " [--log-dir <path>] [--log-file <path>]"
                       << " [--log-level <level>] [--verbose]"
-                      << " [--concurrency <n>] [--max-threads <n>]"
+                      << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
                       << " [--cpu-percent <n>] [--cpu-cores <n>]"
                       << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                       << " [--no-cpu-tracker] [--no-mem-tracker]"
@@ -314,7 +315,7 @@ int main(int argc, char *argv[]) {
                       << " [--interval <seconds>] [--refresh-rate <ms>]"
                       << " [--log-dir <path>] [--log-file <path>]"
                       << " [--log-level <level>] [--verbose]"
-                      << " [--concurrency <n>] [--max-threads <n>]"
+                      << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
                       << " [--cpu-percent <n>] [--cpu-cores <n>]"
                       << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                       << " [--no-cpu-tracker] [--no-mem-tracker]"
@@ -358,7 +359,9 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         }
-        size_t concurrency = 3;
+        size_t concurrency = std::thread::hardware_concurrency();
+        if (concurrency == 0)
+            concurrency = 1;
         size_t max_threads = 0;
         int cpu_percent_limit = 0;
         int cpu_cores = 0;
@@ -393,6 +396,24 @@ int main(int argc, char *argv[]) {
                 std::cerr << "Invalid value for --refresh-rate: " << val << "\n";
                 return 1;
             }
+        }
+        if (parser.has_flag("--threads")) {
+            std::string val = parser.get_option("--threads");
+            if (val.empty()) {
+                std::cerr << "--threads requires a numeric value\n";
+                return 1;
+            }
+            try {
+                concurrency = static_cast<size_t>(std::stoul(val));
+                if (concurrency == 0)
+                    concurrency = 1;
+            } catch (...) {
+                std::cerr << "Invalid value for --threads: " << val << "\n";
+                return 1;
+            }
+        }
+        if (parser.has_flag("--single-thread")) {
+            concurrency = 1;
         }
         if (parser.has_flag("--concurrency")) {
             std::string val = parser.get_option("--concurrency");

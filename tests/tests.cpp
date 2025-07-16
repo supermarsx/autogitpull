@@ -166,3 +166,11 @@ TEST_CASE("--log-file without value creates file") {
     REQUIRE(fs::exists(log));
     fs::remove(log);
 }
+
+TEST_CASE("ArgParser threads flags") {
+    const char *argv[] = {"prog", "--threads", "8", "--single-thread"};
+    ArgParser parser(4, const_cast<char **>(argv), {"--threads", "--single-thread"});
+    REQUIRE(parser.has_flag("--threads"));
+    REQUIRE(parser.get_option("--threads") == std::string("8"));
+    REQUIRE(parser.has_flag("--single-thread"));
+}
