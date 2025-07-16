@@ -176,4 +176,8 @@ void draw_tui(const std::vector<fs::path>& all_repos,
     out << "--------------------------------------------------------------";
     out << "-------------------\n";
     std::cout << out.str() << std::flush;
+    // Explicitly clear the string buffer to avoid stale allocations
+    out.str("");
+    out.clear();
+    std::ostringstream().swap(out);
 }
