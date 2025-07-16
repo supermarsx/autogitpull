@@ -8,6 +8,7 @@
 #ifdef __linux__
 #include <sched.h>
 #include <unistd.h>
+#include <sys/resource.h>
 #elif defined(_WIN32)
 #include <windows.h>
 #include <psapi.h>
@@ -19,9 +20,11 @@ namespace procutil {
 #ifdef __linux__
 
 static long read_proc_jiffies() {
-    std::ifstream stat("/proc/self/stat");
-    if (!stat)
+    static std::ifstream stat("/proc/self/stat");
+    if (!stat.is_open())
         return 0;
+    stat.clear();
+    stat.seekg(0);
     std::string tmp;
     for (int i = 0; i < 13; ++i)
         stat >> tmp; // skip fields
@@ -134,8 +137,10 @@ double get_cpu_percent() {
 
 std::size_t get_memory_usage_mb() {
 #ifdef __linux__
-    std::size_t kb = read_status_value("VmRSS:");
-    return kb / 1024;
+    struct rusage usage;
+    if (getrusage(RUSAGE_SELF, &usage) == 0)
+        return static_cast<std::size_t>(usage.ru_maxrss) / 1024;
+    return 0;
 #elif defined(_WIN32)
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))

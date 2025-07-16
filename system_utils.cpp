@@ -1,4 +1,5 @@
 #include "system_utils.hpp"
+#include <sstream>
 #ifdef __linux__
 #include <sched.h>
 #elif defined(_WIN32)
@@ -25,6 +26,42 @@ bool set_cpu_affinity(unsigned long long mask) {
 #else
     (void)mask;
     return false;
+#endif
+}
+
+std::string get_cpu_affinity() {
+#ifdef __linux__
+    cpu_set_t set;
+    if (sched_getaffinity(0, sizeof(set), &set) != 0)
+        return "";
+    std::ostringstream oss;
+    bool first = true;
+    for (int i = 0; i < CPU_SETSIZE; ++i) {
+        if (CPU_ISSET(i, &set)) {
+            if (!first)
+                oss << ",";
+            oss << i;
+            first = false;
+        }
+    }
+    return oss.str();
+#elif defined(_WIN32)
+    DWORD_PTR process_mask = 0, system_mask = 0;
+    if (!GetProcessAffinityMask(GetCurrentProcess(), &process_mask, &system_mask))
+        return "";
+    std::ostringstream oss;
+    bool first = true;
+    for (int i = 0; i < static_cast<int>(sizeof(DWORD_PTR) * 8); ++i) {
+        if (process_mask & (static_cast<DWORD_PTR>(1) << i)) {
+            if (!first)
+                oss << ",";
+            oss << i;
+            first = false;
+        }
+    }
+    return oss.str();
+#else
+    return "";
 #endif
 }
 

@@ -650,7 +650,8 @@ int main(int argc, char* argv[]) {
                     act = current_action;
                 }
                 draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped,
-                         show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker);
+                         show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker,
+                         cpu_core_mask != 0);
             }
             std::this_thread::sleep_for(refresh_ms);
             countdown_ms -= refresh_ms;
