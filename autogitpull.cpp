@@ -22,6 +22,7 @@
 #include "time_utils.hpp"
 #include "resource_utils.hpp"
 #include "system_utils.hpp"
+#include "version.hpp"
 
 namespace fs = std::filesystem;
 
@@ -298,7 +299,7 @@ int main(int argc, char* argv[]) {
             "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
             "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
             "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
-            "--upload-limit"};
+            "--upload-limit",    "--version"};
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
@@ -313,7 +314,13 @@ int main(int argc, char* argv[]) {
                 << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                 << " [--no-cpu-tracker] [--no-mem-tracker]"
                 << " [--no-thread-tracker] [--net-tracker]"
-                << " [--download-limit <KB/s>] [--upload-limit <KB/s>] [--help]\n";
+                << " [--download-limit <KB/s>] [--upload-limit <KB/s>]"
+                << " [--version] [--help]\n";
+            return 0;
+        }
+
+        if (parser.has_flag("--version")) {
+            std::cout << AUTOGITPULL_VERSION << "\n";
             return 0;
         }
 
@@ -329,7 +336,8 @@ int main(int argc, char* argv[]) {
                 << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                 << " [--no-cpu-tracker] [--no-mem-tracker]"
                 << " [--no-thread-tracker] [--net-tracker]"
-                << " [--download-limit <KB/s>] [--upload-limit <KB/s>] [--help]\n";
+                << " [--download-limit <KB/s>] [--upload-limit <KB/s>]"
+                << " [--version] [--help]\n";
             return 1;
         }
 

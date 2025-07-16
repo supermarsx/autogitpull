@@ -7,6 +7,7 @@
 #include "time_utils.hpp"
 #include "git_utils.hpp"
 #include "resource_utils.hpp"
+#include "version.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -22,8 +23,6 @@ const char* COLOR_CYAN = "\033[36m";
 const char* COLOR_GRAY = "\033[90m";
 const char* COLOR_BOLD = "\033[1m";
 const char* COLOR_MAGENTA = "\033[35m";
-
-const char* AUTOGITPULL_VERSION = "0.1.0";
 
 #ifdef _WIN32
 void enable_win_ansi() {
