@@ -5,13 +5,30 @@
 #include <vector>
 #include <map>
 
+/**
+ * @brief Simple command line argument parser.
+ *
+ * The parser recognizes long style options (e.g. `--flag` or `--opt value`).
+ * A list of known flags can be provided so that unknown flags are collected
+ * and reported separately. Options may also be specified using the form
+ * `--opt=value`.
+ */
 class ArgParser {
-    std::set<std::string> flags_;
-    std::map<std::string, std::string> options_;
-    std::vector<std::string> positional_;
-    std::vector<std::string> unknown_flags_;
-    std::set<std::string> known_flags_;
+    std::set<std::string> flags_;                 ///< Flags present on the command line
+    std::map<std::string, std::string> options_;  ///< Option values keyed by flag
+    std::vector<std::string> positional_;         ///< Positional arguments in order
+    std::vector<std::string> unknown_flags_;      ///< Flags not present in known_flags
+    std::set<std::string> known_flags_;           ///< List of accepted flags
+
 public:
+    /**
+     * @brief Parse the given command line arguments.
+     *
+     * @param argc Argument count from `main`.
+     * @param argv Argument vector from `main`.
+     * @param known_flags Optional set of flags that are considered valid. If
+     *        empty, all flags are treated as known.
+     */
     ArgParser(int argc, char* argv[], const std::set<std::string>& known_flags = {})
         : known_flags_(known_flags) {
         for (int i = 1; i < argc; ++i) {
@@ -49,15 +66,38 @@ public:
         }
     }
 
+    /**
+     * @brief Check whether a flag was provided on the command line.
+     *
+     * @param flag Flag name including the leading `--`.
+     * @return `true` if the flag was present, otherwise `false`.
+     */
     bool has_flag(const std::string& flag) const { return flags_.count(flag) > 0; }
+
+    /**
+     * @brief Retrieve the value associated with an option.
+     *
+     * If the option was not provided, an empty string is returned.
+     *
+     * @param opt Option name including the leading `--`.
+     * @return Stored option value or empty string if missing.
+     */
     std::string get_option(const std::string& opt) const {
         auto it = options_.find(opt);
         if (it != options_.end()) return it->second;
         return "";
     }
+
+    /** @return Set of all flags found during parsing. */
     const std::set<std::string>& flags() const { return flags_; }
+
+    /** @return Map of option names to their parsed values. */
     const std::map<std::string, std::string>& options() const { return options_; }
+
+    /** @return Ordered list of positional arguments. */
     const std::vector<std::string>& positional() const { return positional_; }
+
+    /** @return Flags that were not part of @a known_flags. */
     const std::vector<std::string>& unknown_flags() const { return unknown_flags_; }
 };
 
