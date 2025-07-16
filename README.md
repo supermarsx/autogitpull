@@ -104,7 +104,7 @@ make test
 This command generates a `build` directory (if missing), compiles the tests and
 executes them through CMake's `ctest` driver.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--help]`
 
 Available options:
 
@@ -129,6 +129,7 @@ Available options:
 * `--no-cpu-tracker` – disable CPU usage display in the TUI.
 * `--no-mem-tracker` – disable memory usage display in the TUI.
 * `--no-thread-tracker` – disable thread count display in the TUI.
+* `--net-tracker` – show total network usage since startup.
 * `--help` – show the usage information and exit.
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
@@ -137,7 +138,7 @@ Provide `--log-dir <path>` to store pull logs for each repository. After every p
 is written to a timestamped file inside this directory and its location is shown in the TUI.
 Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
 `./autogitpull myprojects --log-dir logs --log-file autogitpull.log --log-level DEBUG`
-CPU, memory and thread usage are tracked and shown by default. Disable them individually with `--no-cpu-tracker`, `--no-mem-tracker` or `--no-thread-tracker`.
+CPU, memory and thread usage are tracked and shown by default. Disable them individually with `--no-cpu-tracker`, `--no-mem-tracker` or `--no-thread-tracker`. Enable network usage tracking with `--net-tracker`.
 
 ## Linting
 The project uses `clang-format` and `cpplint` to enforce a consistent code style.

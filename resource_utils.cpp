@@ -3,6 +3,8 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <sstream>
+#include <utility>
 #ifdef __linux__
 #include <sched.h>
 #include <unistd.h>
@@ -66,6 +68,36 @@ static long prev_jiffies = 0;
 static ULONGLONG prev_proc_time = 0;
 #endif
 static auto prev_time = std::chrono::steady_clock::now();
+#ifdef __linux__
+static std::pair<std::size_t, std::size_t> read_net_bytes() {
+    std::ifstream net("/proc/self/net/dev");
+    std::string line;
+    std::getline(net, line);
+    std::getline(net, line);
+    std::size_t rx_total = 0, tx_total = 0;
+    while (std::getline(net, line)) {
+        std::istringstream iss(line);
+        std::string iface;
+        if (!std::getline(iss, iface, ':'))
+            continue;
+        std::size_t rx_bytes = 0, rx_packets = 0, rx_errs = 0, rx_drop = 0, rx_fifo = 0,
+                    rx_frame = 0, rx_compressed = 0, rx_multicast = 0;
+        std::size_t tx_bytes = 0, tx_packets = 0, tx_errs = 0, tx_drop = 0, tx_fifo = 0,
+                    tx_colls = 0, tx_carrier = 0, tx_compressed = 0;
+        iss >> rx_bytes >> rx_packets >> rx_errs >> rx_drop >> rx_fifo >> rx_frame >>
+            rx_compressed >> rx_multicast >> tx_bytes >> tx_packets >> tx_errs >> tx_drop >>
+            tx_fifo >> tx_colls >> tx_carrier >> tx_compressed;
+        rx_total += rx_bytes;
+        tx_total += tx_bytes;
+    }
+    return {rx_total, tx_total};
+}
+#else
+static std::pair<std::size_t, std::size_t> read_net_bytes() { return {0, 0}; }
+#endif
+
+static std::size_t base_down = 0;
+static std::size_t base_up = 0;
 
 double get_cpu_percent() {
 #ifdef __linux__
@@ -156,6 +188,20 @@ bool set_cpu_affinity(int cores) {
     (void)cores;
     return false;
 #endif
+}
+
+void init_network_usage() {
+    auto bytes = read_net_bytes();
+    base_down = bytes.first;
+    base_up = bytes.second;
+}
+
+NetUsage get_network_usage() {
+    auto bytes = read_net_bytes();
+    NetUsage u;
+    u.download_bytes = bytes.first - base_down;
+    u.upload_bytes = bytes.second - base_up;
+    return u;
 }
 
 } // namespace procutil

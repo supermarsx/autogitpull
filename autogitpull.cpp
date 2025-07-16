@@ -292,34 +292,36 @@ int main(int argc, char *argv[]) {
             "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
             "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
             "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
-            "--threads",         "--single-thread"};
+            "--threads",         "--single-thread",  "--net-tracker"};
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
-            std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
-                      << " [--interval <seconds>] [--refresh-rate <ms>]"
-                      << " [--log-dir <path>] [--log-file <path>]"
-                      << " [--log-level <level>] [--verbose]"
-                      << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
-                      << " [--cpu-percent <n>] [--cpu-cores <n>]"
-                      << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
-                      << " [--no-cpu-tracker] [--no-mem-tracker]"
-                      << " [--no-thread-tracker] [--help]\n";
+            std::cout
+                << "Usage: " << argv[0]
+                << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
+                << " [--interval <seconds>] [--refresh-rate <ms>]"
+                << " [--log-dir <path>] [--log-file <path>]"
+                << " [--log-level <level>] [--verbose]"
+                << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
+                << " [--cpu-percent <n>] [--cpu-cores <n>]"
+                << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
+                << " [--no-cpu-tracker] [--no-mem-tracker]"
+                << " [--no-thread-tracker] [--net-tracker] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
-            std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
-                      << " [--interval <seconds>] [--refresh-rate <ms>]"
-                      << " [--log-dir <path>] [--log-file <path>]"
-                      << " [--log-level <level>] [--verbose]"
-                      << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
-                      << " [--cpu-percent <n>] [--cpu-cores <n>]"
-                      << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
-                      << " [--no-cpu-tracker] [--no-mem-tracker]"
-                      << " [--no-thread-tracker] [--help]\n";
+            std::cerr
+                << "Usage: " << argv[0]
+                << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
+                << " [--interval <seconds>] [--refresh-rate <ms>]"
+                << " [--log-dir <path>] [--log-file <path>]"
+                << " [--log-level <level>] [--verbose]"
+                << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
+                << " [--cpu-percent <n>] [--cpu-cores <n>]"
+                << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
+                << " [--no-cpu-tracker] [--no-mem-tracker]"
+                << " [--no-thread-tracker] [--net-tracker] [--help]\n";
             return 1;
         }
 
@@ -369,6 +371,7 @@ int main(int argc, char *argv[]) {
         bool cpu_tracker = true;
         bool mem_tracker = true;
         bool thread_tracker = true;
+        bool net_tracker = false;
         int interval = 30;
         std::chrono::milliseconds refresh_ms(250);
         if (parser.has_flag("--interval")) {
@@ -491,6 +494,7 @@ int main(int argc, char *argv[]) {
         cpu_tracker = !parser.has_flag("--no-cpu-tracker");
         mem_tracker = !parser.has_flag("--no-mem-tracker");
         thread_tracker = !parser.has_flag("--no-thread-tracker");
+        net_tracker = parser.has_flag("--net-tracker");
         if (max_threads > 0 && concurrency > max_threads)
             concurrency = max_threads;
         fs::path log_dir;
@@ -535,6 +539,9 @@ int main(int argc, char *argv[]) {
         }
         if (cpu_cores > 0)
             procutil::set_cpu_affinity(cpu_cores);
+
+        if (net_tracker)
+            procutil::init_network_usage();
 
         if (!log_file.empty()) {
             init_logger(log_file, log_level);
@@ -607,7 +614,7 @@ int main(int argc, char *argv[]) {
                     act = current_action;
                 }
                 draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped,
-                         show_version, cpu_tracker, mem_tracker, thread_tracker);
+                         show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker);
             }
             std::this_thread::sleep_for(refresh_ms);
             countdown_ms -= refresh_ms;
