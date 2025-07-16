@@ -495,10 +495,17 @@ int main(int argc, char *argv[]) {
         if (parser.has_flag("--log-file")) {
             std::string val = parser.get_option("--log-file");
             if (val.empty()) {
-                std::cerr << "--log-file requires a path\n";
-                return 1;
+                std::string ts = timestamp();
+                for (char &ch : ts) {
+                    if (ch == ' ' || ch == ':')
+                        ch = '_';
+                    else if (ch == '/')
+                        ch = '-';
+                }
+                log_file = "autogitpull-logs-" + ts + ".log";
+            } else {
+                log_file = val;
             }
-            log_file = val;
         }
         fs::path root = parser.positional().front();
         if (!fs::exists(root) || !fs::is_directory(root)) {

@@ -4,6 +4,7 @@
 #include "repo.hpp"
 #include "logger.hpp"
 #include "resource_utils.hpp"
+#include "time_utils.hpp"
 #include <filesystem>
 #include <fstream>
 #include <cstdlib>
@@ -140,4 +141,28 @@ TEST_CASE("Logger appends messages") {
         REQUIRE(lines.size() == count_before + 1);
         REQUIRE(lines.back().find("third entry") != std::string::npos);
     }
+    close_logger();
+}
+
+TEST_CASE("--log-file without value creates file") {
+    const char *argv[] = {"prog", "--log-file"};
+    ArgParser parser(2, const_cast<char **>(argv), {"--log-file"});
+    REQUIRE(parser.has_flag("--log-file"));
+    REQUIRE(parser.get_option("--log-file").empty());
+
+    std::string ts = timestamp();
+    for (char &ch : ts) {
+        if (ch == ' ' || ch == ':')
+            ch = '_';
+        else if (ch == '/')
+            ch = '-';
+    }
+    fs::path log = "autogitpull-logs-" + ts + ".log";
+    fs::remove(log);
+    init_logger(log.string());
+    REQUIRE(logger_initialized());
+    log_info("test entry");
+    close_logger();
+    REQUIRE(fs::exists(log));
+    fs::remove(log);
 }
