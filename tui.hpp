@@ -11,19 +11,28 @@
  * @brief Enable ANSI color sequences on Windows consoles.
  *
  * Has no effect on other platforms.
+ *
+ * @sideeffects May modify console mode flags on Windows.
  */
 void enable_win_ansi();
 
 /**
  * @brief Render the text user interface.
  *
- * @param all_repos   List of repository paths being monitored.
- * @param repo_infos  Map with status information for each repository.
- * @param interval    Scan interval in seconds.
- * @param seconds_left Seconds remaining until the next scan.
- * @param scanning    Whether a scan is currently in progress.
- * @param action      Short description of the current action.
- * @param show_skipped Show entries marked as skipped.
+ * @param all_repos     List of repository paths being monitored.
+ * @param repo_infos    Map with status information for each repository.
+ * @param interval      Scan interval in seconds.
+ * @param seconds_left  Seconds remaining until the next scan.
+ * @param scanning      Whether a scan is currently in progress.
+ * @param action        Short description of the current action.
+ * @param show_skipped  Show entries marked as skipped.
+ * @param show_version  Display version information when true.
+ * @param track_cpu     Display CPU usage statistics when true.
+ * @param track_mem     Display memory usage statistics when true.
+ * @param track_threads Display thread count when true.
+ * @param track_net     Display network usage statistics when true.
+ *
+ * Writes the interface to the terminal and may clear the screen.
  */
 void draw_tui(const std::vector<std::filesystem::path> &all_repos,
               const std::map<std::filesystem::path, RepoInfo> &repo_infos, int interval,
