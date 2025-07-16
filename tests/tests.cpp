@@ -10,8 +10,40 @@
 #include <thread>
 #include <fstream>
 #include <cstdlib>
+#include <map>
+#include <set>
+#include <mutex>
+#include <atomic>
+#include <thread>
+#include <chrono>
 
 namespace fs = std::filesystem;
+
+static std::size_t read_thread_count() {
+#ifdef __linux__
+    std::ifstream status("/proc/self/status");
+    std::string key;
+    std::size_t val = 0;
+    while (status >> key) {
+        if (key == "Threads:") {
+            status >> val;
+            break;
+        }
+        std::string rest;
+        std::getline(status, rest);
+    }
+    return val;
+#else
+    return procutil::get_thread_count();
+#endif
+}
+
+void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoInfo>& repo_infos,
+                std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
+                std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
+                bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
+                size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
+                size_t up_limit, bool silent);
 
 TEST_CASE("ArgParser basic parsing") {
     const char* argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
@@ -198,4 +230,50 @@ TEST_CASE("ArgParser network limits") {
     ArgParser parser(5, const_cast<char**>(argv), {"--download-limit", "--upload-limit"});
     REQUIRE(parser.get_option("--download-limit") == std::string("100"));
     REQUIRE(parser.get_option("--upload-limit") == std::string("50"));
+}
+
+TEST_CASE("scan_repos respects concurrency limit") {
+    git::GitInitGuard guard;
+    std::vector<fs::path> repos;
+    for (int i = 0; i < 3; ++i) {
+        fs::path repo = fs::temp_directory_path() / ("threads_repo_" + std::to_string(i));
+        fs::remove_all(repo);
+        fs::create_directory(repo);
+        REQUIRE(std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+        std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
+        std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+        std::ofstream(repo / "file.txt") << "hello";
+        std::system(("git -C " + repo.string() + " add file.txt").c_str());
+        std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
+        repos.push_back(repo);
+    }
+
+    std::map<fs::path, RepoInfo> infos;
+    for (const auto& p : repos)
+        infos[p] = RepoInfo{p, RS_PENDING, "", "", "", "", 0, false};
+    std::set<fs::path> skip;
+    std::mutex mtx;
+    std::atomic<bool> scanning(true);
+    std::atomic<bool> running(true);
+    std::string act;
+    std::mutex act_mtx;
+
+    const std::size_t concurrency = 2;
+    std::size_t baseline = read_thread_count();
+    std::size_t max_seen = baseline;
+
+    std::thread t([&]() {
+        scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false,
+                   fs::path(), true, true, concurrency, 0, 0, 0, 0, true);
+    });
+    while (scanning) {
+        max_seen = std::max(max_seen, read_thread_count());
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    t.join();
+
+    REQUIRE(max_seen - baseline <= concurrency);
+
+    for (const auto& p : repos)
+        fs::remove_all(p);
 }
