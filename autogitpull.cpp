@@ -12,6 +12,7 @@
 #include <mutex>
 #include <atomic>
 #include <sstream>
+#include <cctype>
 #include <csignal>
 #include "arg_parser.hpp"
 #include "git_utils.hpp"
@@ -47,7 +48,7 @@ void process_repo(const fs::path& p,
                   bool hash_check) {
     if (!running) return;
     if (logger_initialized())
-        log_info("Checking repo " + p.string());
+        log_debug("Checking repo " + p.string());
     {
         std::lock_guard<std::mutex> lk(mtx);
         auto it = repo_infos.find(p);
@@ -56,7 +57,7 @@ void process_repo(const fs::path& p,
             // Repo already being processed elsewhere
             std::cerr << "Skipping " << p << " - busy\n";
             if (logger_initialized())
-                log_info("Skipping " + p.string() + " - busy");
+                log_debug("Skipping " + p.string() + " - busy");
             return;
         }
     }
@@ -80,7 +81,7 @@ void process_repo(const fs::path& p,
         ri.status = RS_SKIPPED;
         ri.message = "Skipped after fatal error";
         if (logger_initialized())
-            log_info(p.string() + " skipped after fatal error");
+            log_warning(p.string() + " skipped after fatal error");
         std::lock_guard<std::mutex> lk(mtx);
         repo_infos[p] = ri;
         return;
@@ -97,7 +98,7 @@ void process_repo(const fs::path& p,
                     ri.status = RS_SKIPPED;
                     ri.message = "Non-GitHub repo (skipped)";
                     if (logger_initialized())
-                        log_info(p.string() + " skipped: non-GitHub repo");
+                        log_debug(p.string() + " skipped: non-GitHub repo");
                     std::lock_guard<std::mutex> lk(mtx);
                     repo_infos[p] = ri;
                     return;
@@ -106,7 +107,7 @@ void process_repo(const fs::path& p,
                     ri.status = RS_SKIPPED;
                     ri.message = "Private or inaccessible repo";
                     if (logger_initialized())
-                        log_info(p.string() + " skipped: private or inaccessible");
+                        log_debug(p.string() + " skipped: private or inaccessible");
                     std::lock_guard<std::mutex> lk(mtx);
                     repo_infos[p] = ri;
                     return;
@@ -145,7 +146,7 @@ void process_repo(const fs::path& p,
                         ri.commit = git::get_local_hash(p);
                         if (ri.commit.size() > 7) ri.commit = ri.commit.substr(0,7);
                         if (logger_initialized())
-                            log_info(p.string() + " remote ahead");
+                            log_debug(p.string() + " remote ahead");
                     } else {
                         ri.status = RS_PULLING;
                         ri.message = "Remote ahead, pulling...";
@@ -212,7 +213,7 @@ void process_repo(const fs::path& p,
             ri.message = "Not a git repo (skipped)";
             skip_repos.insert(p);
             if (logger_initialized())
-                log_info(p.string() + " skipped: not a git repo");
+                log_debug(p.string() + " skipped: not a git repo");
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
@@ -224,7 +225,7 @@ void process_repo(const fs::path& p,
     std::lock_guard<std::mutex> lk(mtx);
     repo_infos[p] = ri;
     if (logger_initialized())
-        log_info(p.string() + " -> " + ri.message);
+        log_debug(p.string() + " -> " + ri.message);
 }
 
 // Background thread: scan and update info
@@ -246,7 +247,7 @@ void scan_repos(
     if (concurrency == 0) concurrency = 1;
     concurrency = std::min(concurrency, all_repos.size());
     if (logger_initialized())
-        log_info("Scanning repositories");
+        log_debug("Scanning repositories");
 
     std::atomic<size_t> next_index{0};
     auto worker = [&]() {
@@ -271,24 +272,24 @@ void scan_repos(
         action = "Idle";
     }
     if (logger_initialized())
-        log_info("Scan complete");
+        log_debug("Scan complete");
 }
 
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--log-file", "--concurrency", "--check-only", "--no-hash-check", "--help" };
+        const std::set<std::string> known{ "--include-private", "--show-skipped", "--interval", "--refresh-rate", "--log-dir", "--log-file", "--concurrency", "--check-only", "--no-hash-check", "--log-level", "--verbose", "--help" };
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
             std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
+                      << " <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]\n";
             return 1;
         }
 
@@ -302,6 +303,26 @@ int main(int argc, char* argv[]) {
         bool show_skipped = parser.has_flag("--show-skipped");
         bool check_only = parser.has_flag("--check-only");
         bool hash_check = !parser.has_flag("--no-hash-check");
+        LogLevel log_level = LogLevel::INFO;
+        if (parser.has_flag("--verbose")) {
+            log_level = LogLevel::DEBUG;
+        }
+        if (parser.has_flag("--log-level")) {
+            std::string val = parser.get_option("--log-level");
+            if (val.empty()) {
+                std::cerr << "--log-level requires a value\n";
+                return 1;
+            }
+            for (auto& c : val) c = toupper(static_cast<unsigned char>(c));
+            if (val == "DEBUG") log_level = LogLevel::DEBUG;
+            else if (val == "INFO") log_level = LogLevel::INFO;
+            else if (val == "WARNING" || val == "WARN") log_level = LogLevel::WARNING;
+            else if (val == "ERROR") log_level = LogLevel::ERROR;
+            else {
+                std::cerr << "Invalid log level: " << val << "\n";
+                return 1;
+            }
+        }
         size_t concurrency = 3;
         int interval = 30;
         std::chrono::milliseconds refresh_ms(250);
@@ -380,7 +401,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (!log_file.empty()) {
-            init_logger(log_file);
+            init_logger(log_file, log_level);
             if (logger_initialized())
                 log_info("Program started");
             else
