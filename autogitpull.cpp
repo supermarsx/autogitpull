@@ -738,8 +738,11 @@ int main(int argc, char* argv[]) {
             guard = std::make_unique<AltScreenGuard>();
 
         while (running) {
-            if (!scanning && scan_thread.joinable())
+            if (!scanning && scan_thread.joinable()) {
                 scan_thread.join();
+                git_libgit2_shutdown();
+                git_libgit2_init();
+            }
 
             if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
                 {
@@ -788,8 +791,11 @@ int main(int argc, char* argv[]) {
         }
 
         running = false;
-        if (scan_thread.joinable())
+        if (scan_thread.joinable()) {
             scan_thread.join();
+            git_libgit2_shutdown();
+            git_libgit2_init();
+        }
         if (logger_initialized())
             log_info("Program exiting");
         shutdown_logger();
