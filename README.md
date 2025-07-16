@@ -2,15 +2,17 @@
 Automatic Git Puller & Monitor
 
 ## Dependencies
+
 This tool relies on [libgit2](https://libgit2.org/). The helper scripts
 `install_deps.sh` (Linux/macOS) and `install_deps.bat` (Windows) automatically
-download and install `libgit2` when needed.  You can also run `make deps` on
-Unix-like systems to invoke the installer.  The project links against the
+download and install `libgit2` when needed. You can also run `make deps` on
+Unix-like systems to invoke the installer. The project links against the
 static version of the library so the final executable does not depend on a
-separate `libgit2` DLL.  If you prefer to install the library yourself, follow
+separate `libgit2` DLL. If you prefer to install the library yourself, follow
 the instructions below.
 
 ### Installing libgit2 on Linux
+
 ```
 sudo apt-get update && sudo apt-get install -y libgit2-dev     # Debian/Ubuntu
 sudo yum install -y libgit2-devel                              # RHEL/Fedora
@@ -19,6 +21,7 @@ sudo yum install -y libgit2-devel                              # RHEL/Fedora
 ### Installing libgit2 on Windows
 
 #### MSVC (Visual Studio)
+
 Use [vcpkg](https://github.com/microsoft/vcpkg):
 
 ```
@@ -31,6 +34,7 @@ Ensure the resulting `installed` folder is on your `LIB` and `INCLUDE`
 paths when compiling with `compile-cl.bat`.
 
 #### MinGW
+
 Run `install_libgit2_mingw.bat` to build libgit2 natively with MinGW. The
 script installs the static library and headers under `libgit2\_install`.
 
@@ -43,7 +47,9 @@ includes `winhttp`, `ole32`, `rpcrt4` and `crypt32` so that the build
 succeeds without manual tweaks.
 
 ## Building
+
 ### Using the provided scripts
+
 Run `make` (Linux/macOS), `compile.bat` (MinGW) or `compile-cl.bat` (MSVC) to
 build the project. `compile.bat` invokes `install_libgit2_mingw.bat` when
 `libgit2` is missing. The binary is produced as `autogitpull` (or
@@ -57,6 +63,7 @@ will attempt to install a C++ compiler if one isn't present. Windows users get
 Clean up intermediate files with `make clean`.
 
 ### Manual compilation
+
 If you prefer to build without the helper scripts, the following commands show
 the bare minimum required to compile the program.
 
@@ -81,6 +88,7 @@ cl /std:c++17 /EHsc /MT /Ipath\to\libgit2\include autogitpull.cpp git_utils.cpp 
 These commands mirror what the scripts do internally.
 
 ### Building with CMake
+
 Alternatively, configure the project with CMake:
 
 ```bash
@@ -91,6 +99,7 @@ cmake --build build
 The resulting executable will be in the `build` directory.
 
 ### Running tests
+
 Unit tests use [Catch2](https://github.com/catchorg/Catch2). If the library is
 not installed, CMake will automatically download it using `FetchContent`. **Make
 sure `libgit2` is installed** (run `./install_deps.sh` on Linux/macOS or
@@ -108,29 +117,29 @@ Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-v
 
 Available options:
 
-* `--include-private` – include private or non-GitHub repositories in the scan.
-* `--show-skipped` – display repositories that were skipped because they are non-GitHub or require authentication.
-* `--show-version` – display the program version in the TUI header.
-* `--interval <seconds>` – delay between automatic scans (default 30).
-* `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
-* `--log-dir <path>` – directory where pull logs will be written.
-* `--log-file <path>` – file for general messages.
-* `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
-* `--verbose` – shorthand for `--log-level DEBUG`.
-* `--concurrency <n>` – number of repositories processed in parallel (default: hardware concurrency).
-* `--threads <n>` – alias for `--concurrency`.
-* `--single-thread` – run using a single worker thread.
-* `--max-threads <n>` – cap the scanning worker threads.
-* `--cpu-percent <n>` – approximate CPU usage limit (1–100).
-* `--cpu-cores <n>` – bind process to the first N CPU cores (Linux only).
-* `--mem-limit <MB>` – abort if memory usage exceeds this amount.
-* `--check-only` – only check for updates without pulling.
-* `--no-hash-check` – always pull without comparing commit hashes first.
-* `--no-cpu-tracker` – disable CPU usage display in the TUI.
-* `--no-mem-tracker` – disable memory usage display in the TUI.
-* `--no-thread-tracker` – disable thread count display in the TUI.
-* `--net-tracker` – show total network usage since startup.
-* `--help` – show the usage information and exit.
+- `--include-private` – include private or non-GitHub repositories in the scan.
+- `--show-skipped` – display repositories that were skipped because they are non-GitHub or require authentication.
+- `--show-version` – display the program version in the TUI header.
+- `--interval <seconds>` – delay between automatic scans (default 30).
+- `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
+- `--log-dir <path>` – directory where pull logs will be written.
+- `--log-file <path>` – file for general messages.
+- `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+- `--verbose` – shorthand for `--log-level DEBUG`.
+- `--concurrency <n>` – number of repositories processed in parallel (default: hardware concurrency).
+- `--threads <n>` – alias for `--concurrency`.
+- `--single-thread` – run using a single worker thread.
+- `--max-threads <n>` – cap the scanning worker threads.
+- `--cpu-percent <n>` – approximate CPU usage limit (1–100).
+- `--cpu-cores <n>` – bind process to the first N CPU cores (Linux only).
+- `--mem-limit <MB>` – abort if memory usage exceeds this amount.
+- `--check-only` – only check for updates without pulling.
+- `--no-hash-check` – always pull without comparing commit hashes first.
+- `--no-cpu-tracker` – disable CPU usage display in the TUI.
+- `--no-mem-tracker` – disable memory usage display in the TUI.
+- `--no-thread-tracker` – disable thread count display in the TUI.
+- `--net-tracker` – show total network usage since startup.
+- `--help` – show the usage information and exit.
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
 
@@ -141,6 +150,7 @@ Use `--log-file <path>` to append high level messages to the given file. The pro
 CPU, memory and thread usage are tracked and shown by default. Disable them individually with `--no-cpu-tracker`, `--no-mem-tracker` or `--no-thread-tracker`. Enable network usage tracking with `--net-tracker`.
 
 ## Linting
+
 The project uses `clang-format` and `cpplint` to enforce a consistent code style.
 Run `make lint` before committing to ensure formatting and style rules pass:
 
@@ -150,18 +160,30 @@ make lint
 
 The CI workflow also executes this command and will fail on formatting or lint errors.
 
+Markdown and JSON files are formatted with [Prettier](https://prettier.io/).
+Format them with:
+
+```bash
+npm run format
+```
+
+`make lint` also checks these files via `prettier --check`.
+
 ### Status labels
+
 When the program starts, each repository is listed with the **Pending** status
 until it is checked for the first time. Once a scan begins the status switches
 to **Checking** and later reflects the pull result.
 
 ## Runtime requirements
-* **Git** must be available in your `PATH` for libgit2 to interact with repositories.
-* Network access is required to contact remote Git servers when pulling updates.
-* The application prints ANSI color codes; on Windows run it in a terminal that
+
+- **Git** must be available in your `PATH` for libgit2 to interact with repositories.
+- Network access is required to contact remote Git servers when pulling updates.
+- The application prints ANSI color codes; on Windows run it in a terminal that
   supports color (e.g. Windows Terminal or recent PowerShell).
 
 ## Licensing
+
 autogitpull is licensed under the MIT license (see `LICENSE`). The project
 bundles the license for the statically linked libgit2 library in
 `LIBGIT2_LICENSE`.
