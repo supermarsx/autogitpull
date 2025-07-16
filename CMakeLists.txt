@@ -47,3 +47,18 @@ add_executable(autogitpull_tests tests/tests.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib)
 add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
+
+# Address sanitizer memory leak test
+add_executable(memory_leak_test
+    tests/memory_leak.cpp
+    autogitpull.cpp
+    git_utils.cpp
+    logger.cpp
+    resource_utils.cpp
+    time_utils.cpp)
+target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR})
+target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)
+target_compile_options(memory_leak_test PRIVATE -fsanitize=address)
+target_link_options(memory_leak_test PRIVATE -fsanitize=address)
+target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain PkgConfig::LIBGIT2 pthread)
+add_test(NAME memory_leak_test COMMAND memory_leak_test)

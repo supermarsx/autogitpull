@@ -283,6 +283,7 @@ void scan_repos(const std::vector<fs::path> &all_repos, std::map<fs::path, RepoI
         log_debug("Scan complete");
 }
 
+#ifndef AUTOGITPULL_NO_MAIN
 int main(int argc, char *argv[]) {
     git::GitInitGuard git_guard;
     try {
@@ -631,3 +632,4 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
+#endif // AUTOGITPULL_NO_MAIN
