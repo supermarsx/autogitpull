@@ -2,6 +2,7 @@
 #include "arg_parser.hpp"
 #include "git_utils.hpp"
 #include "repo.hpp"
+#include "logger.hpp"
 #include <filesystem>
 #include <fstream>
 #include <cstdlib>
@@ -71,3 +72,46 @@ TEST_CASE("RepoInfo defaults") {
 }
 
 
+TEST_CASE("ArgParser log file option") {
+    const char* argv[] = {"prog", "--log-file", "my.log", "path"};
+    ArgParser parser(4, const_cast<char**>(argv), {"--log-file"});
+    REQUIRE(parser.has_flag("--log-file"));
+    REQUIRE(parser.get_option("--log-file") == "my.log");
+    REQUIRE(parser.positional().size() == 1);
+    REQUIRE(parser.positional()[0] == "path");
+}
+
+TEST_CASE("Logger appends messages") {
+    fs::path log = fs::temp_directory_path() / "autogitpull_logger_test.log";
+    fs::remove(log);
+    init_logger(log.string());
+    REQUIRE(logger_initialized());
+    log_info("first entry");
+    log_error("second entry");
+    {
+        std::ifstream ifs(log);
+        REQUIRE(ifs.good());
+        std::vector<std::string> lines;
+        std::string line;
+        while (std::getline(ifs, line)) lines.push_back(line);
+        REQUIRE(lines.size() >= 2);
+        REQUIRE(lines[lines.size()-2].find("first entry") != std::string::npos);
+        REQUIRE(lines.back().find("second entry") != std::string::npos);
+    }
+    size_t count_before;
+    {
+        std::ifstream ifs(log);
+        std::string l; std::vector<std::string> lines;
+        while (std::getline(ifs, l)) lines.push_back(l);
+        count_before = lines.size();
+    }
+    log_info("third entry");
+    {
+        std::ifstream ifs(log);
+        std::vector<std::string> lines;
+        std::string line;
+        while (std::getline(ifs, line)) lines.push_back(line);
+        REQUIRE(lines.size() == count_before + 1);
+        REQUIRE(lines.back().find("third entry") != std::string::npos);
+    }
+}
