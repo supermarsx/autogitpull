@@ -306,6 +306,15 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit, bool silent) {
     git::GitInitGuard guard;
+
+    {
+        std::lock_guard<std::mutex> lk(mtx);
+        std::map<fs::path, RepoInfo> empty_map;
+        repo_infos.swap(empty_map);
+        std::set<fs::path> empty_set;
+        skip_repos.swap(empty_set);
+    }
+
     if (concurrency == 0)
         concurrency = 1;
     concurrency = std::min(concurrency, all_repos.size());
