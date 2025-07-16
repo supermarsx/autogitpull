@@ -19,6 +19,7 @@
 #include "tui.hpp"
 #include "repo.hpp"
 #include "logger.hpp"
+#include "time_utils.hpp"
 #include "resource_utils.hpp"
 
 namespace fs = std::filesystem;

@@ -14,7 +14,7 @@ if(NOT LIBGIT2_FOUND)
     message(FATAL_ERROR "libgit2 not found. Install the libgit2 development package or run ./install_deps.sh")
 endif()
 
-add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp)
+add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp time_utils.cpp)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 pthread)
 
 add_executable(autogitpull autogitpull.cpp tui.cpp)

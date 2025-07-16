@@ -1,9 +1,7 @@
 #include "logger.hpp"
 #include <fstream>
 #include <mutex>
-#include <chrono>
-#include <ctime>
-#include <iomanip>
+#include "time_utils.hpp"
 
 static std::ofstream g_log_ofs;
 static std::mutex g_log_mtx;
@@ -23,20 +21,6 @@ void set_log_level(LogLevel level) {
 bool logger_initialized() {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     return g_log_ofs.is_open();
-}
-
-static std::string timestamp() {
-    auto now = std::chrono::system_clock::now();
-    std::time_t t = std::chrono::system_clock::to_time_t(now);
-    std::tm tm;
-#ifdef _WIN32
-    localtime_s(&tm, &t);
-#else
-    localtime_r(&t, &tm);
-#endif
-    char buf[32];
-    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
-    return buf;
 }
 
 static void log(LogLevel level, const std::string &label, const std::string &msg) {
