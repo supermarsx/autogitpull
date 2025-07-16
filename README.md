@@ -101,7 +101,7 @@ make test
 This command generates a `build` directory (if missing), compiles the tests and
 executes them through CMake's `ctest` driver.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--help]`
 
 Available options:
 
@@ -114,8 +114,15 @@ Available options:
 * `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
 * `--verbose` – shorthand for `--log-level DEBUG`.
 * `--concurrency <n>` – number of repositories processed in parallel (default 3).
+* `--max-threads <n>` – cap the scanning worker threads.
+* `--cpu-percent <n>` – approximate CPU usage limit (1–100).
+* `--cpu-cores <n>` – bind process to the first N CPU cores (Linux only).
+* `--mem-limit <MB>` – abort if memory usage exceeds this amount.
 * `--check-only` – only check for updates without pulling.
 * `--no-hash-check` – always pull without comparing commit hashes first.
+* `--no-cpu-tracker` – disable CPU usage display in the TUI.
+* `--no-mem-tracker` – disable memory usage display in the TUI.
+* `--no-thread-tracker` – disable thread count display in the TUI.
 * `--help` – show the usage information and exit.
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
@@ -124,6 +131,7 @@ Provide `--log-dir <path>` to store pull logs for each repository. After every p
 is written to a timestamped file inside this directory and its location is shown in the TUI.
 Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
 `./autogitpull myprojects --log-dir logs --log-file autogitpull.log --log-level DEBUG`
+CPU, memory and thread usage are tracked and shown by default. Disable them individually with `--no-cpu-tracker`, `--no-mem-tracker` or `--no-thread-tracker`.
 
 ## Linting
 The project uses `clang-format` and `cpplint` to enforce a consistent code style.
