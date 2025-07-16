@@ -20,6 +20,16 @@ if not exist "%LIBGIT2_LIB%\libgit2.a" (
     if errorlevel 1 exit /b 1
 )
 
-g++ -std=c++20 -O0 -g -fsanitize=address -I"%LIBGIT2_INC%" autogitpull.cpp git_utils.cpp tui.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp "%LIBGIT2_LIB%\libgit2.a" -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -fsanitize=address -o autogitpull_debug.exe
+rem Detect availability of AddressSanitizer
+for /f "delims=" %%d in ('g++ -print-file-name=libasan.a') do set "ASAN_LIB=%%d"
+if exist "%ASAN_LIB%" (
+    set "ASAN_FLAGS=-fsanitize=address"
+    echo Using AddressSanitizer library: %ASAN_LIB%
+) else (
+    echo AddressSanitizer not found. Building without it.
+    set "ASAN_FLAGS="
+)
+
+g++ -std=c++20 -O0 -g %ASAN_FLAGS% -I"%LIBGIT2_INC%" autogitpull.cpp git_utils.cpp tui.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp "%LIBGIT2_LIB%\libgit2.a" -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi %ASAN_FLAGS% -o autogitpull_debug.exe
 
 endlocal
