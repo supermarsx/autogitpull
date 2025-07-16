@@ -10,7 +10,6 @@ using namespace std;
 
 namespace git {
 
-
 struct ProgressData {
     const std::function<void(int)>* cb;
     std::chrono::steady_clock::time_point start;
@@ -152,8 +151,6 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         if (progress_cb)
             (*progress_cb)(100);
     };
-
-    git_repository* r = nullptr;
 
     git_repository* raw_repo = nullptr;
 
