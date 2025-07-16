@@ -3,6 +3,7 @@
 #include "git_utils.hpp"
 #include "repo.hpp"
 #include "logger.hpp"
+#include "resource_utils.hpp"
 #include <filesystem>
 #include <fstream>
 #include <cstdlib>
@@ -10,9 +11,8 @@
 namespace fs = std::filesystem;
 
 TEST_CASE("ArgParser basic parsing") {
-    const char* argv[] = {
-        "prog", "--foo", "--opt", "42", "pos", "--unknown" };
-    ArgParser parser(6, const_cast<char**>(argv), {"--foo","--bar","--opt"});
+    const char *argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
+    ArgParser parser(6, const_cast<char **>(argv), {"--foo", "--bar", "--opt"});
     REQUIRE(parser.has_flag("--foo"));
     REQUIRE(parser.get_option("--opt") == "42");
     REQUIRE(parser.positional().size() == 1);
@@ -22,15 +22,15 @@ TEST_CASE("ArgParser basic parsing") {
 }
 
 TEST_CASE("ArgParser option with equals") {
-    const char* argv[] = { "prog", "--opt=val" };
-    ArgParser parser(2, const_cast<char**>(argv), {"--opt"});
+    const char *argv[] = {"prog", "--opt=val"};
+    ArgParser parser(2, const_cast<char **>(argv), {"--opt"});
     REQUIRE(parser.has_flag("--opt"));
     REQUIRE(parser.get_option("--opt") == "val");
 }
 
 TEST_CASE("ArgParser unknown flag detection") {
-    const char* argv[] = { "prog", "--foo" };
-    ArgParser parser(2, const_cast<char**>(argv), {"--bar"});
+    const char *argv[] = {"prog", "--foo"};
+    ArgParser parser(2, const_cast<char **>(argv), {"--bar"});
     REQUIRE(parser.has_flag("--foo") == false);
     REQUIRE(parser.unknown_flags().size() == 1);
     REQUIRE(parser.unknown_flags()[0] == "--foo");
@@ -72,22 +72,36 @@ TEST_CASE("RepoInfo defaults") {
 }
 
 TEST_CASE("ArgParser log level flags") {
-    const char* argv[] = { "prog", "--log-level", "DEBUG", "--verbose" };
-    ArgParser parser(4, const_cast<char**>(argv), {"--log-level", "--verbose"});
+    const char *argv[] = {"prog", "--log-level", "DEBUG", "--verbose"};
+    ArgParser parser(4, const_cast<char **>(argv), {"--log-level", "--verbose"});
     REQUIRE(parser.has_flag("--log-level"));
     REQUIRE(parser.get_option("--log-level") == "DEBUG");
     REQUIRE(parser.has_flag("--verbose"));
 }
 
-
 TEST_CASE("ArgParser log file option") {
-    const char* argv[] = {"prog", "--log-file", "my.log", "path"};
-    ArgParser parser(4, const_cast<char**>(argv), {"--log-file"});
+    const char *argv[] = {"prog", "--log-file", "my.log", "path"};
+    ArgParser parser(4, const_cast<char **>(argv), {"--log-file"});
     REQUIRE(parser.has_flag("--log-file"));
     REQUIRE(parser.get_option("--log-file") == "my.log");
     REQUIRE(parser.positional().size() == 1);
     REQUIRE(parser.positional()[0] == "path");
 }
+
+TEST_CASE("ArgParser resource flags") {
+    const char *argv[] = {"prog", "--max-threads", "4",   "--cpu-percent", "50", "--cpu-cores",
+                          "2",    "--mem-limit",   "100", "path"};
+    ArgParser parser(10, const_cast<char **>(argv),
+                     {"--max-threads", "--cpu-percent", "--cpu-cores", "--mem-limit"});
+    REQUIRE(parser.get_option("--max-threads") == std::string("4"));
+    REQUIRE(parser.get_option("--cpu-percent") == std::string("50"));
+    REQUIRE(parser.get_option("--cpu-cores") == std::string("2"));
+    REQUIRE(parser.get_option("--mem-limit") == std::string("100"));
+    REQUIRE(parser.positional().size() == 1);
+    REQUIRE(parser.positional()[0] == std::string("path"));
+}
+
+TEST_CASE("Resource helpers") { REQUIRE(procutil::get_thread_count() >= 1); }
 
 TEST_CASE("Logger appends messages") {
     fs::path log = fs::temp_directory_path() / "autogitpull_logger_test.log";
@@ -101,16 +115,19 @@ TEST_CASE("Logger appends messages") {
         REQUIRE(ifs.good());
         std::vector<std::string> lines;
         std::string line;
-        while (std::getline(ifs, line)) lines.push_back(line);
+        while (std::getline(ifs, line))
+            lines.push_back(line);
         REQUIRE(lines.size() >= 2);
-        REQUIRE(lines[lines.size()-2].find("first entry") != std::string::npos);
+        REQUIRE(lines[lines.size() - 2].find("first entry") != std::string::npos);
         REQUIRE(lines.back().find("second entry") != std::string::npos);
     }
     size_t count_before;
     {
         std::ifstream ifs(log);
-        std::string l; std::vector<std::string> lines;
-        while (std::getline(ifs, l)) lines.push_back(l);
+        std::string l;
+        std::vector<std::string> lines;
+        while (std::getline(ifs, l))
+            lines.push_back(l);
         count_before = lines.size();
     }
     log_info("third entry");
@@ -118,7 +135,8 @@ TEST_CASE("Logger appends messages") {
         std::ifstream ifs(log);
         std::vector<std::string> lines;
         std::string line;
-        while (std::getline(ifs, line)) lines.push_back(line);
+        while (std::getline(ifs, line))
+            lines.push_back(line);
         REQUIRE(lines.size() == count_before + 1);
         REQUIRE(lines.back().find("third entry") != std::string::npos);
     }

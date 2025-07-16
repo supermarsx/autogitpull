@@ -11,7 +11,7 @@ else()
 endif()
 pkg_check_modules(LIBGIT2 REQUIRED IMPORTED_TARGET libgit2)
 
-add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp)
+add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 pthread)
 
 add_executable(autogitpull autogitpull.cpp tui.cpp)
