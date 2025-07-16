@@ -8,26 +8,97 @@
 namespace git {
 namespace fs = std::filesystem;
 
-// RAII helper that manages global libgit2 initialization.
-// Instantiate once (e.g. in main) to keep the library active for
-// the lifetime of all git utility calls.
+/**
+ * @brief RAII helper managing global libgit2 initialization.
+ *
+ * Instantiate once for the lifetime of the application to ensure all libgit2
+ * operations are performed after initialization and before shutdown.
+ */
 struct GitInitGuard {
-    GitInitGuard();
-    ~GitInitGuard();
+    GitInitGuard();  ///< Calls `git_libgit2_init()`
+    ~GitInitGuard(); ///< Calls `git_libgit2_shutdown()`
 };
 
-// The utility functions below do not perform libgit2 initialization
-// themselves. Ensure a GitInitGuard exists while they are in use.
+// The utility functions below assume libgit2 is already initialized.
 
+/**
+ * @brief Determine whether the given path is a Git repository.
+ *
+ * @param p Filesystem path to check.
+ * @return `true` if a `.git` directory exists inside @a p.
+ */
 bool is_git_repo(const fs::path& p);
+
+/**
+ * @brief Get the commit hash pointed to by `HEAD`.
+ *
+ * @param repo Path to a Git repository.
+ * @return 40 character hexadecimal commit hash, or empty string on error.
+ */
 std::string get_local_hash(const fs::path& repo);
+
+/**
+ * @brief Retrieve the currently checked out branch name.
+ *
+ * @param repo Path to a Git repository.
+ * @return Branch name or empty string if it cannot be determined.
+ */
 std::string get_current_branch(const fs::path& repo);
+
+/**
+ * @brief Fetch `origin` and return the hash of the specified remote branch.
+ *
+ * @param repo           Path to a Git repository.
+ * @param branch         Branch name to query on the remote.
+ * @param use_credentials Whether to attempt authentication using environment
+ *                        variables `GIT_USERNAME`/`GIT_PASSWORD`.
+ * @param auth_failed    Optional output flag set to `true` when authentication
+ *                        fails.
+ * @return Commit hash of the remote branch, or empty string on failure.
+ */
 std::string get_remote_hash(const fs::path& repo, const std::string& branch,
                             bool use_credentials = false,
                             bool* auth_failed = nullptr);
+
+/**
+ * @brief Obtain the URL of the `origin` remote.
+ *
+ * @param repo Path to a Git repository.
+ * @return Remote URL as a string, or empty string on failure.
+ */
 std::string get_origin_url(const fs::path& repo);
+
+/**
+ * @brief Check if a URL points to GitHub.
+ *
+ * @param url Remote URL string.
+ * @return `true` if the URL contains `github.com`.
+ */
 bool is_github_url(const std::string& url);
+
+/**
+ * @brief Attempt to connect to the `origin` remote.
+ *
+ * @param repo Path to a Git repository.
+ * @return `true` if the remote can be contacted.
+ */
 bool remote_accessible(const fs::path& repo);
+
+/**
+ * @brief Perform a fast-forward pull from the `origin` remote.
+ *
+ * `try_pull` fetches the current branch from `origin` and resets the local
+ * repository if the remote contains new commits. A progress callback may be
+ * provided to monitor fetch progress.
+ *
+ * @param repo           Path to a Git repository.
+ * @param out_pull_log   Receives a short textual log describing the action.
+ * @param progress_cb    Optional callback reporting fetch progress in percent.
+ * @param use_credentials Whether to attempt authentication using environment
+ *                        variables.
+ * @param auth_failed    Optional output flag set when authentication fails.
+ * @return `0` on success or when already up to date, `2` on failure.
+ */
 int try_pull(const fs::path& repo, std::string& out_pull_log,
              const std::function<void(int)>* progress_cb = nullptr,
              bool use_credentials = false, bool* auth_failed = nullptr);
