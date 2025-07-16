@@ -353,6 +353,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
         threads.emplace_back(worker);
     for (auto& t : threads)
         t.join();
+    threads.clear();
+    threads.shrink_to_fit();
     scanning_flag = false;
     {
         std::lock_guard<std::mutex> lk(action_mtx);
