@@ -12,10 +12,10 @@
 
 namespace fs = std::filesystem;
 
-void scan_repos(const std::vector<fs::path> &all_repos, std::map<fs::path, RepoInfo> &repo_infos,
-                std::set<fs::path> &skip_repos, std::mutex &mtx, std::atomic<bool> &scanning_flag,
-                std::atomic<bool> &running, std::string &action, std::mutex &action_mtx,
-                bool include_private, const fs::path &log_dir, bool check_only, bool hash_check,
+void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoInfo>& repo_infos,
+                std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
+                std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
+                bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit);
 
 TEST_CASE("scan_repos memory stability") {
