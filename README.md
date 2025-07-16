@@ -6,10 +6,11 @@ Automatic Git Puller & Monitor
 This tool relies on [libgit2](https://libgit2.org/). The helper scripts
 `install_deps.sh` (Linux/macOS) and `install_deps.bat` (Windows) automatically
 download and install `libgit2` when needed. You can also run `make deps` on
-Unix-like systems to invoke the installer. The project links against the
-static version of the library so the final executable does not depend on a
-separate `libgit2` DLL. If you prefer to install the library yourself, follow
-the instructions below.
+Unix-like systems to invoke the installer. The build requires the development
+package (named `libgit2-dev` on Debian/Ubuntu). The Makefile tries to link
+statically but falls back to dynamic linking when static libraries are
+unavailable. If you prefer to install the library yourself, follow the
+instructions below.
 
 ### Installing libgit2 on Linux
 
@@ -70,7 +71,10 @@ the bare minimum required to compile the program.
 On Linux with `g++`:
 
 ```bash
-g++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp $(pkg-config --cflags --libs libgit2) -pthread -static -o autogitpull
+g++ -std=c++17 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp \
+    $(pkg-config --cflags libgit2) \
+    $(pkg-config --static --libs libgit2 2>/dev/null || pkg-config --libs libgit2) \
+    -pthread -o autogitpull
 ```
 
 On macOS with `clang++`:
