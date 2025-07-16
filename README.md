@@ -129,7 +129,7 @@ valgrind ./build/memory_leak_test
 Valgrind should finish with the message `All heap blocks were freed -- no leaks
 are possible`.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--cli] [--silent] [--help]`
 
 Available options:
 
@@ -155,6 +155,8 @@ Available options:
 - `--no-mem-tracker` – disable memory usage display in the TUI.
 - `--no-thread-tracker` – disable thread count display in the TUI.
 - `--net-tracker` – show total network usage since startup.
+- `--cli` – output text updates to stdout instead of the TUI.
+- `--silent` – disable all console output; only logs are written.
 - `--help` – show the usage information and exit.
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
