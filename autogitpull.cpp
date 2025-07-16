@@ -24,6 +24,7 @@
 #include "resource_utils.hpp"
 #include "system_utils.hpp"
 #include "version.hpp"
+#include "thread_utils.hpp"
 
 namespace fs = std::filesystem;
 
@@ -729,7 +730,7 @@ int main(int argc, char* argv[]) {
         std::signal(SIGTERM, handle_signal);
 #endif
 
-        std::thread scan_thread;
+        ThreadGuard scan_thread;
         std::chrono::milliseconds countdown_ms(0); // Run immediately on start
         std::chrono::milliseconds cli_countdown_ms(0);
 
@@ -738,8 +739,8 @@ int main(int argc, char* argv[]) {
             guard = std::make_unique<AltScreenGuard>();
 
         while (running) {
-            if (!scanning && scan_thread.joinable()) {
-                scan_thread.join();
+            if (!scanning && scan_thread.t.joinable()) {
+                scan_thread.t.join();
                 git_libgit2_shutdown();
                 git_libgit2_init();
             }
@@ -757,12 +758,12 @@ int main(int argc, char* argv[]) {
                     }
                 }
                 scanning = true;
-                scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
-                                          std::ref(skip_repos), std::ref(mtx), std::ref(scanning),
-                                          std::ref(running), std::ref(current_action),
-                                          std::ref(action_mtx), include_private, std::cref(log_dir),
-                                          check_only, hash_check, concurrency, cpu_percent_limit,
-                                          mem_limit, down_limit, up_limit, silent);
+                scan_thread.t = std::thread(
+                    scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
+                    std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
+                    std::ref(action_mtx), include_private, std::cref(log_dir), check_only,
+                    hash_check, concurrency, cpu_percent_limit, mem_limit, down_limit, up_limit,
+                    silent);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {
@@ -791,8 +792,8 @@ int main(int argc, char* argv[]) {
         }
 
         running = false;
-        if (scan_thread.joinable()) {
-            scan_thread.join();
+        if (scan_thread.t.joinable()) {
+            scan_thread.t.join();
             git_libgit2_shutdown();
             git_libgit2_init();
         }
