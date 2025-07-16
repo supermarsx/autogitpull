@@ -13,6 +13,8 @@
 #include <windows.h>
 #include <psapi.h>
 #include <tlhelp32.h>
+#elif defined(__APPLE__)
+#include <mach/mach.h>
 #endif
 
 namespace procutil {
@@ -130,6 +132,29 @@ double get_cpu_percent() {
     GetSystemInfo(&si);
     double cpu_sec = static_cast<double>(diff_proc) / 1e7;
     return 100.0 * cpu_sec / (diff_time / 1e6) / si.dwNumberOfProcessors;
+#elif defined(__APPLE__)
+    host_cpu_load_info_data_t info;
+    mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
+    if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, reinterpret_cast<host_info_t>(&info),
+                        &count) != KERN_SUCCESS)
+        return 0.0;
+    static natural_t prev_user = 0, prev_system = 0, prev_idle = 0, prev_nice = 0;
+    natural_t user = info.cpu_ticks[CPU_STATE_USER];
+    natural_t system = info.cpu_ticks[CPU_STATE_SYSTEM];
+    natural_t idle = info.cpu_ticks[CPU_STATE_IDLE];
+    natural_t nice = info.cpu_ticks[CPU_STATE_NICE];
+    natural_t user_diff = user - prev_user;
+    natural_t system_diff = system - prev_system;
+    natural_t idle_diff = idle - prev_idle;
+    natural_t nice_diff = nice - prev_nice;
+    prev_user = user;
+    prev_system = system;
+    prev_idle = idle;
+    prev_nice = nice;
+    natural_t total = user_diff + system_diff + idle_diff + nice_diff;
+    if (total == 0)
+        return 0.0;
+    return 100.0 * static_cast<double>(total - idle_diff) / total;
 #else
     return 0.0;
 #endif
@@ -145,6 +170,13 @@ std::size_t get_memory_usage_mb() {
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
         return static_cast<std::size_t>(pmc.WorkingSetSize / (1024 * 1024));
+    return 0;
+#elif defined(__APPLE__)
+    mach_task_basic_info info;
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info),
+                  &count) == KERN_SUCCESS)
+        return static_cast<std::size_t>(info.resident_size / (1024 * 1024));
     return 0;
 #else
     return 0;
@@ -170,6 +202,14 @@ std::size_t get_thread_count() {
     }
     CloseHandle(snap);
     return count;
+#elif defined(__APPLE__)
+    thread_act_array_t threads;
+    mach_msg_type_number_t count;
+    if (task_threads(mach_task_self(), &threads, &count) != KERN_SUCCESS)
+        return 1;
+    vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threads),
+                  count * sizeof(thread_act_t));
+    return static_cast<std::size_t>(count);
 #else
     return 1;
 #endif
