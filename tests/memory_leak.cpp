@@ -16,7 +16,9 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
-                size_t concurrency, int cpu_percent_limit, size_t mem_limit);
+                size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
+                size_t up_limit);
+
 
 TEST_CASE("scan_repos memory stability") {
     git::GitInitGuard guard;
@@ -45,7 +47,7 @@ TEST_CASE("scan_repos memory stability") {
         scanning = true;
         running = true;
         scan_repos(repos, infos, skip, mtx, scanning, running, action, action_mtx, false,
-                   fs::path(), true, true, 1, 0, 0);
+                   fs::path(), true, true, 1, 0, 0, 0, 0);
         size_t mem = procutil::get_memory_usage_mb();
         if (i == 0)
             baseline = mem;

@@ -43,7 +43,8 @@ void handle_signal(int) {
 void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
                   std::string& action, std::mutex& action_mtx, bool include_private,
-                  const fs::path& log_dir, bool check_only, bool hash_check) {
+                  const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
+                  size_t up_limit) {
     if (!running)
         return;
     if (logger_initialized())
@@ -166,7 +167,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                         };
                         bool pull_auth_fail = false;
                         int code = git::try_pull(p, pull_log, &progress_cb, include_private,
-                                                 &pull_auth_fail);
+                                                 &pull_auth_fail, down_limit, up_limit);
                         ri.auth_failed = pull_auth_fail;
                         ri.last_pull_log = pull_log;
                         fs::path log_file_path;
@@ -236,7 +237,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
-                size_t concurrency, int cpu_percent_limit, size_t mem_limit) {
+                size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
+                size_t up_limit) {
     if (concurrency == 0)
         concurrency = 1;
     concurrency = std::min(concurrency, all_repos.size());
@@ -251,7 +253,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 break;
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
-                         include_private, log_dir, check_only, hash_check);
+                         include_private, log_dir, check_only, hash_check, down_limit, up_limit);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;
@@ -293,7 +295,8 @@ int main(int argc, char* argv[]) {
             "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
             "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
             "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
-            "--threads",         "--single-thread",  "--net-tracker"};
+            "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
+            "--upload-limit"};
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
@@ -307,7 +310,8 @@ int main(int argc, char* argv[]) {
                 << " [--cpu-percent <n>] [--cpu-cores <n>]"
                 << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                 << " [--no-cpu-tracker] [--no-mem-tracker]"
-                << " [--no-thread-tracker] [--net-tracker] [--help]\n";
+                << " [--no-thread-tracker] [--net-tracker]"
+                << " [--download-limit <KB/s>] [--upload-limit <KB/s>] [--help]\n";
             return 0;
         }
 
@@ -322,7 +326,8 @@ int main(int argc, char* argv[]) {
                 << " [--cpu-percent <n>] [--cpu-cores <n>]"
                 << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                 << " [--no-cpu-tracker] [--no-mem-tracker]"
-                << " [--no-thread-tracker] [--net-tracker] [--help]\n";
+                << " [--no-thread-tracker] [--net-tracker]"
+                << " [--download-limit <KB/s>] [--upload-limit <KB/s>] [--help]\n";
             return 1;
         }
 
@@ -369,6 +374,8 @@ int main(int argc, char* argv[]) {
         int cpu_percent_limit = 0;
         int cpu_cores = 0;
         size_t mem_limit = 0;
+        size_t down_limit = 0;
+        size_t up_limit = 0;
         bool cpu_tracker = true;
         bool mem_tracker = true;
         bool thread_tracker = true;
@@ -492,6 +499,32 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
+        if (parser.has_flag("--download-limit")) {
+            std::string val = parser.get_option("--download-limit");
+            if (val.empty()) {
+                std::cerr << "--download-limit requires a numeric value\n";
+                return 1;
+            }
+            try {
+                down_limit = static_cast<size_t>(std::stoul(val));
+            } catch (...) {
+                std::cerr << "Invalid value for --download-limit: " << val << "\n";
+                return 1;
+            }
+        }
+        if (parser.has_flag("--upload-limit")) {
+            std::string val = parser.get_option("--upload-limit");
+            if (val.empty()) {
+                std::cerr << "--upload-limit requires a numeric value\n";
+                return 1;
+            }
+            try {
+                up_limit = static_cast<size_t>(std::stoul(val));
+            } catch (...) {
+                std::cerr << "Invalid value for --upload-limit: " << val << "\n";
+                return 1;
+            }
+        }
         cpu_tracker = !parser.has_flag("--no-cpu-tracker");
         mem_tracker = !parser.has_flag("--no-mem-tracker");
         thread_tracker = !parser.has_flag("--no-thread-tracker");
@@ -600,7 +633,7 @@ int main(int argc, char* argv[]) {
                     scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
                     std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
                     std::ref(action_mtx), include_private, std::cref(log_dir), check_only,
-                    hash_check, concurrency, cpu_percent_limit, mem_limit);
+                    hash_check, concurrency, cpu_percent_limit, mem_limit, down_limit, up_limit);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {

@@ -2,10 +2,19 @@
 #include <git2.h>
 #include <functional>
 #include <cstdlib>
+#include <chrono>
+#include <thread>
 
 using namespace std;
 
 namespace git {
+
+struct ProgressData {
+    const std::function<void(int)>* cb;
+    std::chrono::steady_clock::time_point start;
+    size_t down_limit;
+    size_t up_limit;
+};
 
 static int credential_cb(git_credential** out, const char* url, const char* username_from_url,
                          unsigned int allowed_types, void* payload) {
@@ -132,7 +141,9 @@ bool remote_accessible(const fs::path& repo) {
 }
 
 int try_pull(const fs::path& repo, string& out_pull_log,
-             const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed) {
+             const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed,
+             size_t down_limit_kbps, size_t up_limit_kbps) {
+
 
     if (progress_cb)
         (*progress_cb)(0);
@@ -158,18 +169,38 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     }
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
-    if (progress_cb) {
-        callbacks.payload = const_cast<std::function<void(int)>*>(progress_cb);
+    ProgressData progress{progress_cb, std::chrono::steady_clock::now(), down_limit_kbps,
+                          up_limit_kbps};
+    if (progress_cb || down_limit_kbps > 0 || up_limit_kbps > 0) {
+        callbacks.payload = &progress;
         callbacks.transfer_progress = [](const git_transfer_progress* stats, void* payload) -> int {
             if (!payload)
                 return 0;
-            auto cb = static_cast<std::function<void(int)>*>(payload);
-
-            int pct = 0;
-            if (stats->total_objects > 0) {
-                pct = static_cast<int>(100 * stats->received_objects / stats->total_objects);
+            auto* pd = static_cast<ProgressData*>(payload);
+            if (pd->cb) {
+                int pct = 0;
+                if (stats->total_objects > 0)
+                    pct = static_cast<int>(100 * stats->received_objects / stats->total_objects);
+                (*pd->cb)(pct);
             }
-            (*cb)(pct);
+            double expected_ms = 0.0;
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::steady_clock::now() - pd->start)
+                               .count();
+            if (pd->down_limit > 0) {
+                double ms = (double)stats->received_bytes / (pd->down_limit * 1024.0) * 1000.0;
+                if (ms > expected_ms)
+                    expected_ms = ms;
+            }
+            if (pd->up_limit > 0) {
+                double ms = (double)stats->received_bytes / (pd->up_limit * 1024.0) * 1000.0;
+                if (ms > expected_ms)
+                    expected_ms = ms;
+            }
+            if (expected_ms > elapsed) {
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(static_cast<int>(expected_ms - elapsed)));
+            }
             return 0;
         };
     }

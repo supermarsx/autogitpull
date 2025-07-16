@@ -174,3 +174,10 @@ TEST_CASE("ArgParser threads flags") {
     REQUIRE(parser.get_option("--threads") == std::string("8"));
     REQUIRE(parser.has_flag("--single-thread"));
 }
+
+TEST_CASE("ArgParser network limits") {
+    const char* argv[] = {"prog", "--download-limit", "100", "--upload-limit", "50"};
+    ArgParser parser(5, const_cast<char**>(argv), {"--download-limit", "--upload-limit"});
+    REQUIRE(parser.get_option("--download-limit") == std::string("100"));
+    REQUIRE(parser.get_option("--upload-limit") == std::string("50"));
+}
