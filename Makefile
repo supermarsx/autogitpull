@@ -12,7 +12,7 @@ LDFLAGS = $(shell pkg-config --libs libgit2 2>/dev/null || echo -lgit2)
 endif
 endif
 
-SRC = autogitpull.cpp git_utils.cpp tui.cpp logger.cpp resource_utils.cpp time_utils.cpp
+SRC = autogitpull.cpp git_utils.cpp tui.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp
 OBJ = $(SRC:.cpp=.o)
 FORMAT_FILES = $(SRC) *.hpp
 

@@ -21,6 +21,7 @@
 #include "logger.hpp"
 #include "time_utils.hpp"
 #include "resource_utils.hpp"
+#include "system_utils.hpp"
 
 namespace fs = std::filesystem;
 
@@ -307,7 +308,7 @@ int main(int argc, char* argv[]) {
                 << " [--log-dir <path>] [--log-file <path>]"
                 << " [--log-level <level>] [--verbose]"
                 << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
-                << " [--cpu-percent <n>] [--cpu-cores <n>]"
+                << " [--cpu-percent <n>] [--cpu-cores <mask>]"
                 << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                 << " [--no-cpu-tracker] [--no-mem-tracker]"
                 << " [--no-thread-tracker] [--net-tracker]"
@@ -323,7 +324,7 @@ int main(int argc, char* argv[]) {
                 << " [--log-dir <path>] [--log-file <path>]"
                 << " [--log-level <level>] [--verbose]"
                 << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
-                << " [--cpu-percent <n>] [--cpu-cores <n>]"
+                << " [--cpu-percent <n>] [--cpu-cores <mask>]"
                 << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                 << " [--no-cpu-tracker] [--no-mem-tracker]"
                 << " [--no-thread-tracker] [--net-tracker]"
@@ -372,7 +373,7 @@ int main(int argc, char* argv[]) {
             concurrency = 1;
         size_t max_threads = 0;
         int cpu_percent_limit = 0;
-        int cpu_cores = 0;
+        unsigned long long cpu_core_mask = 0;
         size_t mem_limit = 0;
         size_t down_limit = 0;
         size_t up_limit = 0;
@@ -474,12 +475,12 @@ int main(int argc, char* argv[]) {
         if (parser.has_flag("--cpu-cores")) {
             std::string val = parser.get_option("--cpu-cores");
             if (val.empty()) {
-                std::cerr << "--cpu-cores requires a numeric value\n";
+                std::cerr << "--cpu-cores requires a value\n";
                 return 1;
             }
             try {
-                cpu_cores = std::stoi(val);
-                if (cpu_cores <= 0)
+                cpu_core_mask = std::stoull(val, nullptr, 0);
+                if (cpu_core_mask == 0)
                     throw 1;
             } catch (...) {
                 std::cerr << "Invalid value for --cpu-cores: " << val << "\n";
@@ -571,8 +572,8 @@ int main(int argc, char* argv[]) {
             std::cerr << "Root path does not exist or is not a directory.\n";
             return 1;
         }
-        if (cpu_cores > 0)
-            procutil::set_cpu_affinity(cpu_cores);
+        if (cpu_core_mask != 0)
+            procutil::set_cpu_affinity(cpu_core_mask);
 
         if (net_tracker)
             procutil::init_network_usage();

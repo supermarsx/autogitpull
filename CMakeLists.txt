@@ -14,7 +14,7 @@ if(NOT LIBGIT2_FOUND)
     message(FATAL_ERROR "libgit2 not found. Install the libgit2 development package or run ./install_deps.sh")
 endif()
 
-add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp time_utils.cpp)
+add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 pthread)
 
 add_executable(autogitpull autogitpull.cpp tui.cpp)
@@ -55,6 +55,7 @@ add_executable(memory_leak_test
     git_utils.cpp
     logger.cpp
     resource_utils.cpp
+    system_utils.cpp
     time_utils.cpp)
 target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR})
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)

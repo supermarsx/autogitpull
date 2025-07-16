@@ -129,7 +129,7 @@ valgrind ./build/memory_leak_test
 Valgrind should finish with the message `All heap blocks were freed -- no leaks
 are possible`.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--help]`
 
 Available options:
 
@@ -147,7 +147,7 @@ Available options:
 - `--single-thread` – run using a single worker thread.
 - `--max-threads <n>` – cap the scanning worker threads.
 - `--cpu-percent <n>` – approximate CPU usage limit (1–100).
-- `--cpu-cores <n>` – bind process to the first N CPU cores (Linux only).
+- `--cpu-cores <mask>` – set CPU affinity mask (e.g. `0x3` binds to cores 0 and 1).
 - `--mem-limit <MB>` – abort if memory usage exceeds this amount.
 - `--check-only` – only check for updates without pulling.
 - `--no-hash-check` – always pull without comparing commit hashes first.

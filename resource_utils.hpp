@@ -7,7 +7,6 @@ namespace procutil {
 double get_cpu_percent();
 std::size_t get_memory_usage_mb();
 std::size_t get_thread_count();
-bool set_cpu_affinity(int cores);
 
 struct NetUsage {
     std::size_t download_bytes;
