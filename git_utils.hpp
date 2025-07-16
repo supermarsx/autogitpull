@@ -1,9 +1,11 @@
 #ifndef GIT_UTILS_HPP
 #define GIT_UTILS_HPP
 
+#include <git2.h>
 #include <string>
 #include <filesystem>
 #include <functional>
+#include <memory>
 
 namespace git {
 namespace fs = std::filesystem;
@@ -18,6 +20,11 @@ struct GitInitGuard {
     GitInitGuard();  ///< Calls `git_libgit2_init()`
     ~GitInitGuard(); ///< Calls `git_libgit2_shutdown()`
 };
+
+// RAII wrappers for libgit2 resources
+using repo_ptr = std::unique_ptr<git_repository, decltype(&git_repository_free)>;
+using remote_ptr = std::unique_ptr<git_remote, decltype(&git_remote_free)>;
+using object_ptr = std::unique_ptr<git_object, decltype(&git_object_free)>;
 
 // The utility functions below assume libgit2 is already initialized.
 
