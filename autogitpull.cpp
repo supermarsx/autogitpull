@@ -309,8 +309,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 
     {
         std::lock_guard<std::mutex> lk(mtx);
-        std::map<fs::path, RepoInfo> empty_map;
-        repo_infos.swap(empty_map);
+        // Retain repo_infos so statuses persist between scans
         std::set<fs::path> empty_set;
         skip_repos.swap(empty_set);
     }
