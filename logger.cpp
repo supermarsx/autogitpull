@@ -9,7 +9,7 @@ static std::ofstream g_log_ofs;
 static std::mutex g_log_mtx;
 static LogLevel g_min_level = LogLevel::INFO;
 
-void init_logger(const std::string& path, LogLevel level) {
+void init_logger(const std::string &path, LogLevel level) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     g_log_ofs.open(path, std::ios::app);
     g_min_level = level;
@@ -39,23 +39,24 @@ static std::string timestamp() {
     return buf;
 }
 
-static void log(LogLevel level, const std::string& label, const std::string& msg) {
+static void log(LogLevel level, const std::string &label, const std::string &msg) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
-    if (!g_log_ofs.is_open() || level < g_min_level) return;
+    if (!g_log_ofs.is_open() || level < g_min_level)
+        return;
     g_log_ofs << "[" << timestamp() << "] [" << label << "] " << msg << std::endl;
 }
 
-void log_debug(const std::string& msg) {
-    log(LogLevel::DEBUG, "DEBUG", msg);
-}
-void log_info(const std::string& msg) {
-    log(LogLevel::INFO, "INFO", msg);
-}
+void log_debug(const std::string &msg) { log(LogLevel::DEBUG, "DEBUG", msg); }
+void log_info(const std::string &msg) { log(LogLevel::INFO, "INFO", msg); }
 
-void log_warning(const std::string& msg) {
-    log(LogLevel::WARNING, "WARNING", msg);
-}
+void log_warning(const std::string &msg) { log(LogLevel::WARNING, "WARNING", msg); }
 
-void log_error(const std::string& msg) {
-    log(LogLevel::ERROR, "ERROR", msg);
+void log_error(const std::string &msg) { log(LogLevel::ERROR, "ERROR", msg); }
+
+void close_logger() {
+    std::lock_guard<std::mutex> lk(g_log_mtx);
+    if (g_log_ofs.is_open()) {
+        g_log_ofs.flush();
+        g_log_ofs.close();
+    }
 }
