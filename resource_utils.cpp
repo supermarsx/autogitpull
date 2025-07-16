@@ -14,6 +14,8 @@
 #include <windows.h>
 #include <psapi.h>
 #include <tlhelp32.h>
+#include <winternl.h>
+#include <vector>
 #elif defined(__APPLE__)
 #include <mach/mach.h>
 #endif
@@ -71,6 +73,38 @@ static ULONGLONG get_process_time() {
     u.HighPart = ut.dwHighDateTime;
     u.LowPart = ut.dwLowDateTime;
     return k.QuadPart + u.QuadPart;
+}
+
+/**
+ * @brief Try to obtain the thread count using the NtQuerySystemInformation API.
+ *
+ * Falls back to Toolhelp32 if the call fails.
+ */
+static std::size_t query_thread_count_ntapi() {
+    using NtQuerySystemInformationPtr =
+        NTSTATUS(WINAPI*)(SYSTEM_INFORMATION_CLASS, PVOID, ULONG, PULONG);
+    auto nt = reinterpret_cast<NtQuerySystemInformationPtr>(
+        GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtQuerySystemInformation"));
+    if (!nt)
+        return 0;
+    ULONG len = 0;
+    NTSTATUS status = nt(SystemProcessInformation, nullptr, 0, &len);
+    if (status != STATUS_INFO_LENGTH_MISMATCH)
+        return 0;
+    std::vector<char> buf(len);
+    if (nt(SystemProcessInformation, buf.data(), len, &len) != 0)
+        return 0;
+    DWORD pid = GetCurrentProcessId();
+    auto* p = reinterpret_cast<SYSTEM_PROCESS_INFORMATION*>(buf.data());
+    while (true) {
+        if ((DWORD_PTR)p->UniqueProcessId == pid)
+            return p->NumberOfThreads;
+        if (p->NextEntryOffset == 0)
+            break;
+        p = reinterpret_cast<SYSTEM_PROCESS_INFORMATION*>(reinterpret_cast<char*>(p) +
+                                                          p->NextEntryOffset);
+    }
+    return 0;
 }
 
 #else
@@ -247,21 +281,26 @@ std::size_t get_thread_count() {
         count = read_status_value("Threads:");
     last_thread_count = count;
 #elif defined(_WIN32)
-    DWORD pid = GetCurrentProcessId();
-    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (snap == INVALID_HANDLE_VALUE) {
-        last_thread_count = 0;
-    } else {
-        THREADENTRY32 te;
-        te.dwSize = sizeof(te);
-        std::size_t count = 0;
-        if (Thread32First(snap, &te)) {
-            do {
-                if (te.th32OwnerProcessID == pid)
-                    ++count;
-            } while (Thread32Next(snap, &te));
+    std::size_t count = query_thread_count_ntapi();
+    if (count == 0) {
+        DWORD pid = GetCurrentProcessId();
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        if (snap == INVALID_HANDLE_VALUE) {
+            last_thread_count = 0;
+        } else {
+            THREADENTRY32 te;
+            te.dwSize = sizeof(te);
+            count = 0;
+            if (Thread32First(snap, &te)) {
+                do {
+                    if (te.th32OwnerProcessID == pid)
+                        ++count;
+                } while (Thread32Next(snap, &te));
+            }
+            CloseHandle(snap);
+            last_thread_count = count;
         }
-        CloseHandle(snap);
+    } else {
         last_thread_count = count;
     }
 #elif defined(__APPLE__)

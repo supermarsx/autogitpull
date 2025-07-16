@@ -144,6 +144,8 @@ are possible`.
 
 Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--cli] [--silent] [--help]`
 
+Most options have single-letter shorthands. Run `autogitpull --help` to see a concise list.
+
 Available options:
 
 - `--include-private` – include private or non-GitHub repositories in the scan.
