@@ -14,6 +14,7 @@
 #include <sstream>
 #include <cctype>
 #include <csignal>
+#include <memory>
 #include "arg_parser.hpp"
 #include "git_utils.hpp"
 #include "tui.hpp"
@@ -40,12 +41,74 @@ void handle_signal(int) {
         g_running_ptr->store(false);
 }
 
+std::string status_label(RepoStatus status) {
+    switch (status) {
+    case RS_PENDING:
+        return "Pending";
+    case RS_CHECKING:
+        return "Checking";
+    case RS_UP_TO_DATE:
+        return "UpToDate";
+    case RS_PULLING:
+        return "Pulling";
+    case RS_PULL_OK:
+        return "Pulled";
+    case RS_PKGLOCK_FIXED:
+        return "PkgLockOk";
+    case RS_ERROR:
+        return "Error";
+    case RS_SKIPPED:
+        return "Skipped";
+    case RS_HEAD_PROBLEM:
+        return "HEAD/BR";
+    case RS_REMOTE_AHEAD:
+        return "RemoteUp";
+    }
+    return "";
+}
+
+void draw_cli(const std::vector<fs::path>& all_repos,
+              const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
+              const std::string& action, bool show_skipped) {
+    std::cout << "Status: ";
+    if (scanning)
+        std::cout << action;
+    else
+        std::cout << "Idle";
+    std::cout << " - Next scan in " << seconds_left << "s\n";
+    for (const auto& p : all_repos) {
+        RepoInfo ri;
+        auto it = repo_infos.find(p);
+        if (it != repo_infos.end())
+            ri = it->second;
+        else
+            ri = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
+        if (ri.status == RS_SKIPPED && !show_skipped)
+            continue;
+        std::cout << " [" << status_label(ri.status) << "] " << p.filename().string();
+        if (!ri.branch.empty()) {
+            std::cout << " (" << ri.branch;
+            if (!ri.commit.empty())
+                std::cout << "@" << ri.commit;
+            std::cout << ")";
+        }
+        if (!ri.message.empty())
+            std::cout << " - " << ri.message;
+        if (ri.status == RS_PULLING)
+            std::cout << " (" << ri.progress << "%)";
+        if (ri.auth_failed)
+            std::cout << " [AUTH]";
+        std::cout << "\n";
+    }
+    std::cout << std::flush;
+}
+
 // Process a single repository
 void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
-                  size_t up_limit) {
+                  size_t up_limit, bool silent) {
     if (!running)
         return;
     if (logger_initialized())
@@ -56,7 +119,8 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         if (it != repo_infos.end() &&
             (it->second.status == RS_PULLING || it->second.status == RS_CHECKING)) {
             // Repo already being processed elsewhere
-            std::cerr << "Skipping " << p << " - busy\n";
+            if (!silent)
+                std::cerr << "Skipping " << p << " - busy\n";
             if (logger_initialized())
                 log_debug("Skipping " + p.string() + " - busy");
             return;
@@ -239,7 +303,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit) {
+                size_t up_limit, bool silent) {
     git::GitInitGuard guard;
     if (concurrency == 0)
         concurrency = 1;
@@ -255,7 +319,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 break;
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
-                         include_private, log_dir, check_only, hash_check, down_limit, up_limit);
+                         include_private, log_dir, check_only, hash_check, down_limit, up_limit,
+                         silent);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;
@@ -272,7 +337,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
         }
     };
 
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     threads.reserve(concurrency);
     for (size_t i = 0; i < concurrency; ++i)
         threads.emplace_back(worker);
@@ -291,15 +356,37 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{
-            "--include-private", "--show-skipped",   "--show-version",      "--interval",
-            "--refresh-rate",    "--log-dir",        "--log-file",          "--concurrency",
-            "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
-            "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
-            "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
-            "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
-            "--upload-limit"};
+        const std::set<std::string> known{"--include-private",
+                                          "--show-skipped",
+                                          "--show-version",
+                                          "--interval",
+                                          "--refresh-rate",
+                                          "--log-dir",
+                                          "--log-file",
+                                          "--concurrency",
+                                          "--check-only",
+                                          "--no-hash-check",
+                                          "--log-level",
+                                          "--verbose",
+                                          "--max-threads",
+                                          "--cpu-percent",
+                                          "--cpu-cores",
+                                          "--mem-limit",
+                                          "--no-cpu-tracker",
+                                          "--no-mem-tracker",
+                                          "--no-thread-tracker",
+                                          "--help",
+                                          "--threads",
+                                          "--single-thread",
+                                          "--net-tracker",
+                                          "--download-limit",
+                                          "--upload-limit",
+                                          "--cli",
+                                          "--silent"};
         ArgParser parser(argc, argv, known);
+
+        bool cli = parser.has_flag("--cli");
+        bool silent = parser.has_flag("--silent");
 
         if (parser.has_flag("--help")) {
             std::cout
@@ -313,29 +400,32 @@ int main(int argc, char* argv[]) {
                 << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
                 << " [--no-cpu-tracker] [--no-mem-tracker]"
                 << " [--no-thread-tracker] [--net-tracker]"
-                << " [--download-limit <KB/s>] [--upload-limit <KB/s>] [--help]\n";
+                << " [--download-limit <KB/s>] [--upload-limit <KB/s>]"
+                << " [--cli] [--silent] [--help]\n";
             return 0;
         }
 
         if (parser.positional().size() != 1) {
-            std::cerr
-                << "Usage: " << argv[0]
-                << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
-                << " [--interval <seconds>] [--refresh-rate <ms>]"
-                << " [--log-dir <path>] [--log-file <path>]"
-                << " [--log-level <level>] [--verbose]"
-                << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
-                << " [--cpu-percent <n>] [--cpu-cores <mask>]"
-                << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
-                << " [--no-cpu-tracker] [--no-mem-tracker]"
-                << " [--no-thread-tracker] [--net-tracker]"
-                << " [--download-limit <KB/s>] [--upload-limit <KB/s>] [--help]\n";
+            if (!silent)
+                std::cerr
+                    << "Usage: " << argv[0]
+                    << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
+                    << " [--interval <seconds>] [--refresh-rate <ms>]"
+                    << " [--log-dir <path>] [--log-file <path>]"
+                    << " [--log-level <level>] [--verbose]"
+                    << " [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>]"
+                    << " [--cpu-percent <n>] [--cpu-cores <mask>]"
+                    << " [--mem-limit <MB>] [--check-only] [--no-hash-check]"
+                    << " [--no-cpu-tracker] [--no-mem-tracker]"
+                    << " [--no-thread-tracker] [--net-tracker]"
+                    << " [--download-limit <KB/s>] [--upload-limit <KB/s>] [--help]\n";
             return 1;
         }
 
         if (!parser.unknown_flags().empty()) {
             for (const auto& f : parser.unknown_flags()) {
-                std::cerr << "Unknown option: " << f << "\n";
+                if (!silent)
+                    std::cerr << "Unknown option: " << f << "\n";
             }
             return 1;
         }
@@ -351,7 +441,8 @@ int main(int argc, char* argv[]) {
         if (parser.has_flag("--log-level")) {
             std::string val = parser.get_option("--log-level");
             if (val.empty()) {
-                std::cerr << "--log-level requires a value\n";
+                if (!silent)
+                    std::cerr << "--log-level requires a value\n";
                 return 1;
             }
             for (auto& c : val)
@@ -365,7 +456,8 @@ int main(int argc, char* argv[]) {
             else if (val == "ERROR")
                 log_level = LogLevel::ERROR;
             else {
-                std::cerr << "Invalid log level: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid log level: " << val << "\n";
                 return 1;
             }
         }
@@ -387,33 +479,38 @@ int main(int argc, char* argv[]) {
         if (parser.has_flag("--interval")) {
             std::string val = parser.get_option("--interval");
             if (val.empty()) {
-                std::cerr << "--interval requires a value in seconds\n";
+                if (!silent)
+                    std::cerr << "--interval requires a value in seconds\n";
                 return 1;
             }
             try {
                 interval = std::stoi(val);
             } catch (...) {
-                std::cerr << "Invalid value for --interval: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --interval: " << val << "\n";
                 return 1;
             }
         }
         if (parser.has_flag("--refresh-rate")) {
             std::string val = parser.get_option("--refresh-rate");
             if (val.empty()) {
-                std::cerr << "--refresh-rate requires a value in milliseconds\n";
+                if (!silent)
+                    std::cerr << "--refresh-rate requires a value in milliseconds\n";
                 return 1;
             }
             try {
                 refresh_ms = std::chrono::milliseconds(std::stoi(val));
             } catch (...) {
-                std::cerr << "Invalid value for --refresh-rate: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --refresh-rate: " << val << "\n";
                 return 1;
             }
         }
         if (parser.has_flag("--threads")) {
             std::string val = parser.get_option("--threads");
             if (val.empty()) {
-                std::cerr << "--threads requires a numeric value\n";
+                if (!silent)
+                    std::cerr << "--threads requires a numeric value\n";
                 return 1;
             }
             try {
@@ -421,7 +518,8 @@ int main(int argc, char* argv[]) {
                 if (concurrency == 0)
                     concurrency = 1;
             } catch (...) {
-                std::cerr << "Invalid value for --threads: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --threads: " << val << "\n";
                 return 1;
             }
         }
@@ -431,7 +529,8 @@ int main(int argc, char* argv[]) {
         if (parser.has_flag("--concurrency")) {
             std::string val = parser.get_option("--concurrency");
             if (val.empty()) {
-                std::cerr << "--concurrency requires a numeric value\n";
+                if (!silent)
+                    std::cerr << "--concurrency requires a numeric value\n";
                 return 1;
             }
             try {
@@ -439,27 +538,31 @@ int main(int argc, char* argv[]) {
                 if (concurrency == 0)
                     concurrency = 1;
             } catch (...) {
-                std::cerr << "Invalid value for --concurrency: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --concurrency: " << val << "\n";
                 return 1;
             }
         }
         if (parser.has_flag("--max-threads")) {
             std::string val = parser.get_option("--max-threads");
             if (val.empty()) {
-                std::cerr << "--max-threads requires a numeric value\n";
+                if (!silent)
+                    std::cerr << "--max-threads requires a numeric value\n";
                 return 1;
             }
             try {
                 max_threads = static_cast<size_t>(std::stoul(val));
             } catch (...) {
-                std::cerr << "Invalid value for --max-threads: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --max-threads: " << val << "\n";
                 return 1;
             }
         }
         if (parser.has_flag("--cpu-percent")) {
             std::string val = parser.get_option("--cpu-percent");
             if (val.empty()) {
-                std::cerr << "--cpu-percent requires a value\n";
+                if (!silent)
+                    std::cerr << "--cpu-percent requires a value\n";
                 return 1;
             }
             if (!val.empty() && val.back() == '%')
@@ -469,14 +572,16 @@ int main(int argc, char* argv[]) {
                 if (cpu_percent_limit < 1 || cpu_percent_limit > 100)
                     throw 1;
             } catch (...) {
-                std::cerr << "Invalid value for --cpu-percent: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --cpu-percent: " << val << "\n";
                 return 1;
             }
         }
         if (parser.has_flag("--cpu-cores")) {
             std::string val = parser.get_option("--cpu-cores");
             if (val.empty()) {
-                std::cerr << "--cpu-cores requires a value\n";
+                if (!silent)
+                    std::cerr << "--cpu-cores requires a value\n";
                 return 1;
             }
             try {
@@ -484,46 +589,53 @@ int main(int argc, char* argv[]) {
                 if (cpu_core_mask == 0)
                     throw 1;
             } catch (...) {
-                std::cerr << "Invalid value for --cpu-cores: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --cpu-cores: " << val << "\n";
                 return 1;
             }
         }
         if (parser.has_flag("--mem-limit")) {
             std::string val = parser.get_option("--mem-limit");
             if (val.empty()) {
-                std::cerr << "--mem-limit requires a numeric value\n";
+                if (!silent)
+                    std::cerr << "--mem-limit requires a numeric value\n";
                 return 1;
             }
             try {
                 mem_limit = static_cast<size_t>(std::stoul(val));
             } catch (...) {
-                std::cerr << "Invalid value for --mem-limit: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --mem-limit: " << val << "\n";
                 return 1;
             }
         }
         if (parser.has_flag("--download-limit")) {
             std::string val = parser.get_option("--download-limit");
             if (val.empty()) {
-                std::cerr << "--download-limit requires a numeric value\n";
+                if (!silent)
+                    std::cerr << "--download-limit requires a numeric value\n";
                 return 1;
             }
             try {
                 down_limit = static_cast<size_t>(std::stoul(val));
             } catch (...) {
-                std::cerr << "Invalid value for --download-limit: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --download-limit: " << val << "\n";
                 return 1;
             }
         }
         if (parser.has_flag("--upload-limit")) {
             std::string val = parser.get_option("--upload-limit");
             if (val.empty()) {
-                std::cerr << "--upload-limit requires a numeric value\n";
+                if (!silent)
+                    std::cerr << "--upload-limit requires a numeric value\n";
                 return 1;
             }
             try {
                 up_limit = static_cast<size_t>(std::stoul(val));
             } catch (...) {
-                std::cerr << "Invalid value for --upload-limit: " << val << "\n";
+                if (!silent)
+                    std::cerr << "Invalid value for --upload-limit: " << val << "\n";
                 return 1;
             }
         }
@@ -537,18 +649,21 @@ int main(int argc, char* argv[]) {
         if (parser.has_flag("--log-dir")) {
             std::string val = parser.get_option("--log-dir");
             if (val.empty()) {
-                std::cerr << "--log-dir requires a path\n";
+                if (!silent)
+                    std::cerr << "--log-dir requires a path\n";
                 return 1;
             }
             log_dir = val;
             try {
                 if (fs::exists(log_dir) && !fs::is_directory(log_dir)) {
-                    std::cerr << "--log-dir path exists and is not a directory\n";
+                    if (!silent)
+                        std::cerr << "--log-dir path exists and is not a directory\n";
                     return 1;
                 }
                 fs::create_directories(log_dir);
             } catch (const std::exception& e) {
-                std::cerr << "Failed to create log directory: " << e.what() << "\n";
+                if (!silent)
+                    std::cerr << "Failed to create log directory: " << e.what() << "\n";
                 return 1;
             }
         }
@@ -570,7 +685,8 @@ int main(int argc, char* argv[]) {
         }
         fs::path root = parser.positional().front();
         if (!fs::exists(root) || !fs::is_directory(root)) {
-            std::cerr << "Root path does not exist or is not a directory.\n";
+            if (!silent)
+                std::cerr << "Root path does not exist or is not a directory.\n";
             return 1;
         }
         if (cpu_core_mask != 0)
@@ -583,7 +699,7 @@ int main(int argc, char* argv[]) {
             init_logger(log_file, log_level);
             if (logger_initialized())
                 log_info("Program started");
-            else
+            else if (!silent)
                 std::cerr << "Failed to open log file: " << log_file << "\n";
         }
 
@@ -612,8 +728,11 @@ int main(int argc, char* argv[]) {
 
         std::thread scan_thread;
         std::chrono::milliseconds countdown_ms(0); // Run immediately on start
+        std::chrono::milliseconds cli_countdown_ms(0);
 
-        AltScreenGuard guard;
+        std::unique_ptr<AltScreenGuard> guard;
+        if (!cli && !silent)
+            guard = std::make_unique<AltScreenGuard>();
 
         while (running) {
             if (!scanning && scan_thread.joinable())
@@ -624,18 +743,20 @@ int main(int argc, char* argv[]) {
                     std::lock_guard<std::mutex> lk(mtx);
                     for (auto& [p, info] : repo_infos) {
                         if (info.status == RS_PULLING || info.status == RS_CHECKING) {
-                            std::cerr << "Manually clearing stale busy state for " << p << "\n";
+                            if (!silent)
+                                std::cerr << "Manually clearing stale busy state for " << p << "\n";
                             info.status = RS_PENDING;
                             info.message = "Pending...";
                         }
                     }
                 }
                 scanning = true;
-                scan_thread = std::thread(
-                    scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
-                    std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
-                    std::ref(action_mtx), include_private, std::cref(log_dir), check_only,
-                    hash_check, concurrency, cpu_percent_limit, mem_limit, down_limit, up_limit);
+                scan_thread = std::thread(scan_repos, std::cref(all_repos), std::ref(repo_infos),
+                                          std::ref(skip_repos), std::ref(mtx), std::ref(scanning),
+                                          std::ref(running), std::ref(current_action),
+                                          std::ref(action_mtx), include_private, std::cref(log_dir),
+                                          check_only, hash_check, concurrency, cpu_percent_limit,
+                                          mem_limit, down_limit, up_limit, silent);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {
@@ -649,12 +770,18 @@ int main(int argc, char* argv[]) {
                     std::lock_guard<std::mutex> a_lk(action_mtx);
                     act = current_action;
                 }
-                draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped,
+                if (!silent && !cli) {
+                    draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped,
                          show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker,
                          cpu_core_mask != 0);
+                } else if (!silent && cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
+                    draw_cli(all_repos, repo_infos, sec_left, scanning, act, show_skipped);
+                    cli_countdown_ms = std::chrono::milliseconds(1000);
+                }
             }
             std::this_thread::sleep_for(refresh_ms);
             countdown_ms -= refresh_ms;
+            cli_countdown_ms -= refresh_ms;
         }
 
         running = false;
