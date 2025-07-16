@@ -63,6 +63,19 @@ will attempt to install a C++ compiler if one isn't present. Windows users get
 
 Clean up intermediate files with `make clean`.
 
+### Debug builds for leak analysis
+
+The scripts `compile-debug.sh`, `compile-debug.bat` and `compile-debug-cl.bat`
+compile the program with AddressSanitizer and debug information enabled. They
+produce `autogitpull_debug` (or `autogitpull_debug.exe` on Windows). Use these
+builds when running leak detection tools:
+
+```bash
+./compile-debug.sh      # Linux/macOS
+compile-debug.bat       # MinGW
+compile-debug-cl.bat    # MSVC
+```
+
 ### Manual compilation
 
 If you prefer to build without the helper scripts, the following commands show
