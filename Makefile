@@ -9,6 +9,7 @@ endif
 
 SRC = autogitpull.cpp git_utils.cpp tui.cpp logger.cpp
 OBJ = $(SRC:.cpp=.o)
+FORMAT_FILES = $(SRC) *.hpp
 
 all: autogitpull
 
@@ -21,9 +22,13 @@ autogitpull: $(OBJ)
 clean:
 	rm -f $(OBJ) autogitpull
 
+lint:
+	clang-format --dry-run --Werror $(FORMAT_FILES)
+	cpplint $(FORMAT_FILES)
+
 test:
 	cmake -S . -B build
 	cmake --build build
 	cd build && ctest --output-on-failure
 
-.PHONY: all clean test
+.PHONY: all clean lint test
