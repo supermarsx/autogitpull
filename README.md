@@ -104,7 +104,7 @@ make test
 This command generates a `build` directory (if missing), compiles the tests and
 executes them through CMake's `ctest` driver.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--help]`
 
 Available options:
 
@@ -117,7 +117,9 @@ Available options:
 * `--log-file <path>` – file for general messages.
 * `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
 * `--verbose` – shorthand for `--log-level DEBUG`.
-* `--concurrency <n>` – number of repositories processed in parallel (default 3).
+* `--concurrency <n>` – number of repositories processed in parallel (default: hardware concurrency).
+* `--threads <n>` – alias for `--concurrency`.
+* `--single-thread` – run using a single worker thread.
 * `--max-threads <n>` – cap the scanning worker threads.
 * `--cpu-percent <n>` – approximate CPU usage limit (1–100).
 * `--cpu-cores <n>` – bind process to the first N CPU cores (Linux only).
