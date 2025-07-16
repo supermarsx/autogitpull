@@ -349,8 +349,12 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 
     std::vector<std::jthread> threads;
     threads.reserve(concurrency);
-    for (size_t i = 0; i < concurrency; ++i)
+    const size_t max_threads = concurrency;
+    for (size_t i = 0; i < max_threads; ++i) {
+        if (threads.size() >= max_threads)
+            break;
         threads.emplace_back(worker);
+    }
     for (auto& t : threads) {
         if (t.joinable())
             t.join();
