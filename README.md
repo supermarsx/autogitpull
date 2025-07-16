@@ -1,4 +1,4 @@
-# autogitpull
+#autogitpull
 Automatic Git Puller & Monitor
 
 ## Dependencies
@@ -104,12 +104,13 @@ make test
 This command generates a `build` directory (if missing), compiles the tests and
 executes them through CMake's `ctest` driver.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <n>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--help]`
 
 Available options:
 
 * `--include-private` – include private or non-GitHub repositories in the scan.
 * `--show-skipped` – display repositories that were skipped because they are non-GitHub or require authentication.
+* `--show-version` – display the program version in the TUI header.
 * `--interval <seconds>` – delay between automatic scans (default 30).
 * `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
 * `--log-dir <path>` – directory where pull logs will be written.

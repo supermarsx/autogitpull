@@ -33,6 +33,6 @@ std::string timestamp();
 void draw_tui(const std::vector<std::filesystem::path> &all_repos,
               const std::map<std::filesystem::path, RepoInfo> &repo_infos, int interval,
               int seconds_left, bool scanning, const std::string &action, bool show_skipped,
-              bool track_cpu, bool track_mem, bool track_threads);
+              bool show_version, bool track_cpu, bool track_mem, bool track_threads);
 
 #endif // TUI_HPP

@@ -286,16 +286,16 @@ int main(int argc, char *argv[]) {
     git::GitInitGuard git_guard;
     try {
         const std::set<std::string> known{
-            "--include-private", "--show-skipped",      "--interval",    "--refresh-rate",
-            "--log-dir",         "--log-file",          "--concurrency", "--check-only",
-            "--no-hash-check",   "--log-level",         "--verbose",     "--max-threads",
-            "--cpu-percent",     "--cpu-cores",         "--mem-limit",   "--no-cpu-tracker",
-            "--no-mem-tracker",  "--no-thread-tracker", "--help"};
+            "--include-private", "--show-skipped",   "--show-version",      "--interval",
+            "--refresh-rate",    "--log-dir",        "--log-file",          "--concurrency",
+            "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
+            "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
+            "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help"};
         ArgParser parser(argc, argv, known);
 
         if (parser.has_flag("--help")) {
             std::cout << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped]"
+                      << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
                       << " [--interval <seconds>] [--refresh-rate <ms>]"
                       << " [--log-dir <path>] [--log-file <path>]"
                       << " [--log-level <level>] [--verbose]"
@@ -309,7 +309,7 @@ int main(int argc, char *argv[]) {
 
         if (parser.positional().size() != 1) {
             std::cerr << "Usage: " << argv[0]
-                      << " <root-folder> [--include-private] [--show-skipped]"
+                      << " <root-folder> [--include-private] [--show-skipped] [--show-version]"
                       << " [--interval <seconds>] [--refresh-rate <ms>]"
                       << " [--log-dir <path>] [--log-file <path>]"
                       << " [--log-level <level>] [--verbose]"
@@ -329,6 +329,7 @@ int main(int argc, char *argv[]) {
         }
         bool include_private = parser.has_flag("--include-private");
         bool show_skipped = parser.has_flag("--show-skipped");
+        bool show_version = parser.has_flag("--show-version");
         bool check_only = parser.has_flag("--check-only");
         bool hash_check = !parser.has_flag("--no-hash-check");
         LogLevel log_level = LogLevel::INFO;
@@ -577,7 +578,7 @@ int main(int argc, char *argv[]) {
                     act = current_action;
                 }
                 draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped,
-                         cpu_tracker, mem_tracker, thread_tracker);
+                         show_version, cpu_tracker, mem_tracker, thread_tracker);
             }
             std::this_thread::sleep_for(refresh_ms);
             countdown_ms -= refresh_ms;

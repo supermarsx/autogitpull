@@ -24,6 +24,8 @@ const char *COLOR_GRAY = "\033[90m";
 const char *COLOR_BOLD = "\033[1m";
 const char *COLOR_MAGENTA = "\033[35m";
 
+const char *APP_VERSION = "0.1.0";
+
 #ifdef _WIN32
 void enable_win_ansi() {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -54,12 +56,14 @@ std::string timestamp() {
 
 void draw_tui(const std::vector<fs::path> &all_repos,
               const std::map<fs::path, RepoInfo> &repo_infos, int interval, int seconds_left,
-              bool scanning, const std::string &action, bool show_skipped, bool track_cpu,
-              bool track_mem, bool track_threads) {
+              bool scanning, const std::string &action, bool show_skipped, bool show_version,
+              bool track_cpu, bool track_mem, bool track_threads) {
     std::ostringstream out;
     out << "\033[2J\033[H";
-    out << COLOR_BOLD << "AutoGitPull TUI   " << COLOR_RESET << COLOR_CYAN << timestamp()
-        << COLOR_RESET << "\n";
+    out << COLOR_BOLD << "AutoGitPull TUI";
+    if (show_version)
+        out << " v" << APP_VERSION;
+    out << "   " << COLOR_RESET << COLOR_CYAN << timestamp() << COLOR_RESET << "\n";
     out << "Monitoring: " << COLOR_YELLOW
         << (all_repos.empty() ? "" : all_repos[0].parent_path().string()) << COLOR_RESET << "\n";
     out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
