@@ -12,8 +12,8 @@
 namespace fs = std::filesystem;
 
 TEST_CASE("ArgParser basic parsing") {
-    const char *argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
-    ArgParser parser(6, const_cast<char **>(argv), {"--foo", "--bar", "--opt"});
+    const char* argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
+    ArgParser parser(6, const_cast<char**>(argv), {"--foo", "--bar", "--opt"});
     REQUIRE(parser.has_flag("--foo"));
     REQUIRE(parser.get_option("--opt") == "42");
     REQUIRE(parser.positional().size() == 1);
@@ -23,15 +23,15 @@ TEST_CASE("ArgParser basic parsing") {
 }
 
 TEST_CASE("ArgParser option with equals") {
-    const char *argv[] = {"prog", "--opt=val"};
-    ArgParser parser(2, const_cast<char **>(argv), {"--opt"});
+    const char* argv[] = {"prog", "--opt=val"};
+    ArgParser parser(2, const_cast<char**>(argv), {"--opt"});
     REQUIRE(parser.has_flag("--opt"));
     REQUIRE(parser.get_option("--opt") == "val");
 }
 
 TEST_CASE("ArgParser unknown flag detection") {
-    const char *argv[] = {"prog", "--foo"};
-    ArgParser parser(2, const_cast<char **>(argv), {"--bar"});
+    const char* argv[] = {"prog", "--foo"};
+    ArgParser parser(2, const_cast<char**>(argv), {"--bar"});
     REQUIRE(parser.has_flag("--foo") == false);
     REQUIRE(parser.unknown_flags().size() == 1);
     REQUIRE(parser.unknown_flags()[0] == "--foo");
@@ -73,16 +73,16 @@ TEST_CASE("RepoInfo defaults") {
 }
 
 TEST_CASE("ArgParser log level flags") {
-    const char *argv[] = {"prog", "--log-level", "DEBUG", "--verbose"};
-    ArgParser parser(4, const_cast<char **>(argv), {"--log-level", "--verbose"});
+    const char* argv[] = {"prog", "--log-level", "DEBUG", "--verbose"};
+    ArgParser parser(4, const_cast<char**>(argv), {"--log-level", "--verbose"});
     REQUIRE(parser.has_flag("--log-level"));
     REQUIRE(parser.get_option("--log-level") == "DEBUG");
     REQUIRE(parser.has_flag("--verbose"));
 }
 
 TEST_CASE("ArgParser log file option") {
-    const char *argv[] = {"prog", "--log-file", "my.log", "path"};
-    ArgParser parser(4, const_cast<char **>(argv), {"--log-file"});
+    const char* argv[] = {"prog", "--log-file", "my.log", "path"};
+    ArgParser parser(4, const_cast<char**>(argv), {"--log-file"});
     REQUIRE(parser.has_flag("--log-file"));
     REQUIRE(parser.get_option("--log-file") == "my.log");
     REQUIRE(parser.positional().size() == 1);
@@ -90,9 +90,9 @@ TEST_CASE("ArgParser log file option") {
 }
 
 TEST_CASE("ArgParser resource flags") {
-    const char *argv[] = {"prog", "--max-threads", "4",   "--cpu-percent", "50", "--cpu-cores",
+    const char* argv[] = {"prog", "--max-threads", "4",   "--cpu-percent", "50", "--cpu-cores",
                           "2",    "--mem-limit",   "100", "path"};
-    ArgParser parser(10, const_cast<char **>(argv),
+    ArgParser parser(10, const_cast<char**>(argv),
                      {"--max-threads", "--cpu-percent", "--cpu-cores", "--mem-limit"});
     REQUIRE(parser.get_option("--max-threads") == std::string("4"));
     REQUIRE(parser.get_option("--cpu-percent") == std::string("50"));
@@ -145,13 +145,13 @@ TEST_CASE("Logger appends messages") {
 }
 
 TEST_CASE("--log-file without value creates file") {
-    const char *argv[] = {"prog", "--log-file"};
-    ArgParser parser(2, const_cast<char **>(argv), {"--log-file"});
+    const char* argv[] = {"prog", "--log-file"};
+    ArgParser parser(2, const_cast<char**>(argv), {"--log-file"});
     REQUIRE(parser.has_flag("--log-file"));
     REQUIRE(parser.get_option("--log-file").empty());
 
     std::string ts = timestamp();
-    for (char &ch : ts) {
+    for (char& ch : ts) {
         if (ch == ' ' || ch == ':')
             ch = '_';
         else if (ch == '/')
@@ -168,9 +168,16 @@ TEST_CASE("--log-file without value creates file") {
 }
 
 TEST_CASE("ArgParser threads flags") {
-    const char *argv[] = {"prog", "--threads", "8", "--single-thread"};
-    ArgParser parser(4, const_cast<char **>(argv), {"--threads", "--single-thread"});
+    const char* argv[] = {"prog", "--threads", "8", "--single-thread"};
+    ArgParser parser(4, const_cast<char**>(argv), {"--threads", "--single-thread"});
     REQUIRE(parser.has_flag("--threads"));
     REQUIRE(parser.get_option("--threads") == std::string("8"));
     REQUIRE(parser.has_flag("--single-thread"));
+}
+
+TEST_CASE("ArgParser network limits") {
+    const char* argv[] = {"prog", "--download-limit", "100", "--upload-limit", "50"};
+    ArgParser parser(5, const_cast<char**>(argv), {"--download-limit", "--upload-limit"});
+    REQUIRE(parser.get_option("--download-limit") == std::string("100"));
+    REQUIRE(parser.get_option("--upload-limit") == std::string("50"));
 }

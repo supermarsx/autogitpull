@@ -29,7 +29,7 @@ class ArgParser {
      * @param known_flags Optional set of flags that are considered valid. If
      *        empty, all flags are treated as known.
      */
-    ArgParser(int argc, char *argv[], const std::set<std::string> &known_flags = {})
+    ArgParser(int argc, char* argv[], const std::set<std::string>& known_flags = {})
         : known_flags_(known_flags) {
         for (int i = 1; i < argc; ++i) {
             std::string arg = argv[i];
@@ -72,7 +72,7 @@ class ArgParser {
      * @param flag Flag name including the leading `--`.
      * @return `true` if the flag was present, otherwise `false`.
      */
-    bool has_flag(const std::string &flag) const { return flags_.count(flag) > 0; }
+    bool has_flag(const std::string& flag) const { return flags_.count(flag) > 0; }
 
     /**
      * @brief Retrieve the value associated with an option.
@@ -82,7 +82,7 @@ class ArgParser {
      * @param opt Option name including the leading `--`.
      * @return Stored option value or empty string if missing.
      */
-    std::string get_option(const std::string &opt) const {
+    std::string get_option(const std::string& opt) const {
         auto it = options_.find(opt);
         if (it != options_.end())
             return it->second;
@@ -90,16 +90,16 @@ class ArgParser {
     }
 
     /** @return Set of all flags found during parsing. */
-    const std::set<std::string> &flags() const { return flags_; }
+    const std::set<std::string>& flags() const { return flags_; }
 
     /** @return Map of option names to their parsed values. */
-    const std::map<std::string, std::string> &options() const { return options_; }
+    const std::map<std::string, std::string>& options() const { return options_; }
 
     /** @return Ordered list of positional arguments. */
-    const std::vector<std::string> &positional() const { return positional_; }
+    const std::vector<std::string>& positional() const { return positional_; }
 
     /** @return Flags that were not part of @a known_flags. */
-    const std::vector<std::string> &unknown_flags() const { return unknown_flags_; }
+    const std::vector<std::string>& unknown_flags() const { return unknown_flags_; }
 };
 
 #endif // ARG_PARSER_HPP
