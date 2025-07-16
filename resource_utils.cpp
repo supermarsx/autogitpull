@@ -170,26 +170,6 @@ std::size_t get_thread_count() {
 #endif
 }
 
-bool set_cpu_affinity(int cores) {
-#ifdef __linux__
-    if (cores <= 0)
-        return false;
-    cpu_set_t set;
-    CPU_ZERO(&set);
-    for (int i = 0; i < cores; ++i)
-        CPU_SET(i, &set);
-    return sched_setaffinity(0, sizeof(set), &set) == 0;
-#elif defined(_WIN32)
-    if (cores <= 0)
-        return false;
-    DWORD_PTR mask = (static_cast<DWORD_PTR>(1) << cores) - 1;
-    return SetProcessAffinityMask(GetCurrentProcess(), mask) != 0;
-#else
-    (void)cores;
-    return false;
-#endif
-}
-
 void init_network_usage() {
     auto bytes = read_net_bytes();
     base_down = bytes.first;
