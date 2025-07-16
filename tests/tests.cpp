@@ -70,4 +70,12 @@ TEST_CASE("RepoInfo defaults") {
     REQUIRE_FALSE(ri.auth_failed);
 }
 
+TEST_CASE("ArgParser log level flags") {
+    const char* argv[] = { "prog", "--log-level", "DEBUG", "--verbose" };
+    ArgParser parser(4, const_cast<char**>(argv), {"--log-level", "--verbose"});
+    REQUIRE(parser.has_flag("--log-level"));
+    REQUIRE(parser.get_option("--log-level") == "DEBUG");
+    REQUIRE(parser.has_flag("--verbose"));
+}
+
 

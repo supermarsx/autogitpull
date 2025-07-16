@@ -101,7 +101,7 @@ make test
 This command generates a `build` directory (if missing), compiles the tests and
 executes them through CMake's `ctest` driver.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--interval <seconds>] [--refresh-rate <ms>] [--log-dir <path>] [--log-file <path>] [--log-level <level>] [--verbose] [--concurrency <n>] [--check-only] [--no-hash-check] [--help]`
 
 Available options:
 
@@ -111,6 +111,8 @@ Available options:
 * `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
 * `--log-dir <path>` – directory where pull logs will be written.
 * `--log-file <path>` – file for general messages.
+* `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+* `--verbose` – shorthand for `--log-level DEBUG`.
 * `--concurrency <n>` – number of repositories processed in parallel (default 3).
 * `--check-only` – only check for updates without pulling.
 * `--no-hash-check` – always pull without comparing commit hashes first.
@@ -121,7 +123,7 @@ By default, repositories whose `origin` remote does not point to GitHub or requi
 Provide `--log-dir <path>` to store pull logs for each repository. After every pull operation the log
 is written to a timestamped file inside this directory and its location is shown in the TUI.
 Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
-`./autogitpull myprojects --log-dir logs --log-file autogitpull.log`
+`./autogitpull myprojects --log-dir logs --log-file autogitpull.log --log-level DEBUG`
 
 ### Status labels
 When the program starts, each repository is listed with the **Pending** status
