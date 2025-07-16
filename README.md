@@ -162,6 +162,7 @@ Available options:
 - `--max-threads <n>` – cap the scanning worker threads.
 - `--cpu-percent <n>` – approximate CPU usage limit (1–100).
 - `--cpu-cores <mask>` – set CPU affinity mask (e.g. `0x3` binds to cores 0 and 1).
+- `--cpu-poll <s>` – how often to sample CPU usage in seconds (default 5).
 - `--mem-limit <MB>` – abort if memory usage exceeds this amount.
 - `--check-only` – only check for updates without pulling.
 - `--no-hash-check` – always pull without comparing commit hashes first.
