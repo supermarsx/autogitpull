@@ -19,7 +19,6 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit);
 
-
 TEST_CASE("scan_repos memory stability") {
     git::GitInitGuard guard;
     fs::path repo = fs::temp_directory_path() / "memory_leak_repo";
