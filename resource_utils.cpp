@@ -22,11 +22,9 @@ namespace procutil {
 #ifdef __linux__
 
 static long read_proc_jiffies() {
-    static std::ifstream stat("/proc/self/stat");
+    std::ifstream stat("/proc/self/stat");
     if (!stat.is_open())
         return 0;
-    stat.clear();
-    stat.seekg(0);
     std::string tmp;
     for (int i = 0; i < 13; ++i)
         stat >> tmp; // skip fields
