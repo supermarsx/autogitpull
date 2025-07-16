@@ -2,8 +2,8 @@
 
 To maintain code quality, all commits must pass the following checks **before** they are committed:
 
-1. `make lint` – runs clang-format and cpplint to ensure the C++ sources follow the project's style rules.
-2. `npm run format` – formats any JavaScript/TypeScript sources.
+1. `make lint` – runs clang-format, cpplint **and Prettier checks** to ensure all sources follow the project's style rules.
+2. `npm run format` – formats all Markdown and JSON files using Prettier.
 3. The full test suite via `make test`.
 
 Run these commands locally from the repository root:

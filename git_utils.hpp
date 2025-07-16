@@ -27,7 +27,7 @@ struct GitInitGuard {
  * @param p Filesystem path to check.
  * @return `true` if a `.git` directory exists inside @a p.
  */
-bool is_git_repo(const fs::path &p);
+bool is_git_repo(const fs::path& p);
 
 /**
  * @brief Get the commit hash pointed to by `HEAD`.
@@ -35,7 +35,7 @@ bool is_git_repo(const fs::path &p);
  * @param repo Path to a Git repository.
  * @return 40 character hexadecimal commit hash, or empty string on error.
  */
-std::string get_local_hash(const fs::path &repo);
+std::string get_local_hash(const fs::path& repo);
 
 /**
  * @brief Retrieve the currently checked out branch name.
@@ -43,7 +43,7 @@ std::string get_local_hash(const fs::path &repo);
  * @param repo Path to a Git repository.
  * @return Branch name or empty string if it cannot be determined.
  */
-std::string get_current_branch(const fs::path &repo);
+std::string get_current_branch(const fs::path& repo);
 
 /**
  * @brief Fetch `origin` and return the hash of the specified remote branch.
@@ -56,8 +56,8 @@ std::string get_current_branch(const fs::path &repo);
  *                        fails.
  * @return Commit hash of the remote branch, or empty string on failure.
  */
-std::string get_remote_hash(const fs::path &repo, const std::string &branch,
-                            bool use_credentials = false, bool *auth_failed = nullptr);
+std::string get_remote_hash(const fs::path& repo, const std::string& branch,
+                            bool use_credentials = false, bool* auth_failed = nullptr);
 
 /**
  * @brief Obtain the URL of the `origin` remote.
@@ -65,7 +65,7 @@ std::string get_remote_hash(const fs::path &repo, const std::string &branch,
  * @param repo Path to a Git repository.
  * @return Remote URL as a string, or empty string on failure.
  */
-std::string get_origin_url(const fs::path &repo);
+std::string get_origin_url(const fs::path& repo);
 
 /**
  * @brief Check if a URL points to GitHub.
@@ -73,7 +73,7 @@ std::string get_origin_url(const fs::path &repo);
  * @param url Remote URL string.
  * @return `true` if the URL contains `github.com`.
  */
-bool is_github_url(const std::string &url);
+bool is_github_url(const std::string& url);
 
 /**
  * @brief Attempt to connect to the `origin` remote.
@@ -81,7 +81,7 @@ bool is_github_url(const std::string &url);
  * @param repo Path to a Git repository.
  * @return `true` if the remote can be contacted.
  */
-bool remote_accessible(const fs::path &repo);
+bool remote_accessible(const fs::path& repo);
 
 /**
  * @brief Perform a fast-forward pull from the `origin` remote.
@@ -98,9 +98,9 @@ bool remote_accessible(const fs::path &repo);
  * @param auth_failed    Optional output flag set when authentication fails.
  * @return `0` on success or when already up to date, `2` on failure.
  */
-int try_pull(const fs::path &repo, std::string &out_pull_log,
-             const std::function<void(int)> *progress_cb = nullptr, bool use_credentials = false,
-             bool *auth_failed = nullptr);
+int try_pull(const fs::path& repo, std::string& out_pull_log,
+             const std::function<void(int)>* progress_cb = nullptr, bool use_credentials = false,
+             bool* auth_failed = nullptr);
 
 } // namespace git
 
