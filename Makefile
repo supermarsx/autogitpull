@@ -26,9 +26,12 @@ lint:
 	clang-format --dry-run --Werror $(FORMAT_FILES)
 	cpplint $(FORMAT_FILES)
 
+deps:
+	./install_deps.sh
+
 test:
 	cmake -S . -B build
 	cmake --build build
 	cd build && ctest --output-on-failure
 
-.PHONY: all clean lint test
+.PHONY: all clean lint deps test
