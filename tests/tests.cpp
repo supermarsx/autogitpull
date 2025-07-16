@@ -4,8 +4,10 @@
 #include "repo.hpp"
 #include "logger.hpp"
 #include "resource_utils.hpp"
+#include "thread_utils.hpp"
 #include "time_utils.hpp"
 #include <filesystem>
+#include <thread>
 #include <fstream>
 #include <cstdlib>
 
@@ -102,7 +104,23 @@ TEST_CASE("ArgParser resource flags") {
     REQUIRE(parser.positional()[0] == std::string("path"));
 }
 
-TEST_CASE("Resource helpers") { REQUIRE(procutil::get_thread_count() >= 1); }
+TEST_CASE("Resource helpers") {
+    procutil::set_thread_poll_interval(1);
+    procutil::get_thread_count();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    REQUIRE(procutil::get_thread_count() >= 1);
+}
+
+TEST_CASE("Thread count reflects running threads") {
+    procutil::set_thread_poll_interval(1);
+    std::size_t before = procutil::get_thread_count();
+    {
+        ThreadGuard tg(std::thread([] { std::this_thread::sleep_for(std::chrono::seconds(2)); }));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        std::size_t during = procutil::get_thread_count();
+        REQUIRE(during >= before + 1);
+    }
+}
 
 TEST_CASE("Logger appends messages") {
     fs::path log = fs::temp_directory_path() / "autogitpull_logger_test.log";
