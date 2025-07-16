@@ -2,12 +2,14 @@
 #include <git2.h>
 #include <functional>
 #include <cstdlib>
+#include <memory>
 #include <chrono>
 #include <thread>
 
 using namespace std;
 
 namespace git {
+
 
 struct ProgressData {
     const std::function<void(int)>* cb;
@@ -153,19 +155,23 @@ int try_pull(const fs::path& repo, string& out_pull_log,
 
     git_repository* r = nullptr;
 
-    if (git_repository_open(&r, repo.string().c_str()) != 0) {
+    git_repository* raw_repo = nullptr;
+
+    if (git_repository_open(&raw_repo, repo.string().c_str()) != 0) {
         out_pull_log = "Failed to open repository";
         finalize();
         return 2;
     }
+    std::unique_ptr<git_repository, decltype(&git_repository_free)> r(raw_repo,
+                                                                      git_repository_free);
     string branch = get_current_branch(repo);
-    git_remote* remote = nullptr;
-    if (git_remote_lookup(&remote, r, "origin") != 0) {
-        git_repository_free(r);
+    git_remote* raw_remote = nullptr;
+    if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0) {
         out_pull_log = "No origin remote";
         finalize();
         return 2;
     }
+    std::unique_ptr<git_remote, decltype(&git_remote_free)> remote(raw_remote, git_remote_free);
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
     ProgressData progress{progress_cb, std::chrono::steady_clock::now(), down_limit_kbps,
@@ -206,61 +212,46 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     if (use_credentials)
         callbacks.credentials = credential_cb;
     fetch_opts.callbacks = callbacks;
-    int err = git_remote_fetch(remote, nullptr, &fetch_opts, nullptr);
+    int err = git_remote_fetch(remote.get(), nullptr, &fetch_opts, nullptr);
     if (err != 0) {
         const git_error* e = git_error_last();
         if (auth_failed && e && e->message &&
             std::string(e->message).find("auth") != std::string::npos)
             *auth_failed = true;
-        git_remote_free(remote);
-        git_repository_free(r);
         out_pull_log = "Fetch failed";
         finalize();
         return 2;
     }
     git_oid remote_oid;
     string refname = string("refs/remotes/origin/") + branch;
-    if (git_reference_name_to_id(&remote_oid, r, refname.c_str()) != 0) {
-        git_remote_free(remote);
-        git_repository_free(r);
+    if (git_reference_name_to_id(&remote_oid, r.get(), refname.c_str()) != 0) {
         out_pull_log = "Remote branch not found";
         finalize();
         return 2;
     }
     git_oid local_oid;
-    if (git_reference_name_to_id(&local_oid, r, "HEAD") != 0) {
-        git_remote_free(remote);
-        git_repository_free(r);
+    if (git_reference_name_to_id(&local_oid, r.get(), "HEAD") != 0) {
         out_pull_log = "Local HEAD not found";
         finalize();
         return 2;
     }
     if (git_oid_cmp(&local_oid, &remote_oid) == 0) {
         out_pull_log = "Already up to date";
-        git_remote_free(remote);
-        git_repository_free(r);
         finalize();
         return 0;
     }
-    git_object* target = nullptr;
-    if (git_object_lookup(&target, r, &remote_oid, GIT_OBJECT_COMMIT) != 0) {
-        git_remote_free(remote);
-        git_repository_free(r);
+    git_object* raw_target = nullptr;
+    if (git_object_lookup(&raw_target, r.get(), &remote_oid, GIT_OBJECT_COMMIT) != 0) {
         out_pull_log = "Lookup failed";
         finalize();
         return 2;
     }
-    if (git_reset(r, target, GIT_RESET_HARD, nullptr) != 0) {
-        git_object_free(target);
-        git_remote_free(remote);
-        git_repository_free(r);
+    std::unique_ptr<git_object, decltype(&git_object_free)> target(raw_target, git_object_free);
+    if (git_reset(r.get(), target.get(), GIT_RESET_HARD, nullptr) != 0) {
         out_pull_log = "Reset failed";
         finalize();
         return 2;
     }
-    git_object_free(target);
-    git_remote_free(remote);
-    git_repository_free(r);
     out_pull_log = "Fast-forwarded";
     finalize();
     return 0;
