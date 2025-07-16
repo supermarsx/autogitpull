@@ -23,7 +23,7 @@ const char* COLOR_GRAY = "\033[90m";
 const char* COLOR_BOLD = "\033[1m";
 const char* COLOR_MAGENTA = "\033[35m";
 
-const char* APP_VERSION = "0.1.0";
+const char* AUTOGITPULL_VERSION = "0.1.0";
 
 #ifdef _WIN32
 void enable_win_ansi() {
@@ -48,8 +48,9 @@ void draw_tui(const std::vector<fs::path>& all_repos,
     out << "\033[2J\033[H";
     out << COLOR_BOLD << "AutoGitPull TUI";
     if (show_version)
-        out << " v" << APP_VERSION;
-    out << "   " << COLOR_RESET << COLOR_CYAN << timestamp() << COLOR_RESET << "\n";
+        out << " v" << AUTOGITPULL_VERSION;
+    out << COLOR_RESET << "\n";
+    out << "Date: " << COLOR_CYAN << timestamp() << COLOR_RESET << "\n";
     out << "Monitoring: " << COLOR_YELLOW
         << (all_repos.empty() ? "" : all_repos[0].parent_path().string()) << COLOR_RESET << "\n";
     out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
