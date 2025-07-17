@@ -46,6 +46,9 @@ struct Options {
     bool install_daemon = false;
     bool uninstall_daemon = false;
     std::string daemon_config;
+    bool install_service = false;
+    bool uninstall_service = false;
+    std::string service_config;
     bool show_help = false;
     bool print_version = false;
 };
