@@ -69,11 +69,20 @@ TEST_CASE("ArgParser option with equals") {
 }
 
 TEST_CASE("ArgParser short options") {
-    const char* argv[] = {"prog", "-h", "-o", "42"};
-    ArgParser parser(4, const_cast<char**>(argv), {"--help", "--opt"},
+    const char* argv[] = {"prog", "-h", "-o42"};
+    ArgParser parser(3, const_cast<char**>(argv), {"--help", "--opt"},
                      {{'h', "--help"}, {'o', "--opt"}});
     REQUIRE(parser.has_flag("--help"));
     REQUIRE(parser.get_option("--opt") == std::string("42"));
+}
+
+TEST_CASE("ArgParser stacked short flags") {
+    const char* argv[] = {"prog", "-abc"};
+    ArgParser parser(2, const_cast<char**>(argv), {"--flag-a", "--flag-b", "--flag-c"},
+                     {{'a', "--flag-a"}, {'b', "--flag-b"}, {'c', "--flag-c"}});
+    REQUIRE(parser.has_flag("--flag-a"));
+    REQUIRE(parser.has_flag("--flag-b"));
+    REQUIRE(parser.has_flag("--flag-c"));
 }
 
 TEST_CASE("ArgParser unknown flag detection") {
