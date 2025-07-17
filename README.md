@@ -233,15 +233,6 @@ make lint
 
 The CI workflow also executes this command and will fail on formatting or lint errors.
 
-Markdown and JSON files are formatted with [Prettier](https://prettier.io/) using
-the settings in `.prettierrc`. Format them with:
-
-```bash
-npm run format
-```
-
-`make lint` also checks these files via `prettier --check`.
-
 ### Status labels
 
 When the program starts, each repository is listed with the **Pending** status

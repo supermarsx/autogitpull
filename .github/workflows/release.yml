@@ -23,17 +23,14 @@ jobs:
       - name: Set up C++ build environment
         uses: aminya/setup-cpp@v1
 
+
       - name: Install lint tools
         run: pip install cpplint
 
-      - name: Install Node dependencies
-        run: npm ci
 
       - name: Lint
         run: make lint
 
-      - name: Format
-        run: npm run format
 
       - name: Test
         run: make test
