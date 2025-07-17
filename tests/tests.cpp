@@ -6,6 +6,7 @@
 #include "resource_utils.hpp"
 #include "thread_utils.hpp"
 #include "time_utils.hpp"
+#include "config_utils.hpp"
 #include <filesystem>
 #include <thread>
 #include <fstream>
@@ -251,6 +252,21 @@ TEST_CASE("ArgParser recursive flag") {
     const char* argv[] = {"prog", "--recursive"};
     ArgParser parser(2, const_cast<char**>(argv), {"--recursive"});
     REQUIRE(parser.has_flag("--recursive"));
+}
+
+TEST_CASE("YAML config loading") {
+    fs::path cfg = fs::temp_directory_path() / "cfg.yaml";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "interval: 42\n";
+        ofs << "cli: true\n";
+    }
+    std::map<std::string, std::string> opts;
+    std::string err;
+    REQUIRE(load_yaml_config(cfg.string(), opts, err));
+    REQUIRE(opts["--interval"] == "42");
+    REQUIRE(opts["--cli"] == "true");
+    fs::remove(cfg);
 }
 
 TEST_CASE("recursive iterator finds nested repo") {

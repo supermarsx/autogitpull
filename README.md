@@ -1,4 +1,4 @@
-# autogitpull
+#autogitpull
 
 Automatic Git Puller & Monitor
 
@@ -194,6 +194,13 @@ is written to a timestamped file inside this directory and its location is shown
 Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
 `./autogitpull myprojects --recursive --log-dir logs --log-file autogitpull.log --log-level DEBUG`
 CPU, memory and thread usage are tracked and shown by default. Disable them individually with `--no-cpu-tracker`, `--no-mem-tracker` or `--no-thread-tracker`. Enable network usage tracking with `--net-tracker`.
+
+### YAML configuration
+
+Frequently used options can be stored in a YAML file and loaded with `--config-yaml <file>`.
+Keys match the long option names without the leading dashes. Boolean flags should be set to `true` or `false`.
+Arguments provided on the command line override values from the YAML file. See `example-config.yaml` for a
+complete example.
 
 ## Linting
 
