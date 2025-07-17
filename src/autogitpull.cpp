@@ -28,6 +28,7 @@
 #include "thread_utils.hpp"
 #include "config_utils.hpp"
 #include "debug_utils.hpp"
+#include "options.hpp"
 
 namespace fs = std::filesystem;
 
@@ -530,736 +531,346 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
         log_debug("Scan complete");
 }
 
-#ifndef AUTOGITPULL_NO_MAIN
-int main(int argc, char* argv[]) {
-    git::GitInitGuard git_guard;
-    try {
-        // Parse config file option first
-        const std::set<std::string> pre_known{"--config-yaml", "--config-json"};
-        const std::map<char, std::string> pre_short{{'y', "--config-yaml"}, {'j', "--config-json"}};
-        ArgParser pre_parser(argc, argv, pre_known, pre_short);
-        std::map<std::string, std::string> cfg_opts;
-        if (pre_parser.has_flag("--config-yaml")) {
-            std::string cfg = pre_parser.get_option("--config-yaml");
-            if (cfg.empty()) {
-                std::cerr << "--config-yaml requires a file\n";
-                return 1;
-            }
-            std::string err;
-            if (!load_yaml_config(cfg, cfg_opts, err)) {
-                std::cerr << "Failed to load config: " << err << "\n";
-                return 1;
-            }
-        }
-        if (pre_parser.has_flag("--config-json")) {
-            std::string cfg = pre_parser.get_option("--config-json");
-            if (cfg.empty()) {
-                std::cerr << "--config-json requires a file\n";
-                return 1;
-            }
-            std::string err;
-            if (!load_json_config(cfg, cfg_opts, err)) {
-                std::cerr << "Failed to load config: " << err << "\n";
-                return 1;
-            }
-        }
+Options parse_options(int argc, char* argv[]) {
+    // Parse config file option first
+    const std::set<std::string> pre_known{"--config-yaml", "--config-json"};
+    const std::map<char, std::string> pre_short{{'y', "--config-yaml"}, {'j', "--config-json"}};
+    ArgParser pre_parser(argc, argv, pre_known, pre_short);
+    std::map<std::string, std::string> cfg_opts;
+    if (pre_parser.has_flag("--config-yaml")) {
+        std::string cfg = pre_parser.get_option("--config-yaml");
+        if (cfg.empty())
+            throw std::runtime_error("--config-yaml requires a file");
+        std::string err;
+        if (!load_yaml_config(cfg, cfg_opts, err))
+            throw std::runtime_error("Failed to load config: " + err);
+    }
+    if (pre_parser.has_flag("--config-json")) {
+        std::string cfg = pre_parser.get_option("--config-json");
+        if (cfg.empty())
+            throw std::runtime_error("--config-json requires a file");
+        std::string err;
+        if (!load_json_config(cfg, cfg_opts, err))
+            throw std::runtime_error("Failed to load config: " + err);
+    }
 
-        const std::set<std::string> known{
-            "--include-private", "--show-skipped",   "--show-version",      "--version",
-            "--interval",        "--refresh-rate",   "--cpu-poll",          "--mem-poll",
-            "--thread-poll",     "--log-dir",        "--log-file",          "--concurrency",
-            "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
-            "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
-            "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
-            "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
-            "--upload-limit",    "--disk-limit",     "--max-depth",         "--cli",
-            "--silent",          "--recursive",      "--config-yaml",       "--config-json",
-            "--ignore",          "--force-pull",     "--discard-dirty",     "--debug-memory",
-            "--dump-state",      "--dump-large"};
-        const std::map<char, std::string> short_opts{
-            {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
-            {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
-            {'d', "--log-dir"},         {'l', "--log-file"},     {'y', "--config-yaml"},
-            {'j', "--config-json"},     {'c', "--cli"},          {'s', "--silent"},
-            {'D', "--max-depth"},       {'h', "--help"}};
-        ArgParser parser(argc, argv, known, short_opts);
+    const std::set<std::string> known{
+        "--include-private", "--show-skipped",   "--show-version",      "--version",
+        "--interval",        "--refresh-rate",   "--cpu-poll",          "--mem-poll",
+        "--thread-poll",     "--log-dir",        "--log-file",          "--concurrency",
+        "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
+        "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
+        "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
+        "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
+        "--upload-limit",    "--disk-limit",     "--max-depth",         "--cli",
+        "--silent",          "--recursive",      "--config-yaml",       "--config-json",
+        "--ignore",          "--force-pull",     "--discard-dirty",     "--debug-memory",
+        "--dump-state",      "--dump-large"};
+    const std::map<char, std::string> short_opts{
+        {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
+        {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
+        {'d', "--log-dir"},         {'l', "--log-file"},     {'y', "--config-yaml"},
+        {'j', "--config-json"},     {'c', "--cli"},          {'s', "--silent"},
+        {'D', "--max-depth"},       {'h', "--help"}};
+    ArgParser parser(argc, argv, known, short_opts);
 
-        auto cfg_flag = [&](const std::string& k) {
-            auto it = cfg_opts.find(k);
-            if (it == cfg_opts.end())
-                return false;
-            std::string v = it->second;
-            std::transform(v.begin(), v.end(), v.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-            return v == "" || v == "1" || v == "true" || v == "yes";
-        };
-        auto cfg_opt = [&](const std::string& k) {
-            auto it = cfg_opts.find(k);
-            if (it != cfg_opts.end())
-                return it->second;
-            return std::string();
-        };
+    auto cfg_flag = [&](const std::string& k) {
+        auto it = cfg_opts.find(k);
+        if (it == cfg_opts.end())
+            return false;
+        std::string v = it->second;
+        std::transform(v.begin(), v.end(), v.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        return v == "" || v == "1" || v == "true" || v == "yes";
+    };
+    auto cfg_opt = [&](const std::string& k) {
+        auto it = cfg_opts.find(k);
+        if (it != cfg_opts.end())
+            return it->second;
+        return std::string();
+    };
 
-        bool cli = parser.has_flag("--cli") || cfg_flag("--cli");
-        bool silent = parser.has_flag("--silent") || cfg_flag("--silent");
-        bool recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
+    Options opts;
+    opts.cli = parser.has_flag("--cli") || cfg_flag("--cli");
+    opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
+    opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
+    opts.show_help = parser.has_flag("--help");
+    opts.print_version = parser.has_flag("--version");
+    if (parser.positional().size() != 1 && !opts.show_help && !opts.print_version)
+        throw std::runtime_error("Root path required");
+    if (!parser.unknown_flags().empty()) {
+        throw std::runtime_error("Unknown option: " + parser.unknown_flags().front());
+    }
+    opts.include_private = parser.has_flag("--include-private") || cfg_flag("--include-private");
+    opts.show_skipped = parser.has_flag("--show-skipped") || cfg_flag("--show-skipped");
+    opts.show_version = parser.has_flag("--show-version") || cfg_flag("--show-version");
+    opts.check_only = parser.has_flag("--check-only") || cfg_flag("--check-only");
+    opts.hash_check = !(parser.has_flag("--no-hash-check") || cfg_flag("--no-hash-check"));
+    opts.force_pull = parser.has_flag("--force-pull") || parser.has_flag("--discard-dirty") ||
+                      cfg_flag("--force-pull") || cfg_flag("--discard-dirty");
+    if (parser.has_flag("--verbose") || cfg_flag("--verbose"))
+        opts.log_level = LogLevel::DEBUG;
+    if (parser.has_flag("--log-level") || cfg_opts.count("--log-level")) {
+        std::string val = parser.get_option("--log-level");
+        if (val.empty())
+            val = cfg_opt("--log-level");
+        if (val.empty())
+            throw std::runtime_error("--log-level requires a value");
+        for (auto& c : val)
+            c = toupper(static_cast<unsigned char>(c));
+        if (val == "DEBUG")
+            opts.log_level = LogLevel::DEBUG;
+        else if (val == "INFO")
+            opts.log_level = LogLevel::INFO;
+        else if (val == "WARNING" || val == "WARN")
+            opts.log_level = LogLevel::WARNING;
+        else if (val == "ERROR")
+            opts.log_level = LogLevel::ERROR;
+        else
+            throw std::runtime_error("Invalid log level: " + val);
+    }
+    opts.concurrency = std::thread::hardware_concurrency();
+    if (opts.concurrency == 0)
+        opts.concurrency = 1;
+    if (cfg_opts.count("--threads"))
+        opts.concurrency = std::max<size_t>(1, std::stoul(cfg_opt("--threads")));
+    if (cfg_flag("--single-thread"))
+        opts.concurrency = 1;
+    if (cfg_opts.count("--concurrency"))
+        opts.concurrency = std::max<size_t>(1, std::stoul(cfg_opt("--concurrency")));
+    if (parser.has_flag("--threads"))
+        opts.concurrency = std::max<size_t>(1, std::stoul(parser.get_option("--threads")));
+    if (parser.has_flag("--single-thread"))
+        opts.concurrency = 1;
+    if (parser.has_flag("--concurrency"))
+        opts.concurrency = std::max<size_t>(1, std::stoul(parser.get_option("--concurrency")));
+    if (cfg_opts.count("--max-threads"))
+        opts.max_threads = std::stoul(cfg_opt("--max-threads"));
+    if (parser.has_flag("--max-threads"))
+        opts.max_threads = std::stoul(parser.get_option("--max-threads"));
+    if (cfg_opts.count("--cpu-percent")) {
+        std::string v = cfg_opt("--cpu-percent");
+        if (!v.empty() && v.back() == '%')
+            v.pop_back();
+        opts.cpu_percent_limit = std::stoi(v);
+    }
+    if (parser.has_flag("--cpu-percent")) {
+        std::string v = parser.get_option("--cpu-percent");
+        if (!v.empty() && v.back() == '%')
+            v.pop_back();
+        opts.cpu_percent_limit = std::stoi(v);
+    }
+    if (cfg_opts.count("--cpu-cores"))
+        opts.cpu_core_mask = std::stoull(cfg_opt("--cpu-cores"), nullptr, 0);
+    if (parser.has_flag("--cpu-cores"))
+        opts.cpu_core_mask = std::stoull(parser.get_option("--cpu-cores"), nullptr, 0);
+    if (cfg_opts.count("--mem-limit"))
+        opts.mem_limit = std::stoul(cfg_opt("--mem-limit"));
+    if (parser.has_flag("--mem-limit"))
+        opts.mem_limit = std::stoul(parser.get_option("--mem-limit"));
+    if (cfg_opts.count("--download-limit"))
+        opts.download_limit = std::stoul(cfg_opt("--download-limit"));
+    if (parser.has_flag("--download-limit"))
+        opts.download_limit = std::stoul(parser.get_option("--download-limit"));
+    if (cfg_opts.count("--upload-limit"))
+        opts.upload_limit = std::stoul(cfg_opt("--upload-limit"));
+    if (parser.has_flag("--upload-limit"))
+        opts.upload_limit = std::stoul(parser.get_option("--upload-limit"));
+    if (cfg_opts.count("--disk-limit"))
+        opts.disk_limit = std::stoul(cfg_opt("--disk-limit"));
+    if (parser.has_flag("--disk-limit"))
+        opts.disk_limit = std::stoul(parser.get_option("--disk-limit"));
+    if (cfg_opts.count("--max-depth"))
+        opts.max_depth = std::stoul(cfg_opt("--max-depth"));
+    if (parser.has_flag("--max-depth"))
+        opts.max_depth = std::stoul(parser.get_option("--max-depth"));
+    opts.cpu_tracker = !cfg_flag("--no-cpu-tracker");
+    opts.mem_tracker = !cfg_flag("--no-mem-tracker");
+    opts.thread_tracker = !cfg_flag("--no-thread-tracker");
+    opts.net_tracker = cfg_flag("--net-tracker");
+    if (parser.has_flag("--no-cpu-tracker"))
+        opts.cpu_tracker = false;
+    if (parser.has_flag("--no-mem-tracker"))
+        opts.mem_tracker = false;
+    if (parser.has_flag("--no-thread-tracker"))
+        opts.thread_tracker = false;
+    if (parser.has_flag("--net-tracker"))
+        opts.net_tracker = true;
+    opts.debug_memory = cfg_flag("--debug-memory") || parser.has_flag("--debug-memory");
+    opts.dump_state = cfg_flag("--dump-state") || parser.has_flag("--dump-state");
+    if (cfg_opts.count("--dump-large"))
+        opts.dump_threshold = std::stoul(cfg_opt("--dump-large"));
+    if (parser.has_flag("--dump-large"))
+        opts.dump_threshold = std::stoul(parser.get_option("--dump-large"));
+    if (cfg_opts.count("--interval"))
+        opts.interval = std::stoi(cfg_opt("--interval"));
+    if (parser.has_flag("--interval"))
+        opts.interval = std::stoi(parser.get_option("--interval"));
+    if (cfg_opts.count("--refresh-rate"))
+        opts.refresh_ms = std::chrono::milliseconds(std::stoi(cfg_opt("--refresh-rate")));
+    if (parser.has_flag("--refresh-rate"))
+        opts.refresh_ms = std::chrono::milliseconds(std::stoi(parser.get_option("--refresh-rate")));
+    if (cfg_opts.count("--cpu-poll"))
+        opts.cpu_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--cpu-poll")));
+    if (parser.has_flag("--cpu-poll"))
+        opts.cpu_poll_sec = static_cast<unsigned int>(std::stoul(parser.get_option("--cpu-poll")));
+    if (cfg_opts.count("--mem-poll"))
+        opts.mem_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--mem-poll")));
+    if (parser.has_flag("--mem-poll"))
+        opts.mem_poll_sec = static_cast<unsigned int>(std::stoul(parser.get_option("--mem-poll")));
+    if (cfg_opts.count("--thread-poll"))
+        opts.thread_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--thread-poll")));
+    if (parser.has_flag("--thread-poll"))
+        opts.thread_poll_sec =
+            static_cast<unsigned int>(std::stoul(parser.get_option("--thread-poll")));
+    if (parser.has_flag("--log-dir") || cfg_opts.count("--log-dir")) {
+        std::string val = parser.get_option("--log-dir");
+        if (val.empty())
+            val = cfg_opt("--log-dir");
+        if (val.empty())
+            throw std::runtime_error("--log-dir requires a path");
+        opts.log_dir = val;
+    }
+    if (parser.has_flag("--log-file") || cfg_opts.count("--log-file")) {
+        std::string val = parser.get_option("--log-file");
+        if (val.empty())
+            val = cfg_opt("--log-file");
+        opts.log_file = val;
+    }
+    opts.root = parser.positional().empty() ? fs::path() : fs::path(parser.positional().front());
+    for (const auto& val : parser.get_all_options("--ignore"))
+        opts.ignore_dirs.push_back(val);
+    return opts;
+}
 
-        if (parser.has_flag("--version")) {
-            std::cout << AUTOGITPULL_VERSION << "\n";
-            return 0;
-        }
-
-        if (parser.has_flag("--help")) {
-            print_help(argv[0]);
-            return 0;
-        }
-
-        if (parser.positional().size() != 1) {
-            if (!silent)
-                print_help(argv[0]);
-            return 1;
-        }
-
-        if (!parser.unknown_flags().empty()) {
-            for (const auto& f : parser.unknown_flags()) {
-                if (!silent)
-                    std::cerr << "Unknown option: " << f << "\n";
-            }
-            return 1;
-        }
-        bool include_private =
-            parser.has_flag("--include-private") || cfg_flag("--include-private");
-        bool show_skipped = parser.has_flag("--show-skipped") || cfg_flag("--show-skipped");
-        bool show_version = parser.has_flag("--show-version") || cfg_flag("--show-version");
-        bool check_only = parser.has_flag("--check-only") || cfg_flag("--check-only");
-        bool hash_check = !(parser.has_flag("--no-hash-check") || cfg_flag("--no-hash-check"));
-        bool force_pull = parser.has_flag("--force-pull") || parser.has_flag("--discard-dirty") ||
-                          cfg_flag("--force-pull") || cfg_flag("--discard-dirty");
-        LogLevel log_level = LogLevel::INFO;
-        if (parser.has_flag("--verbose") || cfg_flag("--verbose")) {
-            log_level = LogLevel::DEBUG;
-        }
-        if (parser.has_flag("--log-level") || cfg_opts.count("--log-level")) {
-            std::string val = parser.get_option("--log-level");
-            if (val.empty())
-                val = cfg_opt("--log-level");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--log-level requires a value\n";
-                return 1;
-            }
-            for (auto& c : val)
-                c = toupper(static_cast<unsigned char>(c));
-            if (val == "DEBUG")
-                log_level = LogLevel::DEBUG;
-            else if (val == "INFO")
-                log_level = LogLevel::INFO;
-            else if (val == "WARNING" || val == "WARN")
-                log_level = LogLevel::WARNING;
-            else if (val == "ERROR")
-                log_level = LogLevel::ERROR;
-            else {
-                if (!silent)
-                    std::cerr << "Invalid log level: " << val << "\n";
-                return 1;
-            }
-        }
-        size_t concurrency = std::thread::hardware_concurrency();
-        if (concurrency == 0)
-            concurrency = 1;
-        size_t max_threads = 0;
-        int cpu_percent_limit = 0;
-        unsigned long long cpu_core_mask = 0;
-        size_t mem_limit = 0;
-        size_t down_limit = 0;
-        size_t up_limit = 0;
-        size_t disk_limit = 0;
-        size_t max_depth = 0;
-        bool cpu_tracker = true;
-        bool mem_tracker = true;
-        bool thread_tracker = true;
-        bool net_tracker = false;
-        int interval = 30;
-        std::chrono::milliseconds refresh_ms(250);
-        unsigned int cpu_poll_sec = 5;
-        unsigned int mem_poll_sec = 5;
-        unsigned int thread_poll_sec = 5;
-
-        // Apply YAML defaults
-        if (cfg_opts.count("--interval")) {
-            try {
-                interval = std::stoi(cfg_opt("--interval"));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for interval\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--refresh-rate")) {
-            try {
-                refresh_ms = std::chrono::milliseconds(std::stoi(cfg_opt("--refresh-rate")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for refresh-rate\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--cpu-poll")) {
-            try {
-                cpu_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--cpu-poll")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for cpu-poll\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--mem-poll")) {
-            try {
-                mem_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--mem-poll")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for mem-poll\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--thread-poll")) {
-            try {
-                thread_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--thread-poll")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for thread-poll\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--threads")) {
-            try {
-                concurrency = static_cast<size_t>(std::stoul(cfg_opt("--threads")));
-                if (concurrency == 0)
-                    concurrency = 1;
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for threads\n";
-                return 1;
-            }
-        }
-        if (cfg_flag("--single-thread"))
-            concurrency = 1;
-        if (cfg_opts.count("--concurrency")) {
-            try {
-                concurrency = static_cast<size_t>(std::stoul(cfg_opt("--concurrency")));
-                if (concurrency == 0)
-                    concurrency = 1;
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for concurrency\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--max-threads")) {
-            try {
-                max_threads = static_cast<size_t>(std::stoul(cfg_opt("--max-threads")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for max-threads\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--cpu-percent")) {
-            std::string val = cfg_opt("--cpu-percent");
-            if (!val.empty() && val.back() == '%')
-                val.pop_back();
-            try {
-                cpu_percent_limit = std::stoi(val);
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for cpu-percent\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--cpu-cores")) {
-            try {
-                cpu_core_mask = std::stoull(cfg_opt("--cpu-cores"), nullptr, 0);
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for cpu-cores\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--mem-limit")) {
-            try {
-                mem_limit = static_cast<size_t>(std::stoul(cfg_opt("--mem-limit")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for mem-limit\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--download-limit")) {
-            try {
-                down_limit = static_cast<size_t>(std::stoul(cfg_opt("--download-limit")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for download-limit\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--upload-limit")) {
-            try {
-                up_limit = static_cast<size_t>(std::stoul(cfg_opt("--upload-limit")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for upload-limit\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--disk-limit")) {
-            try {
-                disk_limit = static_cast<size_t>(std::stoul(cfg_opt("--disk-limit")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for disk-limit\n";
-                return 1;
-            }
-        }
-        if (cfg_opts.count("--max-depth")) {
-            try {
-                max_depth = static_cast<size_t>(std::stoul(cfg_opt("--max-depth")));
-            } catch (...) {
-                std::cerr << "Invalid value in YAML for max-depth\n";
-                return 1;
-            }
-        }
-        cpu_tracker = !cfg_flag("--no-cpu-tracker");
-        mem_tracker = !cfg_flag("--no-mem-tracker");
-        thread_tracker = !cfg_flag("--no-thread-tracker");
-        net_tracker = cfg_flag("--net-tracker");
-        debugMemory = cfg_flag("--debug-memory");
-        dumpState = cfg_flag("--dump-state");
-        if (cfg_opts.count("--dump-large")) {
-            try {
-                dumpThreshold = static_cast<size_t>(std::stoul(cfg_opt("--dump-large")));
-            } catch (...) {
-                std::cerr << "Invalid value in config for dump-large\n";
-                return 1;
-            }
-        }
-
-        if (parser.has_flag("--interval")) {
-            std::string val = parser.get_option("--interval");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--interval requires a value in seconds\n";
-                return 1;
-            }
-            try {
-                interval = std::stoi(val);
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --interval: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--refresh-rate")) {
-            std::string val = parser.get_option("--refresh-rate");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--refresh-rate requires a value in milliseconds\n";
-                return 1;
-            }
-            try {
-                refresh_ms = std::chrono::milliseconds(std::stoi(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --refresh-rate: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--cpu-poll")) {
-            std::string val = parser.get_option("--cpu-poll");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--cpu-poll requires a value in seconds\n";
-                return 1;
-            }
-            try {
-                cpu_poll_sec = static_cast<unsigned int>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --cpu-poll: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--mem-poll")) {
-            std::string val = parser.get_option("--mem-poll");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--mem-poll requires a value in seconds\n";
-                return 1;
-            }
-            try {
-                mem_poll_sec = static_cast<unsigned int>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --mem-poll: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--thread-poll")) {
-            std::string val = parser.get_option("--thread-poll");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--thread-poll requires a value in seconds\n";
-                return 1;
-            }
-            try {
-                thread_poll_sec = static_cast<unsigned int>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --thread-poll: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--threads")) {
-            std::string val = parser.get_option("--threads");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--threads requires a numeric value\n";
-                return 1;
-            }
-            try {
-                concurrency = static_cast<size_t>(std::stoul(val));
-                if (concurrency == 0)
-                    concurrency = 1;
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --threads: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--single-thread")) {
-            concurrency = 1;
-        }
-        if (parser.has_flag("--concurrency")) {
-            std::string val = parser.get_option("--concurrency");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--concurrency requires a numeric value\n";
-                return 1;
-            }
-            try {
-                concurrency = static_cast<size_t>(std::stoul(val));
-                if (concurrency == 0)
-                    concurrency = 1;
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --concurrency: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--max-threads")) {
-            std::string val = parser.get_option("--max-threads");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--max-threads requires a numeric value\n";
-                return 1;
-            }
-            try {
-                max_threads = static_cast<size_t>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --max-threads: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--cpu-percent")) {
-            std::string val = parser.get_option("--cpu-percent");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--cpu-percent requires a value\n";
-                return 1;
-            }
-            if (!val.empty() && val.back() == '%')
-                val.pop_back();
-            try {
-                cpu_percent_limit = std::stoi(val);
-                if (cpu_percent_limit < 1 || cpu_percent_limit > 100)
-                    throw 1;
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --cpu-percent: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--cpu-cores")) {
-            std::string val = parser.get_option("--cpu-cores");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--cpu-cores requires a value\n";
-                return 1;
-            }
-            try {
-                cpu_core_mask = std::stoull(val, nullptr, 0);
-                if (cpu_core_mask == 0)
-                    throw 1;
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --cpu-cores: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--mem-limit")) {
-            std::string val = parser.get_option("--mem-limit");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--mem-limit requires a numeric value\n";
-                return 1;
-            }
-            try {
-                mem_limit = static_cast<size_t>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --mem-limit: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--download-limit")) {
-            std::string val = parser.get_option("--download-limit");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--download-limit requires a numeric value\n";
-                return 1;
-            }
-            try {
-                down_limit = static_cast<size_t>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --download-limit: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--upload-limit")) {
-            std::string val = parser.get_option("--upload-limit");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--upload-limit requires a numeric value\n";
-                return 1;
-            }
-            try {
-                up_limit = static_cast<size_t>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --upload-limit: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--disk-limit")) {
-            std::string val = parser.get_option("--disk-limit");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--disk-limit requires a numeric value\n";
-                return 1;
-            }
-            try {
-                disk_limit = static_cast<size_t>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --disk-limit: " << val << "\n";
-                return 1;
-            }
-        }
-        if (parser.has_flag("--max-depth")) {
-            std::string val = parser.get_option("--max-depth");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--max-depth requires a numeric value\n";
-                return 1;
-            }
-            try {
-                max_depth = static_cast<size_t>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --max-depth: " << val << "\n";
-                return 1;
-            }
-        }
-        cpu_tracker = !parser.has_flag("--no-cpu-tracker");
-        mem_tracker = !parser.has_flag("--no-mem-tracker");
-        thread_tracker = !parser.has_flag("--no-thread-tracker");
-        net_tracker = parser.has_flag("--net-tracker");
-        debugMemory = parser.has_flag("--debug-memory");
-        dumpState = parser.has_flag("--dump-state");
-        if (parser.has_flag("--dump-large")) {
-            std::string val = parser.get_option("--dump-large");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--dump-large requires a numeric value\n";
-                return 1;
-            }
-            try {
-                dumpThreshold = static_cast<size_t>(std::stoul(val));
-            } catch (...) {
-                if (!silent)
-                    std::cerr << "Invalid value for --dump-large: " << val << "\n";
-                return 1;
-            }
-        }
-        if (max_threads > 0 && concurrency > max_threads)
-            concurrency = max_threads;
-        fs::path log_dir;
-        if (parser.has_flag("--log-dir") || cfg_opts.count("--log-dir")) {
-            std::string val = parser.get_option("--log-dir");
-            if (val.empty())
-                val = cfg_opt("--log-dir");
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--log-dir requires a path\n";
-                return 1;
-            }
-            log_dir = val;
-            try {
-                if (fs::exists(log_dir) && !fs::is_directory(log_dir)) {
-                    if (!silent)
-                        std::cerr << "--log-dir path exists and is not a directory\n";
-                    return 1;
-                }
-                fs::create_directories(log_dir);
-            } catch (const std::exception& e) {
-                if (!silent)
-                    std::cerr << "Failed to create log directory: " << e.what() << "\n";
-                return 1;
-            }
-        }
-        std::string log_file;
-        if (parser.has_flag("--log-file") || cfg_opts.count("--log-file")) {
-            std::string val = parser.get_option("--log-file");
-            if (val.empty())
-                val = cfg_opt("--log-file");
-            if (val.empty()) {
-                std::string ts = timestamp();
-                for (char& ch : ts) {
-                    if (ch == ' ' || ch == ':')
-                        ch = '_';
-                    else if (ch == '/')
-                        ch = '-';
-                }
-                log_file = "autogitpull-logs-" + ts + ".log";
-            } else {
-                log_file = val;
-            }
-        }
-        fs::path root = parser.positional().front();
-        if (!fs::exists(root) || !fs::is_directory(root)) {
-            if (!silent)
-                std::cerr << "Root path does not exist or is not a directory.\n";
-            return 1;
-        }
-        std::vector<fs::path> ignore_dirs;
-        for (const auto& val : parser.get_all_options("--ignore")) {
-            if (val.empty()) {
-                if (!silent)
-                    std::cerr << "--ignore requires a path\n";
-                return 1;
-            }
-            ignore_dirs.push_back(val);
-        }
-        if (cpu_core_mask != 0)
-            procutil::set_cpu_affinity(cpu_core_mask);
-
-        procutil::set_cpu_poll_interval(cpu_poll_sec);
-        procutil::set_memory_poll_interval(mem_poll_sec);
-        procutil::set_thread_poll_interval(thread_poll_sec);
-
-        if (net_tracker)
-            procutil::init_network_usage();
-
-        if (!log_file.empty()) {
-            init_logger(log_file, log_level);
-            if (logger_initialized())
-                log_info("Program started");
-            else if (!silent)
-                std::cerr << "Failed to open log file: " << log_file << "\n";
-        }
-
-        // Grab subdirectories at startup, skipping ignored paths
-        std::vector<fs::path> all_repos =
-            build_repo_list(root, recursive_scan, ignore_dirs, max_depth);
-        std::map<fs::path, RepoInfo> repo_infos;
-        for (const auto& p : all_repos) {
-            repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
-        }
-
-        std::set<fs::path> skip_repos;
-        std::mutex mtx;
-        std::atomic<bool> scanning(false);
-        std::atomic<bool> running(true);
-        std::string current_action = "Idle";
-        std::mutex action_mtx;
-
-        g_running_ptr = &running;
-        std::signal(SIGINT, handle_signal);
+int run_event_loop(const Options& opts) {
+    debugMemory = opts.debug_memory;
+    dumpState = opts.dump_state;
+    dumpThreshold = opts.dump_threshold;
+    if (opts.root.empty())
+        return 0;
+    if (!fs::exists(opts.root) || !fs::is_directory(opts.root))
+        throw std::runtime_error("Root path does not exist or is not a directory.");
+    if (opts.cpu_core_mask != 0)
+        procutil::set_cpu_affinity(opts.cpu_core_mask);
+    procutil::set_cpu_poll_interval(opts.cpu_poll_sec);
+    procutil::set_memory_poll_interval(opts.mem_poll_sec);
+    procutil::set_thread_poll_interval(opts.thread_poll_sec);
+    if (opts.net_tracker)
+        procutil::init_network_usage();
+    if (!opts.log_file.empty()) {
+        init_logger(opts.log_file, opts.log_level);
+        if (logger_initialized())
+            log_info("Program started");
+    }
+    fs::create_directories(opts.log_dir);
+    std::vector<fs::path> all_repos =
+        build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+    std::map<fs::path, RepoInfo> repo_infos;
+    for (const auto& p : all_repos)
+        repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
+    std::set<fs::path> skip_repos;
+    std::mutex mtx;
+    std::atomic<bool> scanning(false);
+    std::atomic<bool> running(true);
+    std::string current_action = "Idle";
+    std::mutex action_mtx;
+    g_running_ptr = &running;
+    std::signal(SIGINT, handle_signal);
 #ifndef _WIN32
-        std::signal(SIGTERM, handle_signal);
+    std::signal(SIGTERM, handle_signal);
 #endif
-
-        ThreadGuard scan_thread;
-        std::chrono::milliseconds countdown_ms(0); // Run immediately on start
-        std::chrono::milliseconds cli_countdown_ms(0);
-
-        std::unique_ptr<AltScreenGuard> guard;
-        if (!cli && !silent)
-            guard = std::make_unique<AltScreenGuard>();
-
-        while (running) {
-            if (!scanning && scan_thread.t.joinable()) {
-                scan_thread.t.join();
-                git_libgit2_shutdown();
-                git_libgit2_init();
-            }
-
-            if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
-                {
-                    std::lock_guard<std::mutex> lk(mtx);
-                    for (auto& [p, info] : repo_infos) {
-                        if (info.status == RS_PULLING || info.status == RS_CHECKING) {
-                            if (!silent)
-                                std::cerr << "Manually clearing stale busy state for " << p << "\n";
-                            info.status = RS_PENDING;
-                            info.message = "Pending...";
-                        }
-                    }
-                }
-                scanning = true;
-                scan_thread.t = std::thread(
-                    scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
-                    std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
-                    std::ref(action_mtx), include_private, std::cref(log_dir), check_only,
-                    hash_check, concurrency, cpu_percent_limit, mem_limit, down_limit, up_limit,
-                    disk_limit, silent, force_pull);
-                countdown_ms = std::chrono::seconds(interval);
-            }
-            {
-                std::lock_guard<std::mutex> lk(mtx);
-                int sec_left =
-                    (int)std::chrono::duration_cast<std::chrono::seconds>(countdown_ms).count();
-                if (sec_left < 0)
-                    sec_left = 0;
-                std::string act;
-                {
-                    std::lock_guard<std::mutex> a_lk(action_mtx);
-                    act = current_action;
-                }
-                if (!silent && !cli) {
-                    draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, show_skipped,
-                             show_version, cpu_tracker, mem_tracker, thread_tracker, net_tracker,
-                             cpu_core_mask != 0);
-                } else if (!silent && cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
-                    draw_cli(all_repos, repo_infos, sec_left, scanning, act, show_skipped);
-                    cli_countdown_ms = std::chrono::milliseconds(1000);
-                }
-            }
-            std::this_thread::sleep_for(refresh_ms);
-            countdown_ms -= refresh_ms;
-            cli_countdown_ms -= refresh_ms;
-        }
-
-        running = false;
-        if (scan_thread.t.joinable()) {
+    ThreadGuard scan_thread;
+    std::chrono::milliseconds countdown_ms(0);
+    std::chrono::milliseconds cli_countdown_ms(0);
+    std::unique_ptr<AltScreenGuard> guard;
+    if (!opts.cli && !opts.silent)
+        guard = std::make_unique<AltScreenGuard>();
+    size_t concurrency = opts.concurrency;
+    if (opts.max_threads > 0 && concurrency > opts.max_threads)
+        concurrency = opts.max_threads;
+    while (running) {
+        if (!scanning && scan_thread.t.joinable()) {
             scan_thread.t.join();
             git_libgit2_shutdown();
             git_libgit2_init();
         }
-        if (logger_initialized())
-            log_info("Program exiting");
-        shutdown_logger();
-    } catch (...) {
-        throw;
+        if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
+            {
+                std::lock_guard<std::mutex> lk(mtx);
+                for (auto& [p, info] : repo_infos) {
+                    if (info.status == RS_PULLING || info.status == RS_CHECKING) {
+                        if (!opts.silent)
+                            std::cerr << "Manually clearing stale busy state for " << p << "\n";
+                        info.status = RS_PENDING;
+                        info.message = "Pending...";
+                    }
+                }
+            }
+            scanning = true;
+            scan_thread.t = std::thread(
+                scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
+                std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
+                std::ref(action_mtx), opts.include_private, std::cref(opts.log_dir),
+                opts.check_only, opts.hash_check, concurrency, opts.cpu_percent_limit,
+                opts.mem_limit, opts.download_limit, opts.upload_limit, opts.disk_limit,
+                opts.silent, opts.force_pull);
+            countdown_ms = std::chrono::seconds(opts.interval);
+        }
+        {
+            std::lock_guard<std::mutex> lk(mtx);
+            int sec_left =
+                (int)std::chrono::duration_cast<std::chrono::seconds>(countdown_ms).count();
+            if (sec_left < 0)
+                sec_left = 0;
+            std::string act;
+            {
+                std::lock_guard<std::mutex> a_lk(action_mtx);
+                act = current_action;
+            }
+            if (!opts.silent && !opts.cli) {
+                draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act,
+                         opts.show_skipped, opts.show_version, opts.cpu_tracker, opts.mem_tracker,
+                         opts.thread_tracker, opts.net_tracker, opts.cpu_core_mask != 0);
+            } else if (!opts.silent && opts.cli &&
+                       cli_countdown_ms <= std::chrono::milliseconds(0)) {
+                draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped);
+                cli_countdown_ms = std::chrono::milliseconds(1000);
+            }
+        }
+        std::this_thread::sleep_for(opts.refresh_ms);
+        countdown_ms -= opts.refresh_ms;
+        cli_countdown_ms -= opts.refresh_ms;
     }
+    running = false;
+    if (scan_thread.t.joinable()) {
+        scan_thread.t.join();
+        git_libgit2_shutdown();
+        git_libgit2_init();
+    }
+    if (logger_initialized())
+        log_info("Program exiting");
+    shutdown_logger();
     return 0;
+}
+
+#ifndef AUTOGITPULL_NO_MAIN
+int main(int argc, char* argv[]) {
+    git::GitInitGuard git_guard;
+    try {
+        Options opts = parse_options(argc, argv);
+        if (opts.show_help) {
+            print_help(argv[0]);
+            return 0;
+        }
+        if (opts.print_version) {
+            std::cout << AUTOGITPULL_VERSION << "\n";
+            return 0;
+        }
+        return run_event_loop(opts);
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << "\n";
+        return 1;
+    }
 }
 #endif // AUTOGITPULL_NO_MAIN
