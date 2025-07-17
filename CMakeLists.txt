@@ -13,7 +13,7 @@ else()
 endif()
 pkg_check_modules(LIBGIT2 QUIET IMPORTED_TARGET libgit2)
 if(NOT LIBGIT2_FOUND)
-    message(FATAL_ERROR "libgit2 not found. Install the libgit2 development package or run ./install_deps.sh")
+    message(FATAL_ERROR "libgit2 not found. Install the libgit2 development package or run ./scripts/install_deps.sh")
 endif()
 
 add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp config_utils.cpp debug_utils.cpp)

@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "SCRIPT_DIR=%~dp0"
 
 where cl >nul 2>nul
 if errorlevel 1 (
@@ -8,7 +9,7 @@ if errorlevel 1 (
 )
 
 if not exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\git2.lib" (
-    call install_deps.bat
+    call "%SCRIPT_DIR%install_deps.bat"
     if errorlevel 1 exit /b 1
 )
 

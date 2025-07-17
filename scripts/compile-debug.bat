@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "SCRIPT_DIR=%~dp0"
 
 rem ──────────────────────────────────────────────────────────────
 rem 1. Ensure clang/clang++ is available
@@ -20,7 +21,7 @@ set "LIBGIT2_INC=libgit2_install\include"
 set "LIBGIT2_LIB=libgit2_install\lib"
 
 if not exist "%LIBGIT2_LIB%\libgit2.a" (
-    call install_libgit2_mingw.bat
+    call "%SCRIPT_DIR%install_libgit2_mingw.bat"
     if errorlevel 1 exit /b 1
 )
 
