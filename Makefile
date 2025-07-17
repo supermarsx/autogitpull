@@ -22,6 +22,7 @@ SRC = \
     src/time_utils.cpp \
     src/config_utils.cpp \
     src/debug_utils.cpp \
+    src/options.cpp \
     src/parse_utils.cpp
 OBJ = $(SRC:.cpp=.o)
 FORMAT_FILES = $(SRC) include/*.hpp

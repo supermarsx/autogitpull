@@ -24,6 +24,7 @@ add_library(autogitpull_lib STATIC
     src/time_utils.cpp
     src/config_utils.cpp
     src/debug_utils.cpp
+    src/options.cpp
     src/parse_utils.cpp)
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread)
