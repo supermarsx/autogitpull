@@ -34,9 +34,9 @@ set "CXXFLAGS=-std=c++20 -O0 -g -fsanitize=address"
 set "LDFLAGS=-fsanitize=address"
 
 %CXX% %CXXFLAGS% ^
-    -I"%LIBGIT2_INC%" ^
-    autogitpull.cpp git_utils.cpp tui.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp debug_utils.cpp ^
-    config_utils.cpp ^
+    -I"%LIBGIT2_INC%" -Iinclude ^
+    src\autogitpull.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\debug_utils.cpp ^
+    src\config_utils.cpp ^
     "%LIBGIT2_LIB%\libgit2.a" ^
     -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -lyaml-cpp ^
     %LDFLAGS% ^

@@ -16,10 +16,18 @@ if(NOT LIBGIT2_FOUND)
     message(FATAL_ERROR "libgit2 not found. Install the libgit2 development package or run ./scripts/install_deps.sh")
 endif()
 
-add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp config_utils.cpp debug_utils.cpp)
+add_library(autogitpull_lib STATIC
+    src/git_utils.cpp
+    src/logger.cpp
+    src/resource_utils.cpp
+    src/system_utils.cpp
+    src/time_utils.cpp
+    src/config_utils.cpp
+    src/debug_utils.cpp)
+target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread)
 
-add_executable(autogitpull autogitpull.cpp tui.cpp)
+add_executable(autogitpull src/autogitpull.cpp src/tui.cpp)
 target_link_libraries(autogitpull PRIVATE autogitpull_lib)
 if(MSVC)
     target_link_options(autogitpull PRIVATE /MT)
@@ -45,8 +53,8 @@ if(NOT Catch2_FOUND)
     )
     FetchContent_MakeAvailable(Catch2)
 endif()
-add_executable(autogitpull_tests tests/tests.cpp autogitpull.cpp)
-target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR})
+add_executable(autogitpull_tests tests/tests.cpp src/autogitpull.cpp)
+target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
 target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib)
 add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
@@ -54,14 +62,14 @@ add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
 # Address sanitizer memory leak test
 add_executable(memory_leak_test
     tests/memory_leak.cpp
-    autogitpull.cpp
-    git_utils.cpp
-    logger.cpp
-    resource_utils.cpp
-    system_utils.cpp
-    time_utils.cpp
-    debug_utils.cpp)
-target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR})
+    src/autogitpull.cpp
+    src/git_utils.cpp
+    src/logger.cpp
+    src/resource_utils.cpp
+    src/system_utils.cpp
+    src/time_utils.cpp
+    src/debug_utils.cpp)
+target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)
 target_compile_options(memory_leak_test PRIVATE -fsanitize=address)
 target_link_options(memory_leak_test PRIVATE -fsanitize=address)
