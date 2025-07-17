@@ -13,6 +13,12 @@ statically but falls back to dynamic linking when static libraries are
 unavailable. If you prefer to install the library yourself, follow the
 instructions below.
 
+Running the unit tests (`make test`) additionally requires the development
+headers and libraries for `yaml-cpp` and
+[nlohmann/json](https://github.com/nlohmann/json). The same installer scripts
+(`install_deps.sh` or `install_deps.bat`) will install these packages along with
+`libgit2`.
+
 ### Installing libgit2 on Linux
 
 ```
@@ -121,9 +127,10 @@ The resulting executable will be in the `build` directory.
 ### Running tests
 
 Unit tests use [Catch2](https://github.com/catchorg/Catch2). If the library is
-not installed, CMake will automatically download it using `FetchContent`. **Make
-sure `libgit2` is installed** (run `./install_deps.sh` on Linux/macOS or
-`install_deps.bat` on Windows) before configuring and building the tests.
+not installed, CMake will automatically download it using `FetchContent`.
+`make test` requires the development packages for `libgit2`, `yaml-cpp` and
+`nlohmann-json`. Use `./install_deps.sh` (Linux/macOS) or `install_deps.bat`
+(Windows) to install them before configuring and building the tests.
 Once the dependencies are in place, run `ctest`:
 
 ```bash
