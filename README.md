@@ -201,8 +201,8 @@ CPU, memory and thread usage are tracked and shown by default. Disable them indi
 
 Frequently used options can be stored in a YAML file and loaded with `--config-yaml <file>`.
 Keys match the long option names without the leading dashes. Boolean flags should be set to `true` or `false`.
-Arguments provided on the command line override values from the YAML file. See `example-config.yaml` for a
-complete example.
+Arguments provided on the command line override values from the YAML file. See
+`example-config.yaml` and `example-config.json` for complete examples.
 
 ### JSON configuration
 
