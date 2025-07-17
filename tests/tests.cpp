@@ -153,6 +153,7 @@ TEST_CASE("Resource helpers") {
     procutil::get_thread_count();
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(procutil::get_thread_count() >= 1);
+    REQUIRE(procutil::get_virtual_memory_kb() >= procutil::get_memory_usage_mb() * 1024);
 }
 
 TEST_CASE("Thread count reflects running threads") {

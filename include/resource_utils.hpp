@@ -19,6 +19,9 @@ void set_thread_poll_interval(unsigned int seconds);
 /** @brief Get the resident memory usage of the process in megabytes. */
 std::size_t get_memory_usage_mb();
 
+/** @brief Get the virtual memory usage of the process in kilobytes. */
+std::size_t get_virtual_memory_kb();
+
 /** @brief Retrieve the number of threads currently in the process. */
 std::size_t get_thread_count();
 

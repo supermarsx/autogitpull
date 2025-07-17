@@ -270,6 +270,32 @@ std::size_t get_memory_usage_mb() {
     return last_mem_usage;
 }
 
+std::size_t get_virtual_memory_kb() {
+#ifdef __linux__
+    std::ifstream statm("/proc/self/statm");
+    std::size_t pages = 0;
+    if (!(statm >> pages))
+        return 0;
+    long page_size = sysconf(_SC_PAGESIZE);
+    return pages * static_cast<std::size_t>(page_size) / 1024;
+#elif defined(_WIN32)
+    PROCESS_MEMORY_COUNTERS_EX pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmc),
+                             sizeof(pmc)))
+        return static_cast<std::size_t>(pmc.PrivateUsage / 1024);
+    return 0;
+#elif defined(__APPLE__)
+    mach_task_basic_info info;
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info),
+                  &count) == KERN_SUCCESS)
+        return static_cast<std::size_t>(info.virtual_size / 1024);
+    return 0;
+#else
+    return 0;
+#endif
+}
+
 std::size_t get_thread_count() {
     auto now = std::chrono::steady_clock::now();
     if (now - prev_thread_time < thread_poll_interval)
