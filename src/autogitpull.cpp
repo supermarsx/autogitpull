@@ -32,6 +32,15 @@
 #include "parse_utils.hpp"
 #include "options.hpp"
 #include "lock_utils.hpp"
+#ifndef _WIN32
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include "linux_daemon.hpp"
+#else
+#include "windows_service.hpp"
+#endif
 
 namespace fs = std::filesystem;
 
@@ -584,6 +593,23 @@ int run_event_loop(const Options& opts) {
     debugMemory = opts.debug_memory;
     dumpState = opts.dump_state;
     dumpThreshold = opts.dump_threshold;
+#ifndef _WIN32
+    if (opts.root.empty() && !opts.attach_name.empty()) {
+        int fd = procutil::connect_status_socket(opts.attach_name);
+        if (fd < 0) {
+            std::cerr << "Failed to connect to daemon" << std::endl;
+            return 1;
+        }
+        char buf[256];
+        ssize_t n;
+        while ((n = read(fd, buf, sizeof(buf) - 1)) > 0) {
+            buf[n] = 0;
+            std::cout << buf << std::flush;
+        }
+        close(fd);
+        return 0;
+    }
+#endif
     if (opts.root.empty())
         return 0;
     if (!fs::exists(opts.root) || !fs::is_directory(opts.root))
@@ -631,7 +657,28 @@ int run_event_loop(const Options& opts) {
     size_t concurrency = opts.concurrency;
     if (opts.max_threads > 0 && concurrency > opts.max_threads)
         concurrency = opts.max_threads;
+#ifndef _WIN32
+    int status_fd = -1;
+    std::vector<int> status_clients;
+    if (!opts.attach_name.empty()) {
+        status_fd = procutil::create_status_socket(opts.attach_name);
+        if (status_fd >= 0) {
+            int fl = fcntl(status_fd, F_GETFL, 0);
+            fcntl(status_fd, F_SETFL, fl | O_NONBLOCK);
+        }
+    }
+#endif
     while (running) {
+#ifndef _WIN32
+        if (status_fd >= 0) {
+            int c = accept(status_fd, nullptr, nullptr);
+            if (c >= 0) {
+                int fl = fcntl(c, F_GETFL, 0);
+                fcntl(c, F_SETFL, fl | O_NONBLOCK);
+                status_clients.push_back(c);
+            }
+        }
+#endif
         if (!scanning && scan_thread.t.joinable()) {
             scan_thread.t.join();
             git_libgit2_shutdown();
@@ -661,6 +708,9 @@ int run_event_loop(const Options& opts) {
                 opts.silent, opts.force_pull);
             countdown_ms = std::chrono::seconds(opts.interval);
         }
+#ifndef _WIN32
+        std::string status_msg;
+#endif
         {
             std::lock_guard<std::mutex> lk(mtx);
             int sec_left =
@@ -672,8 +722,25 @@ int run_event_loop(const Options& opts) {
                 std::lock_guard<std::mutex> a_lk(action_mtx);
                 act = current_action;
             }
+#ifndef _WIN32
+            status_msg = act + "\n";
+#endif
             update_ui(opts, all_repos, repo_infos, sec_left, scanning, act, cli_countdown_ms);
         }
+#ifndef _WIN32
+        if (status_fd >= 0) {
+            const std::string& msg = status_msg;
+            for (auto it = status_clients.begin(); it != status_clients.end();) {
+                ssize_t w = send(*it, msg.c_str(), msg.size(), MSG_NOSIGNAL);
+                if (w <= 0) {
+                    close(*it);
+                    it = status_clients.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+#endif
         std::this_thread::sleep_for(opts.refresh_ms);
         countdown_ms -= opts.refresh_ms;
         cli_countdown_ms -= opts.refresh_ms;
@@ -687,6 +754,13 @@ int run_event_loop(const Options& opts) {
     if (logger_initialized())
         log_info("Program exiting");
     shutdown_logger();
+#ifndef _WIN32
+    if (status_fd >= 0) {
+        for (int c : status_clients)
+            close(c);
+        procutil::remove_status_socket(opts.attach_name, status_fd);
+    }
+#endif
     return 0;
 }
 

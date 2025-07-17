@@ -76,5 +76,20 @@ bool uninstall_service(const std::string& name) {
     return ok;
 }
 
+int create_status_socket(const std::string& name) {
+    (void)name;
+    return -1;
+}
+
+int connect_status_socket(const std::string& name) {
+    (void)name;
+    return -1;
+}
+
+void remove_status_socket(const std::string& name, int fd) {
+    (void)name;
+    (void)fd;
+}
+
 } // namespace winservice
 #endif // _WIN32

@@ -1,11 +1,14 @@
 #include "linux_daemon.hpp"
-#include <fstream>
 #ifndef _WIN32
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <cstring>
 #endif
+#include <fstream>
 
 namespace procutil {
 
@@ -67,6 +70,44 @@ bool remove_service_unit(const std::string& name) {
     std::remove(path.c_str());
     std::system("systemctl daemon-reload > /dev/null 2>&1");
     return true;
+}
+
+int create_status_socket(const std::string& name) {
+    std::string path = "/tmp/" + name + ".sock";
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0)
+        return -1;
+    sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
+    unlink(path.c_str());
+    if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0 || listen(fd, 5) != 0) {
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
+int connect_status_socket(const std::string& name) {
+    std::string path = "/tmp/" + name + ".sock";
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0)
+        return -1;
+    sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
+    if (connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
+void remove_status_socket(const std::string& name, int fd) {
+    if (fd >= 0)
+        close(fd);
+    std::string path = "/tmp/" + name + ".sock";
+    unlink(path.c_str());
 }
 #else
 bool daemonize() { return false; }

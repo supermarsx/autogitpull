@@ -384,6 +384,12 @@ TEST_CASE("parse_options service flags") {
     REQUIRE(opts2.uninstall_service);
 }
 
+TEST_CASE("parse_options attach option") {
+    const char* argv[] = {"prog", "--attach", "foo"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.attach_name == std::string("foo"));
+}
+
 TEST_CASE("YAML config loading") {
     fs::path cfg = fs::temp_directory_path() / "cfg.yaml";
     {
