@@ -248,6 +248,48 @@ void draw_cli(const std::vector<fs::path>& all_repos,
     std::cout << std::flush;
 }
 
+// Apply process and tracking related settings
+static void setup_environment(const Options& opts) {
+    if (opts.cpu_core_mask != 0)
+        procutil::set_cpu_affinity(opts.cpu_core_mask);
+    procutil::set_cpu_poll_interval(opts.cpu_poll_sec);
+    procutil::set_memory_poll_interval(opts.mem_poll_sec);
+    procutil::set_thread_poll_interval(opts.thread_poll_sec);
+    if (opts.net_tracker)
+        procutil::init_network_usage();
+}
+
+// Initialize logging if requested
+static void setup_logging(const Options& opts) {
+    if (!opts.log_file.empty()) {
+        init_logger(opts.log_file, opts.log_level);
+        if (logger_initialized())
+            log_info("Program started");
+    }
+}
+
+// Build repository list and populate info table
+static void prepare_repos(const Options& opts, std::vector<fs::path>& all_repos,
+                          std::map<fs::path, RepoInfo>& repo_infos) {
+    all_repos = build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+    for (const auto& p : all_repos)
+        repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
+}
+
+// Render either the TUI or CLI output
+static void update_ui(const Options& opts, const std::vector<fs::path>& all_repos,
+                      const std::map<fs::path, RepoInfo>& repo_infos, int sec_left, bool scanning,
+                      const std::string& act, std::chrono::milliseconds& cli_countdown_ms) {
+    if (!opts.silent && !opts.cli) {
+        draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act, opts.show_skipped,
+                 opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
+                 opts.net_tracker, opts.cpu_core_mask != 0);
+    } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
+        draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped);
+        cli_countdown_ms = std::chrono::milliseconds(1000);
+    }
+}
+
 // Process a single repository
 void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
@@ -544,24 +586,12 @@ int run_event_loop(const Options& opts) {
         return 0;
     if (!fs::exists(opts.root) || !fs::is_directory(opts.root))
         throw std::runtime_error("Root path does not exist or is not a directory.");
-    if (opts.cpu_core_mask != 0)
-        procutil::set_cpu_affinity(opts.cpu_core_mask);
-    procutil::set_cpu_poll_interval(opts.cpu_poll_sec);
-    procutil::set_memory_poll_interval(opts.mem_poll_sec);
-    procutil::set_thread_poll_interval(opts.thread_poll_sec);
-    if (opts.net_tracker)
-        procutil::init_network_usage();
-    if (!opts.log_file.empty()) {
-        init_logger(opts.log_file, opts.log_level);
-        if (logger_initialized())
-            log_info("Program started");
-    }
+    setup_environment(opts);
+    setup_logging(opts);
     fs::create_directories(opts.log_dir);
-    std::vector<fs::path> all_repos =
-        build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+    std::vector<fs::path> all_repos;
     std::map<fs::path, RepoInfo> repo_infos;
-    for (const auto& p : all_repos)
-        repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
+    prepare_repos(opts, all_repos, repo_infos);
     std::set<fs::path> skip_repos;
     std::mutex mtx;
     std::atomic<bool> scanning(false);
@@ -623,15 +653,7 @@ int run_event_loop(const Options& opts) {
                 std::lock_guard<std::mutex> a_lk(action_mtx);
                 act = current_action;
             }
-            if (!opts.silent && !opts.cli) {
-                draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act,
-                         opts.show_skipped, opts.show_version, opts.cpu_tracker, opts.mem_tracker,
-                         opts.thread_tracker, opts.net_tracker, opts.cpu_core_mask != 0);
-            } else if (!opts.silent && opts.cli &&
-                       cli_countdown_ms <= std::chrono::milliseconds(0)) {
-                draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped);
-                cli_countdown_ms = std::chrono::milliseconds(1000);
-            }
+            update_ui(opts, all_repos, repo_infos, sec_left, scanning, act, cli_countdown_ms);
         }
         std::this_thread::sleep_for(opts.refresh_ms);
         countdown_ms -= opts.refresh_ms;
