@@ -26,6 +26,7 @@
 #include "version.hpp"
 #include "thread_utils.hpp"
 #include "config_utils.hpp"
+#include "debug_utils.hpp"
 
 namespace fs = std::filesystem;
 
@@ -38,6 +39,9 @@ struct AltScreenGuard {
 };
 
 std::atomic<bool>* g_running_ptr = nullptr;
+bool debugMemory = false;
+bool dumpState = false;
+size_t dumpThreshold = 0;
 
 void handle_signal(int) {
     if (g_running_ptr)
@@ -129,6 +133,9 @@ void print_help(const char* prog) {
               << "  -D, --max-depth <n>    Limit recursive scan depth\n"
               << "  -c, --cli               Use console output\n"
               << "  -s, --silent            Disable console output\n"
+              << "      --debug-memory      Log memory usage each scan\n"
+              << "      --dump-state        Dump container state when large\n"
+              << "      --dump-large <n>    Dump threshold for --dump-state\n"
               << "  -h, --help              Show this message\n";
 }
 
@@ -374,6 +381,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit, size_t disk_limit, bool silent, bool force_pull) {
     git::GitInitGuard guard;
+    size_t mem_before = procutil::get_memory_usage_mb();
 
     {
         std::lock_guard<std::mutex> lk(mtx);
@@ -428,6 +436,18 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
     }
     threads.clear();
     threads.shrink_to_fit();
+    if (debugMemory) {
+        size_t mem_after = procutil::get_memory_usage_mb();
+        log_debug("Memory before=" + std::to_string(mem_before) +
+                  "MB after=" + std::to_string(mem_after) +
+                  "MB delta=" + std::to_string(mem_after - mem_before) + "MB");
+        debug_utils::log_container_size("repo_infos", repo_infos);
+        debug_utils::log_container_size("skip_repos", skip_repos);
+        if (dumpState && repo_infos.size() > dumpThreshold)
+            debug_utils::dump_repo_infos(repo_infos);
+        if (dumpState && skip_repos.size() > dumpThreshold)
+            debug_utils::dump_container("skip_repos", skip_repos);
+    }
     scanning_flag = false;
     {
         std::lock_guard<std::mutex> lk(action_mtx);
@@ -481,7 +501,8 @@ int main(int argc, char* argv[]) {
             "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
             "--upload-limit",    "--disk-limit",     "--max-depth",         "--cli",
             "--silent",          "--recursive",      "--config-yaml",       "--config-json",
-            "--ignore",          "--force-pull",     "--discard-dirty"};
+            "--ignore",          "--force-pull",     "--discard-dirty",     "--debug-memory",
+            "--dump-state",      "--dump-large"};
         const std::map<char, std::string> short_opts{
             {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
             {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -725,6 +746,16 @@ int main(int argc, char* argv[]) {
         mem_tracker = !cfg_flag("--no-mem-tracker");
         thread_tracker = !cfg_flag("--no-thread-tracker");
         net_tracker = cfg_flag("--net-tracker");
+        debugMemory = cfg_flag("--debug-memory");
+        dumpState = cfg_flag("--dump-state");
+        if (cfg_opts.count("--dump-large")) {
+            try {
+                dumpThreshold = static_cast<size_t>(std::stoul(cfg_opt("--dump-large")));
+            } catch (...) {
+                std::cerr << "Invalid value in config for dump-large\n";
+                return 1;
+            }
+        }
 
         if (parser.has_flag("--interval")) {
             std::string val = parser.get_option("--interval");
@@ -968,6 +999,23 @@ int main(int argc, char* argv[]) {
         mem_tracker = !parser.has_flag("--no-mem-tracker");
         thread_tracker = !parser.has_flag("--no-thread-tracker");
         net_tracker = parser.has_flag("--net-tracker");
+        debugMemory = parser.has_flag("--debug-memory");
+        dumpState = parser.has_flag("--dump-state");
+        if (parser.has_flag("--dump-large")) {
+            std::string val = parser.get_option("--dump-large");
+            if (val.empty()) {
+                if (!silent)
+                    std::cerr << "--dump-large requires a numeric value\n";
+                return 1;
+            }
+            try {
+                dumpThreshold = static_cast<size_t>(std::stoul(val));
+            } catch (...) {
+                if (!silent)
+                    std::cerr << "Invalid value for --dump-large: " << val << "\n";
+                return 1;
+            }
+        }
         if (max_threads > 0 && concurrency > max_threads)
             concurrency = max_threads;
         fs::path log_dir;

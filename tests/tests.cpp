@@ -251,6 +251,15 @@ TEST_CASE("ArgParser disk limit") {
     REQUIRE(parser.get_option("--disk-limit") == std::string("250"));
 }
 
+TEST_CASE("ArgParser debug flags") {
+    const char* argv[] = {"prog", "--debug-memory", "--dump-state", "--dump-large", "5"};
+    ArgParser parser(5, const_cast<char**>(argv),
+                     {"--debug-memory", "--dump-state", "--dump-large"});
+    REQUIRE(parser.has_flag("--debug-memory"));
+    REQUIRE(parser.has_flag("--dump-state"));
+    REQUIRE(parser.get_option("--dump-large") == std::string("5"));
+}
+
 TEST_CASE("ArgParser recursive flag") {
     const char* argv[] = {"prog", "--recursive"};
     ArgParser parser(2, const_cast<char**>(argv), {"--recursive"});

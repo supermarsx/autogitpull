@@ -12,7 +12,9 @@
  * A list of known flags can be provided so that unknown flags are collected
  * and reported separately. Options may also be specified using the form
  * `--opt=value`. A mapping of short options (like `-h`) to their long
- * counterparts can optionally be supplied.
+ * counterparts can optionally be supplied. New options such as `--debug-memory`,
+ * `--dump-state` and `--dump-large` can be added to the known flag set so they
+ * are treated as valid by the parser.
  */
 class ArgParser {
     std::set<std::string> flags_;                ///< Flags present on the command line
