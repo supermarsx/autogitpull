@@ -145,7 +145,7 @@ valgrind ./build/memory_leak_test
 Valgrind should finish with the message `All heap blocks were freed -- no leaks
 are possible`.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--silent] [--force-pull] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--silent] [--force-pull] [--debug-memory] [--dump-state] [--dump-large <n>] [--help]`
 
 Most options have single-letter shorthands. Run `autogitpull --help` to see a concise list.
 
@@ -183,6 +183,9 @@ Available options:
 - `--cli` – output text updates to stdout instead of the TUI.
 - `--silent` – disable all console output; only logs are written.
 - `--force-pull` – discard local changes when pulling updates.
+- `--debug-memory` – log container sizes and memory usage after each scan.
+- `--dump-state` – dump repository state when container size exceeds a limit.
+- `--dump-large <n>` – threshold for dumping containers with `--dump-state`.
 - `--help` – show the usage information and exit.
 
 Repositories with uncommitted changes are skipped by default to avoid losing

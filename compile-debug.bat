@@ -34,7 +34,7 @@ set "LDFLAGS=-fsanitize=address"
 
 %CXX% %CXXFLAGS% ^
     -I"%LIBGIT2_INC%" ^
-    autogitpull.cpp git_utils.cpp tui.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp ^
+    autogitpull.cpp git_utils.cpp tui.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp debug_utils.cpp ^
     config_utils.cpp ^
     "%LIBGIT2_LIB%\libgit2.a" ^
     -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -lyaml-cpp ^
