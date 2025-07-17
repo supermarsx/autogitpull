@@ -4,6 +4,7 @@ project(autogitpull)
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
+find_package(yaml-cpp REQUIRED)
 if(APPLE)
     set(PKG_CONFIG_USE_STATIC_LIBS OFF)
 else()
@@ -14,8 +15,8 @@ if(NOT LIBGIT2_FOUND)
     message(FATAL_ERROR "libgit2 not found. Install the libgit2 development package or run ./install_deps.sh")
 endif()
 
-add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp)
-target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 pthread)
+add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp config_utils.cpp)
+target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp pthread)
 
 add_executable(autogitpull autogitpull.cpp tui.cpp)
 target_link_libraries(autogitpull PRIVATE autogitpull_lib)

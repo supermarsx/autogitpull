@@ -12,9 +12,9 @@ case "$os" in
     Linux*)
         if command -v apt-get >/dev/null; then
             sudo apt-get update
-            sudo apt-get install -y libgit2-dev
+            sudo apt-get install -y libgit2-dev libyaml-cpp-dev
         elif command -v yum >/dev/null; then
-            sudo yum install -y libgit2-devel
+            sudo yum install -y libgit2-devel yaml-cpp-devel
         else
             echo "Unsupported Linux distribution. Please install libgit2 manually."
             exit 1
