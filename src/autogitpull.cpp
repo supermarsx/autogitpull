@@ -448,6 +448,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit, size_t disk_limit, bool silent, bool force_pull) {
     git::GitInitGuard guard;
+    static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
     size_t virt_before = procutil::get_virtual_memory_kb();
 
@@ -504,7 +505,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
     }
     threads.clear();
     threads.shrink_to_fit();
-    if (debugMemory) {
+    if (debugMemory || dumpState) {
         size_t mem_after = procutil::get_memory_usage_mb();
         size_t virt_after = procutil::get_virtual_memory_kb();
         log_debug("Memory before=" + std::to_string(mem_before) + "MB after=" +
@@ -512,12 +513,13 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                   "MB vmem_before=" + std::to_string(virt_before / 1024) +
                   "MB vmem_after=" + std::to_string(virt_after / 1024) +
                   "MB vmem_delta=" + std::to_string((virt_after - virt_before) / 1024) + "MB");
+        debug_utils::log_memory_delta_mb(mem_after, last_mem);
         debug_utils::log_container_size("repo_infos", repo_infos);
         debug_utils::log_container_size("skip_repos", skip_repos);
         if (dumpState && repo_infos.size() > dumpThreshold)
-            debug_utils::dump_repo_infos(repo_infos);
+            debug_utils::dump_repo_infos(repo_infos, dumpThreshold);
         if (dumpState && skip_repos.size() > dumpThreshold)
-            debug_utils::dump_container("skip_repos", skip_repos);
+            debug_utils::dump_container("skip_repos", skip_repos, dumpThreshold);
     }
     scanning_flag = false;
     {
