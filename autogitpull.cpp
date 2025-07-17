@@ -71,6 +71,37 @@ std::string status_label(RepoStatus status) {
     return "";
 }
 
+/**
+ * @brief Collect repository paths under @a root.
+ *
+ * @param root      Directory to scan.
+ * @param recursive Whether to scan recursively.
+ * @param ignore    List of directories to skip.
+ * @return Vector of discovered directories.
+ */
+std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
+                                      const std::vector<fs::path>& ignore) {
+    std::vector<fs::path> result;
+    if (recursive) {
+        for (const auto& entry : fs::recursive_directory_iterator(root)) {
+            if (!entry.is_directory())
+                continue;
+            fs::path p = entry.path();
+            if (std::find(ignore.begin(), ignore.end(), p) != ignore.end())
+                continue;
+            result.push_back(p);
+        }
+    } else {
+        for (const auto& entry : fs::directory_iterator(root)) {
+            fs::path p = entry.path();
+            if (std::find(ignore.begin(), ignore.end(), p) != ignore.end())
+                continue;
+            result.push_back(p);
+        }
+    }
+    return result;
+}
+
 /** Print the command line help text. */
 void print_help(const char* prog) {
     std::cout << "Usage: " << prog << " <root-folder> [options]\n\n"
@@ -83,6 +114,7 @@ void print_help(const char* prog) {
               << "  -r, --refresh-rate <ms> TUI refresh rate\n"
               << "  -d, --log-dir <path>    Directory for pull logs\n"
               << "  -l, --log-file <path>   File for general logs\n"
+              << "      --ignore <dir>      Directory to ignore (repeatable)\n"
               << "      --disk-limit <KB/s> Limit disk throughput\n"
               << "      --recursive         Scan subdirectories recursively\n"
               << "  -c, --cli               Use console output\n"
@@ -432,6 +464,7 @@ int main(int argc, char* argv[]) {
                                           "--cli",
                                           "--silent",
                                           "--recursive",
+                                          "--ignore",
                                           "--force-pull",
                                           "--discard-dirty"};
         const std::map<char, std::string> short_opts{
@@ -793,6 +826,15 @@ int main(int argc, char* argv[]) {
                 std::cerr << "Root path does not exist or is not a directory.\n";
             return 1;
         }
+        std::vector<fs::path> ignore_dirs;
+        for (const auto& val : parser.get_all_options("--ignore")) {
+            if (val.empty()) {
+                if (!silent)
+                    std::cerr << "--ignore requires a path\n";
+                return 1;
+            }
+            ignore_dirs.push_back(val);
+        }
         if (cpu_core_mask != 0)
             procutil::set_cpu_affinity(cpu_core_mask);
 
@@ -811,18 +853,8 @@ int main(int argc, char* argv[]) {
                 std::cerr << "Failed to open log file: " << log_file << "\n";
         }
 
-        // Grab subdirectories at startup
-        std::vector<fs::path> all_repos;
-        if (recursive_scan) {
-            for (const auto& entry : fs::recursive_directory_iterator(root)) {
-                if (entry.is_directory())
-                    all_repos.push_back(entry.path());
-            }
-        } else {
-            for (const auto& entry : fs::directory_iterator(root)) {
-                all_repos.push_back(entry.path());
-            }
-        }
+        // Grab subdirectories at startup, skipping ignored paths
+        std::vector<fs::path> all_repos = build_repo_list(root, recursive_scan, ignore_dirs);
         std::map<fs::path, RepoInfo> repo_infos;
         for (const auto& p : all_repos) {
             repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
