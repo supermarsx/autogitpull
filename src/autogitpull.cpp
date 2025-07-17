@@ -382,6 +382,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t up_limit, size_t disk_limit, bool silent, bool force_pull) {
     git::GitInitGuard guard;
     size_t mem_before = procutil::get_memory_usage_mb();
+    size_t virt_before = procutil::get_virtual_memory_kb();
 
     {
         std::lock_guard<std::mutex> lk(mtx);
@@ -438,9 +439,12 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
     threads.shrink_to_fit();
     if (debugMemory) {
         size_t mem_after = procutil::get_memory_usage_mb();
-        log_debug("Memory before=" + std::to_string(mem_before) +
-                  "MB after=" + std::to_string(mem_after) +
-                  "MB delta=" + std::to_string(mem_after - mem_before) + "MB");
+        size_t virt_after = procutil::get_virtual_memory_kb();
+        log_debug("Memory before=" + std::to_string(mem_before) + "MB after=" +
+                  std::to_string(mem_after) + "MB delta=" + std::to_string(mem_after - mem_before) +
+                  "MB vmem_before=" + std::to_string(virt_before / 1024) +
+                  "MB vmem_after=" + std::to_string(virt_after / 1024) +
+                  "MB vmem_delta=" + std::to_string((virt_after - virt_before) / 1024) + "MB");
         debug_utils::log_container_size("repo_infos", repo_infos);
         debug_utils::log_container_size("skip_repos", skip_repos);
         if (dumpState && repo_infos.size() > dumpThreshold)
