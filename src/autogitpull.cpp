@@ -28,6 +28,7 @@
 #include "thread_utils.hpp"
 #include "config_utils.hpp"
 #include "debug_utils.hpp"
+#include "lock_utils.hpp"
 #include "parse_utils.hpp"
 #include "options.hpp"
 
@@ -544,6 +545,11 @@ int run_event_loop(const Options& opts) {
         return 0;
     if (!fs::exists(opts.root) || !fs::is_directory(opts.root))
         throw std::runtime_error("Root path does not exist or is not a directory.");
+    lockfile::PidLock lock(opts.root);
+    if (!lock.acquired()) {
+        std::cerr << "Another instance is already running for " << opts.root << "\n";
+        return 1;
+    }
     if (opts.cpu_core_mask != 0)
         procutil::set_cpu_affinity(opts.cpu_core_mask);
     procutil::set_cpu_poll_interval(opts.cpu_poll_sec);

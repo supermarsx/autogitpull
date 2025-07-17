@@ -24,6 +24,7 @@ add_library(autogitpull_lib STATIC
     src/time_utils.cpp
     src/config_utils.cpp
     src/debug_utils.cpp
+    src/lock_utils.cpp
     src/options.cpp
     src/parse_utils.cpp)
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -71,8 +72,9 @@ add_executable(memory_leak_test
     src/system_utils.cpp
     src/time_utils.cpp
     src/config_utils.cpp
-    src/debug_utils.cpp
     src/parse_utils.cpp
+    src/debug_utils.cpp
+    src/lock_utils.cpp
     src/tui.cpp)
 target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)

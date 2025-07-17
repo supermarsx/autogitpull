@@ -15,6 +15,6 @@ mkdir -p dist
 $CXX -std=c++20 -O0 -g -fsanitize=address -Iinclude $PKG_CFLAGS \
     src/autogitpull.cpp src/git_utils.cpp src/tui.cpp src/logger.cpp \
     src/resource_utils.cpp src/system_utils.cpp src/time_utils.cpp \
-    src/config_utils.cpp src/debug_utils.cpp src/options.cpp \
+    src/config_utils.cpp src/debug_utils.cpp src/lock_utils.cpp src/options.cpp \
     src/parse_utils.cpp $PKG_LIBS \
     -fsanitize=address -o dist/autogitpull_debug
