@@ -7,3 +7,6 @@ for %%f in (*.o *.obj) do (
 if exist build (
     rmdir /s /q build
 )
+if exist dist (
+    rmdir /s /q dist
+)

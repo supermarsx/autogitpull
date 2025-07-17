@@ -5,3 +5,6 @@ rm -f *.o *.obj
 if [ -d build ]; then
   rm -rf build
 fi
+if [ -d dist ]; then
+  rm -rf dist
+fi

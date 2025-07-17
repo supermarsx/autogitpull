@@ -69,8 +69,8 @@ will attempt to install a C++ compiler if one isn't present. Windows users get
 `scripts/install_deps.bat`, `scripts/install_libgit2_mingw.bat` and `scripts/run.bat`.
 
 Clean up intermediate files with `make clean`. You can also run
-`./clean.sh` on Unix-like systems or `clean.bat` on Windows to remove the
-generated binary, object files and the `build` directory.
+`scripts/clean.sh` on Unix-like systems or `scripts/clean.bat` on Windows to remove the
+generated binary, object files and the `build` and `dist` directories.
 
 ### Debug builds for leak analysis
 
