@@ -51,13 +51,13 @@ Options parse_options(int argc, char* argv[]) {
         "--config-json",      "--ignore",         "--force-pull",        "--discard-dirty",
         "--debug-memory",     "--dump-state",     "--dump-large",        "--install-daemon",
         "--uninstall-daemon", "--daemon-config",  "--install-service",   "--uninstall-service",
-        "--service-config"};
+        "--service-config",   "--attach"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
         {'d', "--log-dir"},         {'l', "--log-file"},     {'y', "--config-yaml"},
         {'j', "--config-json"},     {'c', "--cli"},          {'s', "--silent"},
-        {'D', "--max-depth"},       {'h', "--help"}};
+        {'D', "--max-depth"},       {'h', "--help"},         {'A', "--attach"}};
     ArgParser parser(argc, argv, known, short_opts);
 
     auto cfg_flag = [&](const std::string& k) {
@@ -98,11 +98,20 @@ Options parse_options(int argc, char* argv[]) {
             val = cfg_opt("--service-config");
         opts.service_config = val;
     }
+    if (parser.has_flag("--attach") || cfg_opts.count("--attach")) {
+        std::string val = parser.get_option("--attach");
+        if (val.empty())
+            val = cfg_opt("--attach");
+        if (val.empty())
+            throw std::runtime_error("--attach requires a name");
+        opts.attach_name = val;
+    }
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");
     opts.print_version = parser.has_flag("--version");
-    if (parser.positional().size() != 1 && !opts.show_help && !opts.print_version)
+    if (parser.positional().size() != 1 && !opts.show_help && !opts.print_version &&
+        opts.attach_name.empty())
         throw std::runtime_error("Root path required");
     if (!parser.unknown_flags().empty()) {
         throw std::runtime_error("Unknown option: " + parser.unknown_flags().front());

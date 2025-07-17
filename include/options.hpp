@@ -49,6 +49,7 @@ struct Options {
     bool install_service = false;
     bool uninstall_service = false;
     std::string service_config;
+    std::string attach_name;
     bool show_help = false;
     bool print_version = false;
 };
