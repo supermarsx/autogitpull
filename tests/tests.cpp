@@ -8,6 +8,7 @@
 #include "time_utils.hpp"
 #include "config_utils.hpp"
 #include "parse_utils.hpp"
+#include "lock_utils.hpp"
 #include <filesystem>
 #include <thread>
 #include <fstream>
@@ -170,6 +171,26 @@ TEST_CASE("Resource helpers") {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(procutil::get_thread_count() >= 1);
     REQUIRE(procutil::get_virtual_memory_kb() >= procutil::get_memory_usage_mb() * 1024);
+}
+
+TEST_CASE("Lock file guards instances") {
+    namespace fs = std::filesystem;
+    fs::path dir = fs::temp_directory_path() / "autogitpull_lock_test";
+    fs::create_directories(dir);
+    fs::path lock = dir / ".autogitpull.lock";
+    fs::remove(lock);
+    {
+        procutil::LockFileGuard g1(lock);
+        REQUIRE(g1.locked);
+        procutil::LockFileGuard g2(lock);
+        REQUIRE_FALSE(g2.locked);
+        unsigned long pid = 0;
+        REQUIRE(procutil::read_lock_pid(lock, pid));
+        REQUIRE(procutil::process_running(pid));
+    }
+    procutil::LockFileGuard g3(lock);
+    REQUIRE(g3.locked);
+    fs::remove_all(dir);
 }
 
 TEST_CASE("Thread count reflects running threads") {
