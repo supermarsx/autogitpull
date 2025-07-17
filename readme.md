@@ -69,12 +69,12 @@ Provide `--log-dir <path>` to store pull logs for each repository. After every p
 
 Frequently used options can be stored in a YAML file and loaded with `--config-yaml <file>`.
 Keys match the long option names without the leading dashes. Boolean flags should be set to `true` or `false`.
-Arguments provided on the command line override values from the YAML file. See `example-config.yaml` and `example-config.json` for complete examples.
+Arguments provided on the command line override values from the YAML file. See `examples/example-config.yaml` and `examples/example-config.json` for complete examples.
 
 ### JSON configuration
 
 Settings can also be provided in JSON format and loaded with `--config-json <file>`.
-The keys mirror the long command line options without the leading dashes. Values from the command line override those from the JSON file. See `example-config.json` for a complete example.
+The keys mirror the long command line options without the leading dashes. Values from the command line override those from the JSON file. See `examples/example-config.json` for a complete example.
 
 ## Build requirements
 
@@ -118,11 +118,11 @@ paths when compiling with `compile-cl.bat`.
 #### MinGW
 
 Run `scripts/install_libgit2_mingw.bat` to build libgit2 natively with MinGW. The
-script installs the static library and headers under `libgit2\_install`.
+script installs the static library and headers under `libs/libgit2_install`.
 
 `scripts/compile-cl.bat` expects a vcpkg installation while `scripts/compile.bat` uses the
 library produced by `scripts/install_libgit2_mingw.bat` and will call it
-automatically if `libgit2\_install` is missing. When linking with MinGW,
+automatically if `libs/libgit2_install` is missing. When linking with MinGW,
 additional Windows system libraries are required. `scripts/compile.bat` now attempts
 to install MinGW through Chocolatey if `g++` is not found and already
 includes `winhttp`, `ole32`, `rpcrt4` and `crypt32` so that the build
@@ -134,17 +134,17 @@ succeeds without manual tweaks.
 
 Run `make` (Linux/macOS), `scripts/compile.bat` (MinGW) or `scripts/compile-cl.bat` (MSVC) to
 build the project. `scripts/compile.bat` invokes `scripts/install_libgit2_mingw.bat` when
-`libgit2` is missing. The binary is produced in `dist` as `dist/autogitpull` (or
-`dist/autogitpull.exe` on Windows).
+`libgit2` is missing. All helper scripts place the resulting executable in the `dist/`
+directory as `dist/autogitpull` (or `dist/autogitpull.exe` on Windows).
 
 The repository also ships with `scripts/compile.sh` for Unix-like environments which
 will attempt to install a C++ compiler if one isn't present. Windows users get
 `scripts/compile.bat` (MinGW) and `scripts/compile-cl.bat` (MSVC) along with
 `scripts/install_deps.bat`, `scripts/install_libgit2_mingw.bat` and `scripts/run.bat`.
 
-Clean up intermediate files with `make clean`. You can also run
-`scripts/clean.sh` on Unix-like systems or `scripts/clean.bat` on Windows to remove the
-generated binary, object files and the `build` and `dist` directories.
+Clean up intermediate files with `make clean`. Dedicated cleanup scripts are also
+available under `scripts/` as `scripts/clean.sh` (Unix-like systems) and `scripts/clean.bat`
+(Windows) to remove the generated binary, object files and the `build` and `dist` directories.
 
 ### Debug builds for leak analysis
 
@@ -182,7 +182,8 @@ clang++ -std=c++20 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp $(pkg-config
 On Windows with MSVC's `cl`:
 
 ```batch
-cl /std:c++20 /EHsc /MT /Ipath\to\libgit2\include autogitpull.cpp git_utils.cpp tui.cpp logger.cpp /link /LIBPATH:path\to\libgit2\lib git2.lib
+cl /std:c++20 /EHsc /MT /Ipath\to\libgit2\include autogitpull.cpp git_utils.cpp tui.cpp logger.cpp ^
+    /link /LIBPATH:path\to\libgit2\lib git2.lib /Fedist\autogitpull.exe
 ```
 
 These commands mirror what the scripts do internally.
@@ -196,7 +197,7 @@ cmake -S . -B build
 cmake --build build
 ```
 
-The resulting executable will be in the `build` directory.
+The resulting executable will appear in the `dist/` directory.
 
 ### Running tests
 
