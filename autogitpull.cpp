@@ -63,6 +63,8 @@ std::string status_label(RepoStatus status) {
         return "Skipped";
     case RS_HEAD_PROBLEM:
         return "HEAD/BR";
+    case RS_DIRTY:
+        return "Dirty";
     case RS_REMOTE_AHEAD:
         return "RemoteUp";
     }
@@ -128,7 +130,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
-                  size_t up_limit, bool silent) {
+                  size_t up_limit, bool silent, bool force_pull) {
     if (!running)
         return;
     if (logger_initialized())
@@ -252,7 +254,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                         };
                         bool pull_auth_fail = false;
                         int code = git::try_pull(p, pull_log, &progress_cb, include_private,
-                                                 &pull_auth_fail, down_limit, up_limit);
+                                                 &pull_auth_fail, down_limit, up_limit, force_pull);
                         ri.auth_failed = pull_auth_fail;
                         ri.last_pull_log = pull_log;
                         fs::path log_file_path;
@@ -284,6 +286,9 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                                 ri.commit = ri.commit.substr(0, 7);
                             if (logger_initialized())
                                 log_info(p.string() + " package-lock reset and pulled");
+                        } else if (code == 3) {
+                            ri.status = RS_DIRTY;
+                            ri.message = "Local changes present";
                         } else {
                             ri.status = RS_ERROR;
                             ri.message = "Pull failed (see log)";
@@ -323,7 +328,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, bool silent) {
+                size_t up_limit, bool silent, bool force_pull) {
     git::GitInitGuard guard;
 
     {
@@ -348,7 +353,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                          include_private, log_dir, check_only, hash_check, down_limit, up_limit,
-                         silent);
+                         silent, force_pull);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;
@@ -403,7 +408,8 @@ int main(int argc, char* argv[]) {
             "--no-mem-tracker",  "--no-thread-tracker", "--help",
             "--threads",         "--single-thread",     "--net-tracker",
             "--download-limit",  "--upload-limit",      "--cli",
-            "--silent",          "--recursive"};
+            "--silent",          "--recursive",         "--force-pull",
+            "--discard-dirty"};
         const std::map<char, std::string> short_opts{
             {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
             {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -443,6 +449,7 @@ int main(int argc, char* argv[]) {
         bool show_version = parser.has_flag("--show-version");
         bool check_only = parser.has_flag("--check-only");
         bool hash_check = !parser.has_flag("--no-hash-check");
+        bool force_pull = parser.has_flag("--force-pull") || parser.has_flag("--discard-dirty");
         LogLevel log_level = LogLevel::INFO;
         if (parser.has_flag("--verbose")) {
             log_level = LogLevel::DEBUG;
@@ -827,7 +834,7 @@ int main(int argc, char* argv[]) {
                     std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
                     std::ref(action_mtx), include_private, std::cref(log_dir), check_only,
                     hash_check, concurrency, cpu_percent_limit, mem_limit, down_limit, up_limit,
-                    silent);
+                    silent, force_pull);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {

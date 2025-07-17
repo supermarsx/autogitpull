@@ -43,7 +43,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, bool silent);
+                size_t up_limit, bool silent, bool force_pull);
 
 TEST_CASE("ArgParser basic parsing") {
     const char* argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
@@ -305,7 +305,7 @@ TEST_CASE("scan_repos respects concurrency limit") {
 
     std::thread t([&]() {
         scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false, fs::path(),
-                   true, true, concurrency, 0, 0, 0, 0, true);
+                   true, true, concurrency, 0, 0, 0, 0, true, false);
     });
     while (scanning) {
         max_seen = std::max(max_seen, read_thread_count());
@@ -317,4 +317,54 @@ TEST_CASE("scan_repos respects concurrency limit") {
 
     for (const auto& p : repos)
         fs::remove_all(p);
+}
+
+TEST_CASE("try_pull handles dirty repos") {
+    git::GitInitGuard guard;
+    fs::path remote = fs::temp_directory_path() / "pull_remote.git";
+    fs::path src = fs::temp_directory_path() / "pull_src";
+    fs::path repo = fs::temp_directory_path() / "pull_work";
+    fs::remove_all(remote);
+    fs::remove_all(src);
+    fs::remove_all(repo);
+    REQUIRE(std::system(("git init --bare " + remote.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + " > /dev/null 2>&1")
+                            .c_str()) == 0);
+    std::system(("git -C " + src.string() + " config user.email you@example.com").c_str());
+    std::system(("git -C " + src.string() + " config user.name tester").c_str());
+    std::ofstream(src / "file.txt") << "hello";
+    std::system(("git -C " + src.string() + " add file.txt").c_str());
+    std::system(("git -C " + src.string() + " commit -m init > /dev/null 2>&1").c_str());
+    std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1")
+                            .c_str()) == 0);
+    std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
+    std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    std::ofstream(src / "file.txt", std::ios::app) << "update";
+    std::system(("git -C " + src.string() + " add file.txt").c_str());
+    std::system(("git -C " + src.string() + " commit -m update > /dev/null 2>&1").c_str());
+    std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
+    std::ofstream(repo / "file.txt", std::ios::app) << "local";
+
+    std::string log;
+    bool auth_fail = false;
+    int ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, false);
+    REQUIRE(ret == 3);
+    REQUIRE(fs::exists(repo / "file.txt"));
+    std::string after = git::get_local_hash(repo);
+    REQUIRE(after != git::get_local_hash(src));
+
+    ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, true);
+    REQUIRE(ret == 0);
+    {
+        std::ifstream ifs(repo / "file.txt");
+        std::string contents;
+        std::getline(ifs, contents);
+        REQUIRE(contents == "helloupdate");
+    }
+    REQUIRE(git::get_local_hash(repo) == git::get_local_hash(src));
+
+    fs::remove_all(remote);
+    fs::remove_all(src);
+    fs::remove_all(repo);
 }
