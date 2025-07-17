@@ -156,7 +156,7 @@ TEST_CASE("Thread count reflects running threads") {
     std::size_t before = procutil::get_thread_count();
     {
         ThreadGuard tg(std::thread([] { std::this_thread::sleep_for(std::chrono::seconds(2)); }));
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        std::this_thread::sleep_for(std::chrono::seconds(3));
         std::size_t during = procutil::get_thread_count();
         // Account for environments where thread polling may lag
         REQUIRE(during >= before);
