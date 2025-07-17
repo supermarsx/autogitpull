@@ -2,7 +2,81 @@
 
 Automatic Git Puller & Monitor
 
-## Dependencies
+`autogitpull` scans a directory of Git repositories, pulls updates on a schedule
+and shows progress either in an interactive TUI or with plain console output.
+
+## Features
+
+- Periodic scanning and automatic `git pull`
+- Optional CLI mode without the TUI
+- YAML or JSON configuration files
+- Detailed logging with resource tracking
+- Throttling and CPU/memory limits
+
+## Usage
+
+`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--single-run] [--silent] [--force-pull] [--debug-memory] [--dump-state] [--dump-large <n>] [--help]`
+
+Most options have single-letter shorthands. Run `autogitpull --help` to see a concise list.
+
+Available options:
+
+- `--include-private` – include private or non-GitHub repositories in the scan.
+- `--show-skipped` – display repositories that were skipped because they are non-GitHub or require authentication.
+- `--show-version` – display the program version in the TUI header.
+- `--version` – print the program version and exit.
+- `--interval <seconds>` – delay between automatic scans (default 30).
+- `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
+- `--log-dir <path>` – directory where pull logs will be written.
+- `--log-file <path>` – file for general messages.
+- `--ignore <dir>` – skip the given directory when collecting repositories. This option may be repeated.
+- `--recursive` – search subdirectories recursively for repositories.
+- `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+- `--verbose` – shorthand for `--log-level DEBUG`.
+- `--concurrency <n>` – number of repositories processed in parallel (default: hardware concurrency).
+- `--threads <n>` – alias for `--concurrency`.
+- `--single-thread` – run using a single worker thread.
+- `--max-threads <n>` – cap the scanning worker threads.
+- `--cpu-percent <n>` – approximate CPU usage limit (1–100).
+- `--cpu-cores <mask>` – set CPU affinity mask (e.g. `0x3` binds to cores 0 and 1).
+- `--cpu-poll <s>` – how often to sample CPU usage in seconds (default 5).
+- `--mem-poll <s>` – how often to sample memory usage in seconds (default 5).
+- `--thread-poll <s>` – how often to sample thread count in seconds (default 5).
+- `--mem-limit <MB>` – abort if memory usage exceeds this amount.
+- `--check-only` – only check for updates without pulling.
+- `--no-hash-check` – always pull without comparing commit hashes first.
+- `--no-cpu-tracker` – disable CPU usage display in the TUI.
+- `--no-mem-tracker` – disable memory usage display in the TUI.
+- `--no-thread-tracker` – disable thread count display in the TUI.
+- `--net-tracker` – show total network usage since startup.
+- `--disk-limit <KB/s>` – throttle disk reads and writes.
+- `--cli` – output text updates to stdout instead of the TUI.
+- `--single-run` – perform one scan cycle and exit.
+- `--silent` – disable all console output; only logs are written.
+- `--force-pull` – discard local changes when pulling updates.
+- `--debug-memory` – log container sizes and memory usage after each scan.
+- `--dump-state` – dump repository state when container size exceeds a limit.
+- `--dump-large <n>` – threshold for dumping containers with `--dump-state`.
+- `--help` – show the usage information and exit.
+
+Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` to reset such repositories to the remote state.
+
+By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
+
+Provide `--log-dir <path>` to store pull logs for each repository. After every pull operation the log is written to a timestamped file inside this directory and its location is shown in the TUI. Use `--log-file <path>` to append high level messages to the given file.
+
+### YAML configuration
+
+Frequently used options can be stored in a YAML file and loaded with `--config-yaml <file>`.
+Keys match the long option names without the leading dashes. Boolean flags should be set to `true` or `false`.
+Arguments provided on the command line override values from the YAML file. See `example-config.yaml` and `example-config.json` for complete examples.
+
+### JSON configuration
+
+Settings can also be provided in JSON format and loaded with `--config-json <file>`.
+The keys mirror the long command line options without the leading dashes. Values from the command line override those from the JSON file. See `example-config.json` for a complete example.
+
+## Build requirements
 
 This tool relies on [libgit2](https://libgit2.org/). The helper scripts
 `scripts/install_deps.sh` (Linux/macOS) and `scripts/install_deps.bat` (Windows) automatically
@@ -149,77 +223,7 @@ To run the memory leak regression test you need both the `valgrind` tool and the
 valgrind ./build/memory_leak_test
 ```
 
-Valgrind should finish with the message `All heap blocks were freed -- no leaks
-are possible`.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--silent] [--force-pull] [--debug-memory] [--dump-state] [--dump-large <n>] [--help]`
-
-Most options have single-letter shorthands. Run `autogitpull --help` to see a concise list.
-
-Available options:
-
-- `--include-private` – include private or non-GitHub repositories in the scan.
-- `--show-skipped` – display repositories that were skipped because they are non-GitHub or require authentication.
-- `--show-version` – display the program version in the TUI header.
-- `--version` – print the program version and exit.
-- `--interval <seconds>` – delay between automatic scans (default 30).
-- `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
-- `--log-dir <path>` – directory where pull logs will be written.
-- `--log-file <path>` – file for general messages.
-- `--ignore <dir>` – skip the given directory when collecting repositories. This option may be repeated.
-- `--recursive` – search subdirectories recursively for repositories.
-- `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
-- `--verbose` – shorthand for `--log-level DEBUG`.
-- `--concurrency <n>` – number of repositories processed in parallel (default: hardware concurrency).
-- `--threads <n>` – alias for `--concurrency`.
-- `--single-thread` – run using a single worker thread.
-- `--max-threads <n>` – cap the scanning worker threads.
-- `--cpu-percent <n>` – approximate CPU usage limit (1–100).
-- `--cpu-cores <mask>` – set CPU affinity mask (e.g. `0x3` binds to cores 0 and 1).
-- `--cpu-poll <s>` – how often to sample CPU usage in seconds (default 5).
-- `--mem-poll <s>` – how often to sample memory usage in seconds (default 5).
-- `--thread-poll <s>` – how often to sample thread count in seconds (default 5).
-- `--mem-limit <MB>` – abort if memory usage exceeds this amount.
-- `--check-only` – only check for updates without pulling.
-- `--no-hash-check` – always pull without comparing commit hashes first.
-- `--no-cpu-tracker` – disable CPU usage display in the TUI.
-- `--no-mem-tracker` – disable memory usage display in the TUI.
-- `--no-thread-tracker` – disable thread count display in the TUI.
-- `--net-tracker` – show total network usage since startup.
-- `--disk-limit <KB/s>` – throttle disk reads and writes.
-- `--cli` – output text updates to stdout instead of the TUI.
-- `--silent` – disable all console output; only logs are written.
-- `--force-pull` – discard local changes when pulling updates.
-- `--debug-memory` – log container sizes and memory usage after each scan.
-- `--dump-state` – dump repository state when container size exceeds a limit.
-- `--dump-large <n>` – threshold for dumping containers with `--dump-state`.
-- `--help` – show the usage information and exit.
-
-Repositories with uncommitted changes are skipped by default to avoid losing
-work. Use `--force-pull` to reset such repositories to the remote state.
-
-By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
-
-Provide `--log-dir <path>` to store pull logs for each repository. After every pull operation the log
-is written to a timestamped file inside this directory and its location is shown in the TUI.
-Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
-`./autogitpull myprojects --recursive --log-dir logs --log-file autogitpull.log --log-level DEBUG`
-Exclude directories from scanning with `--ignore <dir>`. The option may be specified multiple times.
-CPU, memory and thread usage are tracked and shown by default. Disable them individually with `--no-cpu-tracker`, `--no-mem-tracker` or `--no-thread-tracker`. Enable network usage tracking with `--net-tracker`.
-
-### YAML configuration
-
-Frequently used options can be stored in a YAML file and loaded with `--config-yaml <file>`.
-Keys match the long option names without the leading dashes. Boolean flags should be set to `true` or `false`.
-Arguments provided on the command line override values from the YAML file. See
-`example-config.yaml` and `example-config.json` for complete examples.
-
-### JSON configuration
-
-Settings can also be provided in JSON format and loaded with `--config-json <file>`.
-The keys mirror the long command line options without the leading dashes. Values
-from the command line override those from the JSON file. See `example-config.json`
-for a complete example.
 
 ## Linting
 
@@ -239,7 +243,7 @@ When the program starts, each repository is listed with the **Pending** status
 until it is checked for the first time. Once a scan begins the status switches
 to **Checking** and later reflects the pull result.
 
-## Runtime requirements
+## Production requirements
 
 - **Git** must be available in your `PATH` for libgit2 to interact with repositories.
 - Network access is required to contact remote Git servers when pulling updates.

@@ -138,6 +138,7 @@ void print_help(const char* prog) {
         {"--config-yaml", "-y", "<file>", "Load options from YAML file", "General"},
         {"--config-json", "-j", "<file>", "Load options from JSON file", "General"},
         {"--cli", "-c", "", "Use console output", "General"},
+        {"--single-run", "", "", "Run a single scan cycle and exit", "General"},
         {"--silent", "-s", "", "Disable console output", "General"},
         {"--check-only", "", "", "Only check for updates", "Actions"},
         {"--no-hash-check", "", "", "Always pull without hash check", "Actions"},
@@ -184,6 +185,9 @@ void print_help(const char* prog) {
         width = std::max(width, flag.size());
     }
 
+    std::cout << "autogitpull - Automatic Git Puller & Monitor\n";
+    std::cout << "Scans a directory of Git repositories and pulls updates.\n";
+    std::cout << "Configuration can be read from YAML or JSON files.\n\n";
     std::cout << "Usage: " << prog << " <root-folder> [options]\n\n";
     const std::vector<std::string> order{"General",         "Logging",  "Concurrency",
                                          "Resource limits", "Tracking", "Actions"};
@@ -563,9 +567,9 @@ Options parse_options(int argc, char* argv[]) {
         "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
         "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
         "--upload-limit",    "--disk-limit",     "--max-depth",         "--cli",
-        "--silent",          "--recursive",      "--config-yaml",       "--config-json",
-        "--ignore",          "--force-pull",     "--discard-dirty",     "--debug-memory",
-        "--dump-state",      "--dump-large"};
+        "--single-run",      "--silent",         "--recursive",         "--config-yaml",
+        "--config-json",     "--ignore",         "--force-pull",        "--discard-dirty",
+        "--debug-memory",    "--dump-state",     "--dump-large"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -592,6 +596,9 @@ Options parse_options(int argc, char* argv[]) {
 
     Options opts;
     opts.cli = parser.has_flag("--cli") || cfg_flag("--cli");
+    opts.single_run = parser.has_flag("--single-run") || cfg_flag("--single-run");
+    if (opts.single_run)
+        opts.cli = true;
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");
@@ -794,6 +801,8 @@ int run_event_loop(const Options& opts) {
             scan_thread.t.join();
             git_libgit2_shutdown();
             git_libgit2_init();
+            if (opts.single_run)
+                running = false;
         }
         if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
             {
