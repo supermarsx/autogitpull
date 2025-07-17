@@ -27,6 +27,7 @@
   "cli": false,
   "silent": false,
   "recursive": false,
+  "max-depth": 0,
   "force-pull": false,
   "discard-dirty": false,
   "single-run": false,

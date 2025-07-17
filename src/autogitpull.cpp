@@ -751,6 +751,8 @@ Options parse_options(int argc, char* argv[]) {
         if (!ok)
             throw std::runtime_error("Invalid value for --max-depth");
     }
+    if (opts.max_depth > 0)
+        opts.recursive_scan = true;
     opts.cpu_tracker = !cfg_flag("--no-cpu-tracker");
     opts.mem_tracker = !cfg_flag("--no-mem-tracker");
     opts.thread_tracker = !cfg_flag("--no-thread-tracker");

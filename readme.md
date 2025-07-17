@@ -15,7 +15,7 @@ and shows progress either in an interactive TUI or with plain console output.
 
 ## Usage
 
-`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--single-run] [--silent] [--force-pull] [--debug-memory] [--dump-state] [--dump-large <n>] [--help]`
+`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--single-run] [--silent] [--force-pull] [--debug-memory] [--dump-state] [--dump-large <n>] [--help]`
 
 Most options have single-letter shorthands. Run `autogitpull --help` to see a concise list.
 
@@ -31,6 +31,7 @@ Available options:
 - `--log-file <path>` – file for general messages.
 - `--ignore <dir>` – skip the given directory when collecting repositories. This option may be repeated.
 - `--recursive` – search subdirectories recursively for repositories.
+- `--max-depth <n>` – limit recursion depth; implies `--recursive`.
 - `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
 - `--verbose` – shorthand for `--log-level DEBUG`.
 - `--concurrency <n>` – number of repositories processed in parallel (default: hardware concurrency).
