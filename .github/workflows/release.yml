@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up C++ build environment
+        uses: aminya/setup-cpp@v1
+
+      - name: Install lint tools
+        run: pip install cpplint
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Lint
+        run: make lint
+
+      - name: Format
+        run: npm run format
+
+      - name: Test
+        run: make test
+
+      - name: Build
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cmd.exe /c compile.bat
+          else
+            ./compile.sh
+          fi
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: autogitpull-${{ matrix.os }}
+          path: |
+            autogitpull
+            autogitpull.exe
+
