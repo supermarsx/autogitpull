@@ -23,7 +23,8 @@ add_library(autogitpull_lib STATIC
     src/system_utils.cpp
     src/time_utils.cpp
     src/config_utils.cpp
-    src/debug_utils.cpp)
+    src/debug_utils.cpp
+    src/parse_utils.cpp)
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread)
 
@@ -53,7 +54,7 @@ if(NOT Catch2_FOUND)
     )
     FetchContent_MakeAvailable(Catch2)
 endif()
-add_executable(autogitpull_tests tests/tests.cpp src/autogitpull.cpp)
+add_executable(autogitpull_tests tests/tests.cpp src/autogitpull.cpp src/tui.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
 target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib)
@@ -68,10 +69,13 @@ add_executable(memory_leak_test
     src/resource_utils.cpp
     src/system_utils.cpp
     src/time_utils.cpp
-    src/debug_utils.cpp)
+    src/config_utils.cpp
+    src/debug_utils.cpp
+    src/parse_utils.cpp
+    src/tui.cpp)
 target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)
 target_compile_options(memory_leak_test PRIVATE -fsanitize=address)
 target_link_options(memory_leak_test PRIVATE -fsanitize=address)
-target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain PkgConfig::LIBGIT2 pthread)
+target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain autogitpull_lib)
 add_test(NAME memory_leak_test COMMAND memory_leak_test)

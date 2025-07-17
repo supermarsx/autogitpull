@@ -28,6 +28,7 @@
 #include "thread_utils.hpp"
 #include "config_utils.hpp"
 #include "debug_utils.hpp"
+#include "parse_utils.hpp"
 #include "options.hpp"
 
 namespace fs = std::filesystem;
@@ -632,58 +633,117 @@ Options parse_options(int argc, char* argv[]) {
     opts.concurrency = std::thread::hardware_concurrency();
     if (opts.concurrency == 0)
         opts.concurrency = 1;
-    if (cfg_opts.count("--threads"))
-        opts.concurrency = std::max<size_t>(1, std::stoul(cfg_opt("--threads")));
+    bool ok = false;
+    if (cfg_opts.count("--threads")) {
+        opts.concurrency = parse_size_t(cfg_opt("--threads"), 1, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --threads");
+    }
     if (cfg_flag("--single-thread"))
         opts.concurrency = 1;
-    if (cfg_opts.count("--concurrency"))
-        opts.concurrency = std::max<size_t>(1, std::stoul(cfg_opt("--concurrency")));
-    if (parser.has_flag("--threads"))
-        opts.concurrency = std::max<size_t>(1, std::stoul(parser.get_option("--threads")));
+    if (cfg_opts.count("--concurrency")) {
+        opts.concurrency = parse_size_t(cfg_opt("--concurrency"), 1, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --concurrency");
+    }
+    if (parser.has_flag("--threads")) {
+        opts.concurrency = parse_size_t(parser, "--threads", 1, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --threads");
+    }
     if (parser.has_flag("--single-thread"))
         opts.concurrency = 1;
-    if (parser.has_flag("--concurrency"))
-        opts.concurrency = std::max<size_t>(1, std::stoul(parser.get_option("--concurrency")));
-    if (cfg_opts.count("--max-threads"))
-        opts.max_threads = std::stoul(cfg_opt("--max-threads"));
-    if (parser.has_flag("--max-threads"))
-        opts.max_threads = std::stoul(parser.get_option("--max-threads"));
+    if (parser.has_flag("--concurrency")) {
+        opts.concurrency = parse_size_t(parser, "--concurrency", 1, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --concurrency");
+    }
+    if (cfg_opts.count("--max-threads")) {
+        opts.max_threads = parse_size_t(cfg_opt("--max-threads"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --max-threads");
+    }
+    if (parser.has_flag("--max-threads")) {
+        opts.max_threads = parse_size_t(parser, "--max-threads", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --max-threads");
+    }
     if (cfg_opts.count("--cpu-percent")) {
         std::string v = cfg_opt("--cpu-percent");
         if (!v.empty() && v.back() == '%')
             v.pop_back();
-        opts.cpu_percent_limit = std::stoi(v);
+        opts.cpu_percent_limit = parse_int(v, 0, 100, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-percent");
     }
     if (parser.has_flag("--cpu-percent")) {
         std::string v = parser.get_option("--cpu-percent");
         if (!v.empty() && v.back() == '%')
             v.pop_back();
-        opts.cpu_percent_limit = std::stoi(v);
+        opts.cpu_percent_limit = parse_int(v, 0, 100, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-percent");
     }
-    if (cfg_opts.count("--cpu-cores"))
-        opts.cpu_core_mask = std::stoull(cfg_opt("--cpu-cores"), nullptr, 0);
-    if (parser.has_flag("--cpu-cores"))
-        opts.cpu_core_mask = std::stoull(parser.get_option("--cpu-cores"), nullptr, 0);
-    if (cfg_opts.count("--mem-limit"))
-        opts.mem_limit = std::stoul(cfg_opt("--mem-limit"));
-    if (parser.has_flag("--mem-limit"))
-        opts.mem_limit = std::stoul(parser.get_option("--mem-limit"));
-    if (cfg_opts.count("--download-limit"))
-        opts.download_limit = std::stoul(cfg_opt("--download-limit"));
-    if (parser.has_flag("--download-limit"))
-        opts.download_limit = std::stoul(parser.get_option("--download-limit"));
-    if (cfg_opts.count("--upload-limit"))
-        opts.upload_limit = std::stoul(cfg_opt("--upload-limit"));
-    if (parser.has_flag("--upload-limit"))
-        opts.upload_limit = std::stoul(parser.get_option("--upload-limit"));
-    if (cfg_opts.count("--disk-limit"))
-        opts.disk_limit = std::stoul(cfg_opt("--disk-limit"));
-    if (parser.has_flag("--disk-limit"))
-        opts.disk_limit = std::stoul(parser.get_option("--disk-limit"));
-    if (cfg_opts.count("--max-depth"))
-        opts.max_depth = std::stoul(cfg_opt("--max-depth"));
-    if (parser.has_flag("--max-depth"))
-        opts.max_depth = std::stoul(parser.get_option("--max-depth"));
+    if (cfg_opts.count("--cpu-cores")) {
+        opts.cpu_core_mask = parse_ull(cfg_opt("--cpu-cores"), 0, ULLONG_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-cores");
+    }
+    if (parser.has_flag("--cpu-cores")) {
+        opts.cpu_core_mask = parse_ull(parser, "--cpu-cores", 0, ULLONG_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-cores");
+    }
+    if (cfg_opts.count("--mem-limit")) {
+        opts.mem_limit = parse_size_t(cfg_opt("--mem-limit"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --mem-limit");
+    }
+    if (parser.has_flag("--mem-limit")) {
+        opts.mem_limit = parse_size_t(parser, "--mem-limit", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --mem-limit");
+    }
+    if (cfg_opts.count("--download-limit")) {
+        opts.download_limit = parse_size_t(cfg_opt("--download-limit"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --download-limit");
+    }
+    if (parser.has_flag("--download-limit")) {
+        opts.download_limit = parse_size_t(parser, "--download-limit", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --download-limit");
+    }
+    if (cfg_opts.count("--upload-limit")) {
+        opts.upload_limit = parse_size_t(cfg_opt("--upload-limit"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --upload-limit");
+    }
+    if (parser.has_flag("--upload-limit")) {
+        opts.upload_limit = parse_size_t(parser, "--upload-limit", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --upload-limit");
+    }
+    if (cfg_opts.count("--disk-limit")) {
+        opts.disk_limit = parse_size_t(cfg_opt("--disk-limit"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --disk-limit");
+    }
+    if (parser.has_flag("--disk-limit")) {
+        opts.disk_limit = parse_size_t(parser, "--disk-limit", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --disk-limit");
+    }
+    if (cfg_opts.count("--max-depth")) {
+        opts.max_depth = parse_size_t(cfg_opt("--max-depth"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --max-depth");
+    }
+    if (parser.has_flag("--max-depth")) {
+        opts.max_depth = parse_size_t(parser, "--max-depth", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --max-depth");
+    }
     opts.cpu_tracker = !cfg_flag("--no-cpu-tracker");
     opts.mem_tracker = !cfg_flag("--no-mem-tracker");
     opts.thread_tracker = !cfg_flag("--no-thread-tracker");
@@ -698,31 +758,68 @@ Options parse_options(int argc, char* argv[]) {
         opts.net_tracker = true;
     opts.debug_memory = cfg_flag("--debug-memory") || parser.has_flag("--debug-memory");
     opts.dump_state = cfg_flag("--dump-state") || parser.has_flag("--dump-state");
-    if (cfg_opts.count("--dump-large"))
-        opts.dump_threshold = std::stoul(cfg_opt("--dump-large"));
-    if (parser.has_flag("--dump-large"))
-        opts.dump_threshold = std::stoul(parser.get_option("--dump-large"));
-    if (cfg_opts.count("--interval"))
-        opts.interval = std::stoi(cfg_opt("--interval"));
-    if (parser.has_flag("--interval"))
-        opts.interval = std::stoi(parser.get_option("--interval"));
-    if (cfg_opts.count("--refresh-rate"))
-        opts.refresh_ms = std::chrono::milliseconds(std::stoi(cfg_opt("--refresh-rate")));
-    if (parser.has_flag("--refresh-rate"))
-        opts.refresh_ms = std::chrono::milliseconds(std::stoi(parser.get_option("--refresh-rate")));
-    if (cfg_opts.count("--cpu-poll"))
-        opts.cpu_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--cpu-poll")));
-    if (parser.has_flag("--cpu-poll"))
-        opts.cpu_poll_sec = static_cast<unsigned int>(std::stoul(parser.get_option("--cpu-poll")));
-    if (cfg_opts.count("--mem-poll"))
-        opts.mem_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--mem-poll")));
-    if (parser.has_flag("--mem-poll"))
-        opts.mem_poll_sec = static_cast<unsigned int>(std::stoul(parser.get_option("--mem-poll")));
-    if (cfg_opts.count("--thread-poll"))
-        opts.thread_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--thread-poll")));
-    if (parser.has_flag("--thread-poll"))
-        opts.thread_poll_sec =
-            static_cast<unsigned int>(std::stoul(parser.get_option("--thread-poll")));
+    if (cfg_opts.count("--dump-large")) {
+        opts.dump_threshold = parse_size_t(cfg_opt("--dump-large"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --dump-large");
+    }
+    if (parser.has_flag("--dump-large")) {
+        opts.dump_threshold = parse_size_t(parser, "--dump-large", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --dump-large");
+    }
+    if (cfg_opts.count("--interval")) {
+        opts.interval = parse_int(cfg_opt("--interval"), 1, INT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --interval");
+    }
+    if (parser.has_flag("--interval")) {
+        opts.interval = parse_int(parser, "--interval", 1, INT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --interval");
+    }
+    if (cfg_opts.count("--refresh-rate")) {
+        int v = parse_int(cfg_opt("--refresh-rate"), 1, INT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --refresh-rate");
+        opts.refresh_ms = std::chrono::milliseconds(v);
+    }
+    if (parser.has_flag("--refresh-rate")) {
+        int v = parse_int(parser, "--refresh-rate", 1, INT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --refresh-rate");
+        opts.refresh_ms = std::chrono::milliseconds(v);
+    }
+    if (cfg_opts.count("--cpu-poll")) {
+        opts.cpu_poll_sec = parse_uint(cfg_opt("--cpu-poll"), 1u, UINT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-poll");
+    }
+    if (parser.has_flag("--cpu-poll")) {
+        opts.cpu_poll_sec = parse_uint(parser, "--cpu-poll", 1u, UINT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-poll");
+    }
+    if (cfg_opts.count("--mem-poll")) {
+        opts.mem_poll_sec = parse_uint(cfg_opt("--mem-poll"), 1u, UINT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --mem-poll");
+    }
+    if (parser.has_flag("--mem-poll")) {
+        opts.mem_poll_sec = parse_uint(parser, "--mem-poll", 1u, UINT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --mem-poll");
+    }
+    if (cfg_opts.count("--thread-poll")) {
+        opts.thread_poll_sec = parse_uint(cfg_opt("--thread-poll"), 1u, UINT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --thread-poll");
+    }
+    if (parser.has_flag("--thread-poll")) {
+        opts.thread_poll_sec = parse_uint(parser, "--thread-poll", 1u, UINT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --thread-poll");
+    }
     if (parser.has_flag("--log-dir") || cfg_opts.count("--log-dir")) {
         std::string val = parser.get_option("--log-dir");
         if (val.empty())
