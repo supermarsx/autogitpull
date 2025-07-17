@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        uses: aminya/setup-cpp@v1
+
+      - name: Install dependencies
+        run: ./install_deps.sh
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Lint
+        run: make lint
+
+      - name: Check formatting
+        run: npm run format
+
+      - name: Test
+        run: make test
