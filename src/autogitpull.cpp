@@ -536,6 +536,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
         log_debug("Scan complete");
 }
 
+
 Options parse_options(int argc, char* argv[]) {
     // Parse config file option first
     const std::set<std::string> pre_known{"--config-yaml", "--config-json"};
