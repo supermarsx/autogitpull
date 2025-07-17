@@ -24,6 +24,7 @@
 #include "time_utils.hpp"
 #include "resource_utils.hpp"
 #include "system_utils.hpp"
+#include "lockfile.hpp"
 #include "version.hpp"
 #include "thread_utils.hpp"
 #include "config_utils.hpp"
@@ -544,6 +545,11 @@ int run_event_loop(const Options& opts) {
         return 0;
     if (!fs::exists(opts.root) || !fs::is_directory(opts.root))
         throw std::runtime_error("Root path does not exist or is not a directory.");
+    LockFile lock(opts.root);
+    if (!lock.acquired()) {
+        std::cerr << lock.error() << "\n";
+        return 1;
+    }
     if (opts.cpu_core_mask != 0)
         procutil::set_cpu_affinity(opts.cpu_core_mask);
     procutil::set_cpu_poll_interval(opts.cpu_poll_sec);

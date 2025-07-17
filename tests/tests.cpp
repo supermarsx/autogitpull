@@ -8,6 +8,7 @@
 #include "time_utils.hpp"
 #include "config_utils.hpp"
 #include "parse_utils.hpp"
+#include "lockfile.hpp"
 #include <filesystem>
 #include <thread>
 #include <fstream>
@@ -520,4 +521,17 @@ TEST_CASE("try_pull handles dirty repos") {
     fs::remove_all(remote);
     fs::remove_all(src);
     fs::remove_all(repo);
+}
+
+TEST_CASE("LockFile prevents multiple instances") {
+    fs::path root = fs::temp_directory_path() / "lock_test";
+    fs::remove_all(root);
+    fs::create_directory(root);
+    {
+        LockFile lock1(root);
+        REQUIRE(lock1.acquired());
+        LockFile lock2(root);
+        REQUIRE_FALSE(lock2.acquired());
+    }
+    fs::remove_all(root);
 }
