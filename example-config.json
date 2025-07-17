@@ -13,7 +13,7 @@
   "verbose": false,
   "max-threads": 8,
   "cpu-percent": 50,
-  "cpu-cores": 255,
+  "cpu-cores": "0xff",
   "mem-limit": 0,
   "no-cpu-tracker": false,
   "no-mem-tracker": false,

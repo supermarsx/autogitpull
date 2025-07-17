@@ -204,6 +204,13 @@ Keys match the long option names without the leading dashes. Boolean flags shoul
 Arguments provided on the command line override values from the YAML file. See
 `example-config.yaml` and `example-config.json` for complete examples.
 
+### JSON configuration
+
+Settings can also be provided in JSON format and loaded with `--config-json <file>`.
+The keys mirror the long command line options without the leading dashes. Values
+from the command line override those from the JSON file. See `example-config.json`
+for a complete example.
+
 ## Linting
 
 The project uses `clang-format` and `cpplint` (configured via `CPPLINT.cfg`) to

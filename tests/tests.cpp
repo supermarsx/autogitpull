@@ -272,6 +272,20 @@ TEST_CASE("YAML config loading") {
     fs::remove(cfg);
 }
 
+TEST_CASE("JSON config loading") {
+    fs::path cfg = fs::temp_directory_path() / "cfg.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"interval\": 42, \n  \"cli\": true\n}";
+    }
+    std::map<std::string, std::string> opts;
+    std::string err;
+    REQUIRE(load_json_config(cfg.string(), opts, err));
+    REQUIRE(opts["--interval"] == "42");
+    REQUIRE(opts["--cli"] == "true");
+    fs::remove(cfg);
+}
+
 TEST_CASE("build_repo_list ignores directories") {
     fs::path root = fs::temp_directory_path() / "ignore_test";
     fs::remove_all(root);
