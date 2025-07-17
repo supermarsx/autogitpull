@@ -18,6 +18,12 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#ifdef __linux__
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <vector>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -260,6 +266,39 @@ TEST_CASE("ArgParser disk limit") {
     const char* argv[] = {"prog", "--disk-limit", "250"};
     ArgParser parser(3, const_cast<char**>(argv), {"--disk-limit"});
     REQUIRE(parser.get_option("--disk-limit") == std::string("250"));
+}
+
+TEST_CASE("Network usage upload bytes") {
+#ifdef __linux__
+    procutil::init_network_usage();
+    int srv = socket(AF_INET, SOCK_STREAM, 0);
+    REQUIRE(srv >= 0);
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(0);
+    REQUIRE(bind(srv, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0);
+    socklen_t len = sizeof(addr);
+    REQUIRE(getsockname(srv, reinterpret_cast<sockaddr*>(&addr), &len) == 0);
+    REQUIRE(listen(srv, 1) == 0);
+    std::thread th([&]() {
+        int fd = accept(srv, nullptr, nullptr);
+        REQUIRE(fd >= 0);
+        char buf[4096];
+        read(fd, buf, sizeof(buf));
+        close(fd);
+    });
+    int cli = socket(AF_INET, SOCK_STREAM, 0);
+    REQUIRE(cli >= 0);
+    REQUIRE(connect(cli, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0);
+    std::vector<char> data(4096, 'x');
+    REQUIRE(send(cli, data.data(), data.size(), 0) == static_cast<ssize_t>(data.size()));
+    close(cli);
+    th.join();
+    close(srv);
+    auto usage = procutil::get_network_usage();
+    REQUIRE(usage.upload_bytes >= data.size());
+#endif
 }
 
 TEST_CASE("parse_int helper valid") {

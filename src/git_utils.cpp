@@ -173,6 +173,8 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
     ProgressData progress{progress_cb, std::chrono::steady_clock::now(), down_limit_kbps,
                           up_limit_kbps, disk_limit_kbps};
+    if (up_limit_kbps > 0)
+        procutil::init_network_usage();
     if (progress_cb || down_limit_kbps > 0 || up_limit_kbps > 0 || disk_limit_kbps > 0) {
         if (disk_limit_kbps > 0)
             procutil::init_disk_usage();
@@ -197,7 +199,8 @@ int try_pull(const fs::path& repo, string& out_pull_log,
                     expected_ms = ms;
             }
             if (pd->up_limit > 0) {
-                double ms = (double)stats->received_bytes / (pd->up_limit * 1024.0) * 1000.0;
+                auto net = procutil::get_network_usage();
+                double ms = (double)net.upload_bytes / (pd->up_limit * 1024.0) * 1000.0;
                 if (ms > expected_ms)
                     expected_ms = ms;
             }
