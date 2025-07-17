@@ -28,13 +28,15 @@ FORMAT_FILES = $(SRC) include/*.hpp
 all: autogitpull
 
 autogitpull: $(OBJ)
-	$(CXX) $(CXXFLAGS) $(OBJ) $(LDFLAGS) -o $@
+	mkdir -p dist
+	$(CXX) $(CXXFLAGS) $(OBJ) $(LDFLAGS) -o dist/autogitpull
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ) autogitpull
+	rm -f $(OBJ)
+	rm -rf dist
 
 lint:
 	clang-format --dry-run --Werror $(FORMAT_FILES)

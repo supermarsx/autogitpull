@@ -16,6 +16,7 @@ if not exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\git2.lib" (
 set "INC=%VCPKG_ROOT%\installed\x64-windows-static\include"
 set "LIB=%VCPKG_ROOT%\installed\x64-windows-static\lib"
 
+if not exist dist mkdir dist
 cl /nologo /std:c++20 /EHsc /I"%INC%" -Iinclude src\autogitpull.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\config_utils.cpp src\debug_utils.cpp ^
-    "%LIB%\git2.lib" advapi32.lib Ws2_32.lib Shell32.lib Ole32.lib Rpcrt4.lib Crypt32.lib winhttp.lib Psapi.lib yaml-cpp.lib /Feautogitpull.exe
+    "%LIB%\git2.lib" advapi32.lib Ws2_32.lib Shell32.lib Ole32.lib Rpcrt4.lib Crypt32.lib winhttp.lib Psapi.lib yaml-cpp.lib /Fedist\autogitpull.exe
 endlocal

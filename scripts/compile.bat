@@ -23,7 +23,8 @@ if not exist "%LIBGIT2_LIB%\libgit2.a" (
     if errorlevel 1 exit /b 1
 )
 
-g++ -std=c++20 -static -I"%LIBGIT2_INC%" -Iinclude src\autogitpull.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\config_utils.cpp src\debug_utils.cpp "%LIBGIT2_LIB%\libgit2.a" -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -lyaml-cpp -o autogitpull.exe
+if not exist dist mkdir dist
+g++ -std=c++20 -static -I"%LIBGIT2_INC%" -Iinclude src\autogitpull.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\config_utils.cpp src\debug_utils.cpp "%LIBGIT2_LIB%\libgit2.a" -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -lyaml-cpp -o dist\autogitpull.exe
 
 endlocal
 
