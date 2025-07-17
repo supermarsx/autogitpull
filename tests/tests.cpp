@@ -362,6 +362,17 @@ TEST_CASE("ArgParser recursive flag") {
     REQUIRE(parser.has_flag("--recursive"));
 }
 
+TEST_CASE("ArgParser daemon flags") {
+    const char* argv[] = {"prog", "--install-daemon", "--daemon-config", "cfg"};
+    ArgParser parser(4, const_cast<char**>(argv),
+                     {"--install-daemon", "--uninstall-daemon", "--daemon-config"});
+    REQUIRE(parser.has_flag("--install-daemon"));
+    REQUIRE(parser.get_option("--daemon-config") == std::string("cfg"));
+    const char* argv2[] = {"prog", "--uninstall-daemon"};
+    ArgParser parser2(2, const_cast<char**>(argv2), {"--install-daemon", "--uninstall-daemon"});
+    REQUIRE(parser2.has_flag("--uninstall-daemon"));
+}
+
 TEST_CASE("YAML config loading") {
     fs::path cfg = fs::temp_directory_path() / "cfg.yaml";
     {

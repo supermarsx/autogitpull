@@ -27,6 +27,9 @@ add_library(autogitpull_lib STATIC
     src/options.cpp
     src/parse_utils.cpp
     src/lock_utils.cpp)
+if(NOT WIN32)
+    target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp)
+endif()
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread)
 
@@ -76,6 +79,9 @@ add_executable(memory_leak_test
     src/parse_utils.cpp
     src/lock_utils.cpp
     src/tui.cpp)
+if(NOT WIN32)
+    target_sources(memory_leak_test PRIVATE src/linux_daemon.cpp)
+endif()
 target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)
 target_compile_options(memory_leak_test PRIVATE -fsanitize=address)
