@@ -145,7 +145,7 @@ valgrind ./build/memory_leak_test
 Valgrind should finish with the message `All heap blocks were freed -- no leaks
 are possible`.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--silent] [--force-pull] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--silent] [--force-pull] [--help]`
 
 Most options have single-letter shorthands. Run `autogitpull --help` to see a concise list.
 
@@ -159,6 +159,7 @@ Available options:
 - `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
 - `--log-dir <path>` – directory where pull logs will be written.
 - `--log-file <path>` – file for general messages.
+- `--ignore <dir>` – skip the given directory when collecting repositories. This option may be repeated.
 - `--recursive` – search subdirectories recursively for repositories.
 - `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
 - `--verbose` – shorthand for `--log-level DEBUG`.
@@ -193,6 +194,7 @@ Provide `--log-dir <path>` to store pull logs for each repository. After every p
 is written to a timestamped file inside this directory and its location is shown in the TUI.
 Use `--log-file <path>` to append high level messages to the given file. The program records startup, repository actions and shutdown there. For example:
 `./autogitpull myprojects --recursive --log-dir logs --log-file autogitpull.log --log-level DEBUG`
+Exclude directories from scanning with `--ignore <dir>`. The option may be specified multiple times.
 CPU, memory and thread usage are tracked and shown by default. Disable them individually with `--no-cpu-tracker`, `--no-mem-tracker` or `--no-thread-tracker`. Enable network usage tracking with `--net-tracker`.
 
 ### YAML configuration

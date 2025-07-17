@@ -17,10 +17,12 @@
 class ArgParser {
     std::set<std::string> flags_;                ///< Flags present on the command line
     std::map<std::string, std::string> options_; ///< Option values keyed by flag
-    std::vector<std::string> positional_;        ///< Positional arguments in order
-    std::vector<std::string> unknown_flags_;     ///< Flags not present in known_flags
-    std::set<std::string> known_flags_;          ///< List of accepted flags
-    std::map<char, std::string> short_map_;      ///< Mapping of short to long flags
+    std::map<std::string, std::vector<std::string>>
+        multi_options_;                      ///< Store all values for repeatable options
+    std::vector<std::string> positional_;    ///< Positional arguments in order
+    std::vector<std::string> unknown_flags_; ///< Flags not present in known_flags
+    std::set<std::string> known_flags_;      ///< List of accepted flags
+    std::map<char, std::string> short_map_;  ///< Mapping of short to long flags
 
   public:
     /**
@@ -46,6 +48,7 @@ class ArgParser {
                     if (known_flags_.empty() || known_flags_.count(key)) {
                         flags_.insert(key);
                         options_[key] = val;
+                        multi_options_[key].push_back(val);
                     } else {
                         unknown_flags_.push_back(key);
                     }
@@ -55,6 +58,7 @@ class ArgParser {
                     if (known_flags_.empty() || known_flags_.count(key)) {
                         flags_.insert(key);
                         options_[key] = val;
+                        multi_options_[key].push_back(val);
                     } else {
                         unknown_flags_.push_back(key);
                     }
@@ -79,6 +83,7 @@ class ArgParser {
                     if (known_flags_.empty() || known_flags_.count(key)) {
                         flags_.insert(key);
                         options_[key] = val;
+                        multi_options_[key].push_back(val);
                     } else {
                         unknown_flags_.push_back(key);
                     }
@@ -116,6 +121,18 @@ class ArgParser {
         if (it != options_.end())
             return it->second;
         return "";
+    }
+
+    /**
+     * @brief Retrieve all values associated with an option.
+     *
+     * If the option was not provided, an empty vector is returned.
+     */
+    std::vector<std::string> get_all_options(const std::string& opt) const {
+        auto it = multi_options_.find(opt);
+        if (it != multi_options_.end())
+            return it->second;
+        return {};
     }
 
     /** @return Set of all flags found during parsing. */
