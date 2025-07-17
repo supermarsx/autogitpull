@@ -249,5 +249,6 @@ to **Checking** and later reflects the pull result.
 ## Licensing
 
 autogitpull is licensed under the MIT license (see `LICENSE`). The project
-bundles the license for the statically linked libgit2 library in
-`LIBGIT2_LICENSE`.
+bundles the license texts for its third-party dependencies under
+the `licenses/` directory, including `libgit2.txt`, `yaml-cpp.txt` and
+`nlohmann-json.txt`.
