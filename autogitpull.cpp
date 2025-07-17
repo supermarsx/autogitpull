@@ -81,15 +81,21 @@ std::string status_label(RepoStatus status) {
  * @return Vector of discovered directories.
  */
 std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
-                                      const std::vector<fs::path>& ignore) {
+                                      const std::vector<fs::path>& ignore, size_t max_depth) {
     std::vector<fs::path> result;
     if (recursive) {
-        for (const auto& entry : fs::recursive_directory_iterator(root)) {
-            if (!entry.is_directory())
+        for (fs::recursive_directory_iterator it(root), end; it != end; ++it) {
+            if (max_depth > 0 && it.depth() >= static_cast<int>(max_depth)) {
+                it.disable_recursion_pending();
                 continue;
-            fs::path p = entry.path();
-            if (std::find(ignore.begin(), ignore.end(), p) != ignore.end())
+            }
+            if (!it->is_directory())
                 continue;
+            fs::path p = it->path();
+            if (std::find(ignore.begin(), ignore.end(), p) != ignore.end()) {
+                it.disable_recursion_pending();
+                continue;
+            }
             result.push_back(p);
         }
     } else {
@@ -120,6 +126,7 @@ void print_help(const char* prog) {
               << "      --ignore <dir>      Directory to ignore (repeatable)\n"
               << "      --disk-limit <KB/s> Limit disk throughput\n"
               << "      --recursive         Scan subdirectories recursively\n"
+              << "  -D, --max-depth <n>    Limit recursive scan depth\n"
               << "  -c, --cli               Use console output\n"
               << "  -s, --silent            Disable console output\n"
               << "  -h, --help              Show this message\n";
@@ -464,57 +471,23 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        const std::set<std::string> known{"--include-private",
-                                          "--show-skipped",
-                                          "--show-version",
-                                          "--version",
-                                          "--interval",
-                                          "--refresh-rate",
-                                          "--cpu-poll",
-                                          "--mem-poll",
-                                          "--thread-poll",
-                                          "--log-dir",
-                                          "--log-file",
-                                          "--concurrency",
-                                          "--check-only",
-                                          "--no-hash-check",
-                                          "--log-level",
-                                          "--verbose",
-                                          "--max-threads",
-                                          "--cpu-percent",
-                                          "--cpu-cores",
-                                          "--mem-limit",
-                                          "--no-cpu-tracker",
-                                          "--no-mem-tracker",
-                                          "--no-thread-tracker",
-                                          "--help",
-                                          "--threads",
-                                          "--single-thread",
-                                          "--net-tracker",
-                                          "--download-limit",
-                                          "--upload-limit",
-                                          "--disk-limit",
-                                          "--cli",
-                                          "--silent",
-                                          "--recursive",
-                                          "--config-yaml",
-                                          "--config-json",
-                                          "--ignore",
-                                          "--force-pull",
-                                          "--discard-dirty"};
-        const std::map<char, std::string> short_opts{{'p', "--include-private"},
-                                                     {'k', "--show-skipped"},
-                                                     {'v', "--show-version"},
-                                                     {'V', "--version"},
-                                                     {'i', "--interval"},
-                                                     {'r', "--refresh-rate"},
-                                                     {'d', "--log-dir"},
-                                                     {'l', "--log-file"},
-                                                     {'y', "--config-yaml"},
-                                                     {'j', "--config-json"},
-                                                     {'c', "--cli"},
-                                                     {'s', "--silent"},
-                                                     {'h', "--help"}};
+        const std::set<std::string> known{
+            "--include-private", "--show-skipped",   "--show-version",      "--version",
+            "--interval",        "--refresh-rate",   "--cpu-poll",          "--mem-poll",
+            "--thread-poll",     "--log-dir",        "--log-file",          "--concurrency",
+            "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
+            "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
+            "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
+            "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
+            "--upload-limit",    "--disk-limit",     "--max-depth",         "--cli",
+            "--silent",          "--recursive",      "--config-yaml",       "--config-json",
+            "--ignore",          "--force-pull",     "--discard-dirty"};
+        const std::map<char, std::string> short_opts{
+            {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
+            {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
+            {'d', "--log-dir"},         {'l', "--log-file"},     {'y', "--config-yaml"},
+            {'j', "--config-json"},     {'c', "--cli"},          {'s', "--silent"},
+            {'D', "--max-depth"},       {'h', "--help"}};
         ArgParser parser(argc, argv, known, short_opts);
 
         auto cfg_flag = [&](const std::string& k) {
@@ -607,6 +580,7 @@ int main(int argc, char* argv[]) {
         size_t down_limit = 0;
         size_t up_limit = 0;
         size_t disk_limit = 0;
+        size_t max_depth = 0;
         bool cpu_tracker = true;
         bool mem_tracker = true;
         bool thread_tracker = true;
@@ -736,6 +710,14 @@ int main(int argc, char* argv[]) {
                 disk_limit = static_cast<size_t>(std::stoul(cfg_opt("--disk-limit")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for disk-limit\n";
+                return 1;
+            }
+        }
+        if (cfg_opts.count("--max-depth")) {
+            try {
+                max_depth = static_cast<size_t>(std::stoul(cfg_opt("--max-depth")));
+            } catch (...) {
+                std::cerr << "Invalid value in YAML for max-depth\n";
                 return 1;
             }
         }
@@ -967,6 +949,21 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
+        if (parser.has_flag("--max-depth")) {
+            std::string val = parser.get_option("--max-depth");
+            if (val.empty()) {
+                if (!silent)
+                    std::cerr << "--max-depth requires a numeric value\n";
+                return 1;
+            }
+            try {
+                max_depth = static_cast<size_t>(std::stoul(val));
+            } catch (...) {
+                if (!silent)
+                    std::cerr << "Invalid value for --max-depth: " << val << "\n";
+                return 1;
+            }
+        }
         cpu_tracker = !parser.has_flag("--no-cpu-tracker");
         mem_tracker = !parser.has_flag("--no-mem-tracker");
         thread_tracker = !parser.has_flag("--no-thread-tracker");
@@ -1049,7 +1046,8 @@ int main(int argc, char* argv[]) {
         }
 
         // Grab subdirectories at startup, skipping ignored paths
-        std::vector<fs::path> all_repos = build_repo_list(root, recursive_scan, ignore_dirs);
+        std::vector<fs::path> all_repos =
+            build_repo_list(root, recursive_scan, ignore_dirs, max_depth);
         std::map<fs::path, RepoInfo> repo_infos;
         for (const auto& p : all_repos) {
             repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};

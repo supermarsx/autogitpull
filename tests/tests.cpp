@@ -47,7 +47,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t up_limit, size_t disk_limit, bool silent, bool force_pull);
 
 std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
-                                      const std::vector<fs::path>& ignore);
+                                      const std::vector<fs::path>& ignore, size_t max_depth);
 
 TEST_CASE("ArgParser basic parsing") {
     const char* argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
@@ -294,7 +294,7 @@ TEST_CASE("build_repo_list ignores directories") {
     fs::create_directories(root / "c");
 
     std::vector<fs::path> ignore{root / "b", root / "c"};
-    std::vector<fs::path> repos = build_repo_list(root, false, ignore);
+    std::vector<fs::path> repos = build_repo_list(root, false, ignore, 0);
     REQUIRE(std::find(repos.begin(), repos.end(), root / "a") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "b") == repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "c") == repos.end());
@@ -325,6 +325,19 @@ TEST_CASE("recursive iterator finds nested repo") {
         if (e.is_directory())
             rec.push_back(e.path());
     REQUIRE(std::find(rec.begin(), rec.end(), repo) != rec.end());
+
+    fs::remove_all(root);
+}
+
+TEST_CASE("build_repo_list respects max depth") {
+    fs::path root = fs::temp_directory_path() / "depth_test";
+    fs::remove_all(root);
+    fs::create_directories(root / "a/b/c");
+
+    std::vector<fs::path> repos = build_repo_list(root, true, {}, 2);
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "a") != repos.end());
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "a/b") != repos.end());
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "a/b/c") == repos.end());
 
     fs::remove_all(root);
 }
