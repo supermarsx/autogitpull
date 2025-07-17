@@ -45,6 +45,9 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit, size_t disk_limit, bool silent, bool force_pull);
 
+std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
+                                      const std::vector<fs::path>& ignore);
+
 TEST_CASE("ArgParser basic parsing") {
     const char* argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
     ArgParser parser(6, const_cast<char**>(argv), {"--foo", "--bar", "--opt"});
@@ -251,6 +254,22 @@ TEST_CASE("ArgParser recursive flag") {
     const char* argv[] = {"prog", "--recursive"};
     ArgParser parser(2, const_cast<char**>(argv), {"--recursive"});
     REQUIRE(parser.has_flag("--recursive"));
+}
+
+TEST_CASE("build_repo_list ignores directories") {
+    fs::path root = fs::temp_directory_path() / "ignore_test";
+    fs::remove_all(root);
+    fs::create_directories(root / "a");
+    fs::create_directories(root / "b");
+    fs::create_directories(root / "c");
+
+    std::vector<fs::path> ignore{root / "b", root / "c"};
+    std::vector<fs::path> repos = build_repo_list(root, false, ignore);
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "a") != repos.end());
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "b") == repos.end());
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "c") == repos.end());
+
+    fs::remove_all(root);
 }
 
 TEST_CASE("recursive iterator finds nested repo") {
