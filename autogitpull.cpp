@@ -116,6 +116,7 @@ void print_help(const char* prog) {
               << "  -d, --log-dir <path>    Directory for pull logs\n"
               << "  -l, --log-file <path>   File for general logs\n"
               << "  -y, --config-yaml <f>  Load options from YAML file\n"
+              << "  -j, --config-json <f>  Load options from JSON file\n"
               << "      --ignore <dir>      Directory to ignore (repeatable)\n"
               << "      --disk-limit <KB/s> Limit disk throughput\n"
               << "      --recursive         Scan subdirectories recursively\n"
@@ -434,10 +435,10 @@ int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
         // Parse config file option first
-        const std::set<std::string> pre_known{"--config-yaml"};
-        const std::map<char, std::string> pre_short{{'y', "--config-yaml"}};
+        const std::set<std::string> pre_known{"--config-yaml", "--config-json"};
+        const std::map<char, std::string> pre_short{{'y', "--config-yaml"}, {'j', "--config-json"}};
         ArgParser pre_parser(argc, argv, pre_known, pre_short);
-        std::map<std::string, std::string> yaml_opts;
+        std::map<std::string, std::string> cfg_opts;
         if (pre_parser.has_flag("--config-yaml")) {
             std::string cfg = pre_parser.get_option("--config-yaml");
             if (cfg.empty()) {
@@ -445,7 +446,19 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
             std::string err;
-            if (!load_yaml_config(cfg, yaml_opts, err)) {
+            if (!load_yaml_config(cfg, cfg_opts, err)) {
+                std::cerr << "Failed to load config: " << err << "\n";
+                return 1;
+            }
+        }
+        if (pre_parser.has_flag("--config-json")) {
+            std::string cfg = pre_parser.get_option("--config-json");
+            if (cfg.empty()) {
+                std::cerr << "--config-json requires a file\n";
+                return 1;
+            }
+            std::string err;
+            if (!load_json_config(cfg, cfg_opts, err)) {
                 std::cerr << "Failed to load config: " << err << "\n";
                 return 1;
             }
@@ -485,37 +498,44 @@ int main(int argc, char* argv[]) {
                                           "--silent",
                                           "--recursive",
                                           "--config-yaml",
+                                          "--config-json",
                                           "--ignore",
                                           "--force-pull",
                                           "--discard-dirty"};
-        const std::map<char, std::string> short_opts{
-            {'p', "--include-private"}, {'k', "--show-skipped"},
-            {'v', "--show-version"},    {'V', "--version"},
-            {'i', "--interval"},        {'r', "--refresh-rate"},
-            {'d', "--log-dir"},         {'l', "--log-file"},
-            {'y', "--config-yaml"},     {'c', "--cli"},
-            {'s', "--silent"},          {'h', "--help"}};
+        const std::map<char, std::string> short_opts{{'p', "--include-private"},
+                                                     {'k', "--show-skipped"},
+                                                     {'v', "--show-version"},
+                                                     {'V', "--version"},
+                                                     {'i', "--interval"},
+                                                     {'r', "--refresh-rate"},
+                                                     {'d', "--log-dir"},
+                                                     {'l', "--log-file"},
+                                                     {'y', "--config-yaml"},
+                                                     {'j', "--config-json"},
+                                                     {'c', "--cli"},
+                                                     {'s', "--silent"},
+                                                     {'h', "--help"}};
         ArgParser parser(argc, argv, known, short_opts);
 
-        auto yaml_flag = [&](const std::string& k) {
-            auto it = yaml_opts.find(k);
-            if (it == yaml_opts.end())
+        auto cfg_flag = [&](const std::string& k) {
+            auto it = cfg_opts.find(k);
+            if (it == cfg_opts.end())
                 return false;
             std::string v = it->second;
             std::transform(v.begin(), v.end(), v.begin(),
                            [](unsigned char c) { return std::tolower(c); });
             return v == "" || v == "1" || v == "true" || v == "yes";
         };
-        auto yaml_opt = [&](const std::string& k) {
-            auto it = yaml_opts.find(k);
-            if (it != yaml_opts.end())
+        auto cfg_opt = [&](const std::string& k) {
+            auto it = cfg_opts.find(k);
+            if (it != cfg_opts.end())
                 return it->second;
             return std::string();
         };
 
-        bool cli = parser.has_flag("--cli") || yaml_flag("--cli");
-        bool silent = parser.has_flag("--silent") || yaml_flag("--silent");
-        bool recursive_scan = parser.has_flag("--recursive") || yaml_flag("--recursive");
+        bool cli = parser.has_flag("--cli") || cfg_flag("--cli");
+        bool silent = parser.has_flag("--silent") || cfg_flag("--silent");
+        bool recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
 
         if (parser.has_flag("--version")) {
             std::cout << AUTOGITPULL_VERSION << "\n";
@@ -541,21 +561,21 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         bool include_private =
-            parser.has_flag("--include-private") || yaml_flag("--include-private");
-        bool show_skipped = parser.has_flag("--show-skipped") || yaml_flag("--show-skipped");
-        bool show_version = parser.has_flag("--show-version") || yaml_flag("--show-version");
-        bool check_only = parser.has_flag("--check-only") || yaml_flag("--check-only");
-        bool hash_check = !(parser.has_flag("--no-hash-check") || yaml_flag("--no-hash-check"));
+            parser.has_flag("--include-private") || cfg_flag("--include-private");
+        bool show_skipped = parser.has_flag("--show-skipped") || cfg_flag("--show-skipped");
+        bool show_version = parser.has_flag("--show-version") || cfg_flag("--show-version");
+        bool check_only = parser.has_flag("--check-only") || cfg_flag("--check-only");
+        bool hash_check = !(parser.has_flag("--no-hash-check") || cfg_flag("--no-hash-check"));
         bool force_pull = parser.has_flag("--force-pull") || parser.has_flag("--discard-dirty") ||
-                          yaml_flag("--force-pull") || yaml_flag("--discard-dirty");
+                          cfg_flag("--force-pull") || cfg_flag("--discard-dirty");
         LogLevel log_level = LogLevel::INFO;
-        if (parser.has_flag("--verbose") || yaml_flag("--verbose")) {
+        if (parser.has_flag("--verbose") || cfg_flag("--verbose")) {
             log_level = LogLevel::DEBUG;
         }
-        if (parser.has_flag("--log-level") || yaml_opts.count("--log-level")) {
+        if (parser.has_flag("--log-level") || cfg_opts.count("--log-level")) {
             std::string val = parser.get_option("--log-level");
             if (val.empty())
-                val = yaml_opt("--log-level");
+                val = cfg_opt("--log-level");
             if (val.empty()) {
                 if (!silent)
                     std::cerr << "--log-level requires a value\n";
@@ -598,49 +618,49 @@ int main(int argc, char* argv[]) {
         unsigned int thread_poll_sec = 5;
 
         // Apply YAML defaults
-        if (yaml_opts.count("--interval")) {
+        if (cfg_opts.count("--interval")) {
             try {
-                interval = std::stoi(yaml_opt("--interval"));
+                interval = std::stoi(cfg_opt("--interval"));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for interval\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--refresh-rate")) {
+        if (cfg_opts.count("--refresh-rate")) {
             try {
-                refresh_ms = std::chrono::milliseconds(std::stoi(yaml_opt("--refresh-rate")));
+                refresh_ms = std::chrono::milliseconds(std::stoi(cfg_opt("--refresh-rate")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for refresh-rate\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--cpu-poll")) {
+        if (cfg_opts.count("--cpu-poll")) {
             try {
-                cpu_poll_sec = static_cast<unsigned int>(std::stoul(yaml_opt("--cpu-poll")));
+                cpu_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--cpu-poll")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for cpu-poll\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--mem-poll")) {
+        if (cfg_opts.count("--mem-poll")) {
             try {
-                mem_poll_sec = static_cast<unsigned int>(std::stoul(yaml_opt("--mem-poll")));
+                mem_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--mem-poll")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for mem-poll\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--thread-poll")) {
+        if (cfg_opts.count("--thread-poll")) {
             try {
-                thread_poll_sec = static_cast<unsigned int>(std::stoul(yaml_opt("--thread-poll")));
+                thread_poll_sec = static_cast<unsigned int>(std::stoul(cfg_opt("--thread-poll")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for thread-poll\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--threads")) {
+        if (cfg_opts.count("--threads")) {
             try {
-                concurrency = static_cast<size_t>(std::stoul(yaml_opt("--threads")));
+                concurrency = static_cast<size_t>(std::stoul(cfg_opt("--threads")));
                 if (concurrency == 0)
                     concurrency = 1;
             } catch (...) {
@@ -648,11 +668,11 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
-        if (yaml_flag("--single-thread"))
+        if (cfg_flag("--single-thread"))
             concurrency = 1;
-        if (yaml_opts.count("--concurrency")) {
+        if (cfg_opts.count("--concurrency")) {
             try {
-                concurrency = static_cast<size_t>(std::stoul(yaml_opt("--concurrency")));
+                concurrency = static_cast<size_t>(std::stoul(cfg_opt("--concurrency")));
                 if (concurrency == 0)
                     concurrency = 1;
             } catch (...) {
@@ -660,16 +680,16 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
-        if (yaml_opts.count("--max-threads")) {
+        if (cfg_opts.count("--max-threads")) {
             try {
-                max_threads = static_cast<size_t>(std::stoul(yaml_opt("--max-threads")));
+                max_threads = static_cast<size_t>(std::stoul(cfg_opt("--max-threads")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for max-threads\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--cpu-percent")) {
-            std::string val = yaml_opt("--cpu-percent");
+        if (cfg_opts.count("--cpu-percent")) {
+            std::string val = cfg_opt("--cpu-percent");
             if (!val.empty() && val.back() == '%')
                 val.pop_back();
             try {
@@ -679,50 +699,50 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
-        if (yaml_opts.count("--cpu-cores")) {
+        if (cfg_opts.count("--cpu-cores")) {
             try {
-                cpu_core_mask = std::stoull(yaml_opt("--cpu-cores"), nullptr, 0);
+                cpu_core_mask = std::stoull(cfg_opt("--cpu-cores"), nullptr, 0);
             } catch (...) {
                 std::cerr << "Invalid value in YAML for cpu-cores\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--mem-limit")) {
+        if (cfg_opts.count("--mem-limit")) {
             try {
-                mem_limit = static_cast<size_t>(std::stoul(yaml_opt("--mem-limit")));
+                mem_limit = static_cast<size_t>(std::stoul(cfg_opt("--mem-limit")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for mem-limit\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--download-limit")) {
+        if (cfg_opts.count("--download-limit")) {
             try {
-                down_limit = static_cast<size_t>(std::stoul(yaml_opt("--download-limit")));
+                down_limit = static_cast<size_t>(std::stoul(cfg_opt("--download-limit")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for download-limit\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--upload-limit")) {
+        if (cfg_opts.count("--upload-limit")) {
             try {
-                up_limit = static_cast<size_t>(std::stoul(yaml_opt("--upload-limit")));
+                up_limit = static_cast<size_t>(std::stoul(cfg_opt("--upload-limit")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for upload-limit\n";
                 return 1;
             }
         }
-        if (yaml_opts.count("--disk-limit")) {
+        if (cfg_opts.count("--disk-limit")) {
             try {
-                disk_limit = static_cast<size_t>(std::stoul(yaml_opt("--disk-limit")));
+                disk_limit = static_cast<size_t>(std::stoul(cfg_opt("--disk-limit")));
             } catch (...) {
                 std::cerr << "Invalid value in YAML for disk-limit\n";
                 return 1;
             }
         }
-        cpu_tracker = !yaml_flag("--no-cpu-tracker");
-        mem_tracker = !yaml_flag("--no-mem-tracker");
-        thread_tracker = !yaml_flag("--no-thread-tracker");
-        net_tracker = yaml_flag("--net-tracker");
+        cpu_tracker = !cfg_flag("--no-cpu-tracker");
+        mem_tracker = !cfg_flag("--no-mem-tracker");
+        thread_tracker = !cfg_flag("--no-thread-tracker");
+        net_tracker = cfg_flag("--net-tracker");
 
         if (parser.has_flag("--interval")) {
             std::string val = parser.get_option("--interval");
@@ -954,10 +974,10 @@ int main(int argc, char* argv[]) {
         if (max_threads > 0 && concurrency > max_threads)
             concurrency = max_threads;
         fs::path log_dir;
-        if (parser.has_flag("--log-dir") || yaml_opts.count("--log-dir")) {
+        if (parser.has_flag("--log-dir") || cfg_opts.count("--log-dir")) {
             std::string val = parser.get_option("--log-dir");
             if (val.empty())
-                val = yaml_opt("--log-dir");
+                val = cfg_opt("--log-dir");
             if (val.empty()) {
                 if (!silent)
                     std::cerr << "--log-dir requires a path\n";
@@ -978,10 +998,10 @@ int main(int argc, char* argv[]) {
             }
         }
         std::string log_file;
-        if (parser.has_flag("--log-file") || yaml_opts.count("--log-file")) {
+        if (parser.has_flag("--log-file") || cfg_opts.count("--log-file")) {
             std::string val = parser.get_option("--log-file");
             if (val.empty())
-                val = yaml_opt("--log-file");
+                val = cfg_opt("--log-file");
             if (val.empty()) {
                 std::string ts = timestamp();
                 for (char& ch : ts) {

@@ -1,8 +1,11 @@
-#!/usr/bin/env bash
-set -e
+#!/ usr / bin / env bash
+set -
+        e
 
-# Install libgit2 if missing
-if command -v pkg-config >/dev/null && pkg-config --exists libgit2; then
+#Install libgit2 if missing
+        if command -
+        v pkg - config >
+    / dev / null&& pkg - config-- exists libgit2; then
     echo "libgit2 already installed"
     exit 0
 fi
@@ -12,9 +15,9 @@ case "$os" in
     Linux*)
         if command -v apt-get >/dev/null; then
             sudo apt-get update
-            sudo apt-get install -y libgit2-dev libyaml-cpp-dev
+            sudo apt-get install -y libgit2-dev libyaml-cpp-dev nlohmann-json3-dev
         elif command -v yum >/dev/null; then
-            sudo yum install -y libgit2-devel yaml-cpp-devel
+            sudo yum install -y libgit2-devel yaml-cpp-devel nlohmann-json-devel
         else
             echo "Unsupported Linux distribution. Please install libgit2 manually."
             exit 1

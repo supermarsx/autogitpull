@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(nlohmann_json 3 REQUIRED)
 if(APPLE)
     set(PKG_CONFIG_USE_STATIC_LIBS OFF)
 else()
@@ -16,7 +17,7 @@ if(NOT LIBGIT2_FOUND)
 endif()
 
 add_library(autogitpull_lib STATIC git_utils.cpp logger.cpp resource_utils.cpp system_utils.cpp time_utils.cpp config_utils.cpp)
-target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp pthread)
+target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread)
 
 add_executable(autogitpull autogitpull.cpp tui.cpp)
 target_link_libraries(autogitpull PRIVATE autogitpull_lib)
