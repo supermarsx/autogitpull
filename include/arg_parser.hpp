@@ -72,28 +72,52 @@ class ArgParser {
                     }
                 }
             } else if (arg.rfind('-', 0) == 0 && arg.size() >= 2 && short_map_.count(arg[1])) {
-                std::string long_opt = short_map_.at(arg[1]);
-                std::string key = long_opt;
-                std::string val;
                 size_t eq = arg.find('=');
-                if (eq != std::string::npos)
-                    val = arg.substr(eq + 1);
-                else if (i + 1 < argc && std::string(argv[i + 1]).rfind('-', 0) != 0) {
-                    val = argv[++i];
-                }
-                if (!val.empty()) {
-                    if (known_flags_.empty() || known_flags_.count(key)) {
-                        flags_.insert(key);
-                        options_[key] = val;
-                        multi_options_[key].push_back(val);
-                    } else {
-                        unknown_flags_.push_back(key);
+                std::string before =
+                    arg.substr(1, eq != std::string::npos ? eq - 1 : std::string::npos);
+                std::string after = eq != std::string::npos ? arg.substr(eq + 1) : "";
+
+                for (size_t j = 0; j < before.size();) {
+                    char c = before[j];
+                    if (!short_map_.count(c))
+                        break;
+
+                    std::string key = short_map_.at(c);
+                    std::string val;
+
+                    bool last = (j == before.size() - 1);
+                    if (last) {
+                        if (!after.empty()) {
+                            val = after;
+                        } else if (j + 1 < before.size() && !short_map_.count(before[j + 1])) {
+                            val = before.substr(j + 1);
+                            j = before.size();
+                        } else if (i + 1 < argc && std::string(argv[i + 1]).rfind('-', 0) != 0) {
+                            val = argv[++i];
+                        }
+                    } else if (!short_map_.count(before[j + 1])) {
+                        val = before.substr(j + 1);
+                        if (!after.empty())
+                            val += after;
+                        j = before.size();
                     }
-                } else {
-                    if (known_flags_.empty() || known_flags_.count(key)) {
-                        flags_.insert(key);
+
+                    if (!val.empty()) {
+                        if (known_flags_.empty() || known_flags_.count(key)) {
+                            flags_.insert(key);
+                            options_[key] = val;
+                            multi_options_[key].push_back(val);
+                        } else {
+                            unknown_flags_.push_back(key);
+                        }
+                        break;
                     } else {
-                        unknown_flags_.push_back(key);
+                        if (known_flags_.empty() || known_flags_.count(key)) {
+                            flags_.insert(key);
+                        } else {
+                            unknown_flags_.push_back(key);
+                        }
+                        ++j;
                     }
                 }
             } else {
