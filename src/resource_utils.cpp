@@ -18,6 +18,7 @@
 #include <vector>
 #elif defined(__APPLE__)
 #include <mach/mach.h>
+#include <unistd.h>
 #endif
 
 namespace procutil {
