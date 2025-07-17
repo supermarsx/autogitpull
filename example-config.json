@@ -29,6 +29,7 @@
   "recursive": false,
   "force-pull": false,
   "discard-dirty": false,
+  "single-run": false,
   "cpu-poll": 5,
   "mem-poll": 5,
   "thread-poll": 5

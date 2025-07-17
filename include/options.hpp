@@ -42,6 +42,7 @@ struct Options {
     bool debug_memory = false;
     bool dump_state = false;
     size_t dump_threshold = 0;
+    bool single_run = false;
     bool show_help = false;
     bool print_version = false;
 };
