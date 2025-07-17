@@ -31,6 +31,7 @@
 #include "debug_utils.hpp"
 #include "parse_utils.hpp"
 #include "options.hpp"
+#include "lock_utils.hpp"
 
 namespace fs = std::filesystem;
 
@@ -587,6 +588,23 @@ int run_event_loop(const Options& opts) {
         return 0;
     if (!fs::exists(opts.root) || !fs::is_directory(opts.root))
         throw std::runtime_error("Root path does not exist or is not a directory.");
+    fs::path lock_path = opts.root / ".autogitpull.lock";
+    procutil::LockFileGuard lock(lock_path);
+    if (!lock.locked) {
+        unsigned long pid = 0;
+        if (procutil::read_lock_pid(lock_path, pid) && procutil::process_running(pid)) {
+            std::cerr << "Another instance is already running for this directory (PID " << pid
+                      << ")\n";
+            return 1;
+        }
+        std::cerr << "Stale lock file found. Removing and continuing...\n";
+        procutil::release_lock_file(lock_path);
+        lock.locked = procutil::acquire_lock_file(lock_path);
+        if (!lock.locked) {
+            std::cerr << "Failed to acquire lock." << std::endl;
+            return 1;
+        }
+    }
     setup_environment(opts);
     setup_logging(opts);
     fs::create_directories(opts.log_dir);
