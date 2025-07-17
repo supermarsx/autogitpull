@@ -1,8 +1,9 @@
 #include "git_utils.hpp"
-#include <functional>
 #include <cstdlib>
 #include <chrono>
+#include <functional>
 #include <thread>
+#include "resource_utils.hpp"
 
 using namespace std;
 
@@ -13,6 +14,7 @@ struct ProgressData {
     std::chrono::steady_clock::time_point start;
     size_t down_limit;
     size_t up_limit;
+    size_t disk_limit;
 };
 
 static int credential_cb(git_credential** out, const char* url, const char* username_from_url,
@@ -141,7 +143,8 @@ bool has_uncommitted_changes(const fs::path& repo) {
 
 int try_pull(const fs::path& repo, string& out_pull_log,
              const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed,
-             size_t down_limit_kbps, size_t up_limit_kbps, bool force_pull) {
+             size_t down_limit_kbps, size_t up_limit_kbps, size_t disk_limit_kbps,
+             bool force_pull) {
 
     if (progress_cb)
         (*progress_cb)(0);
@@ -169,8 +172,10 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
     ProgressData progress{progress_cb, std::chrono::steady_clock::now(), down_limit_kbps,
-                          up_limit_kbps};
-    if (progress_cb || down_limit_kbps > 0 || up_limit_kbps > 0) {
+                          up_limit_kbps, disk_limit_kbps};
+    if (progress_cb || down_limit_kbps > 0 || up_limit_kbps > 0 || disk_limit_kbps > 0) {
+        if (disk_limit_kbps > 0)
+            procutil::init_disk_usage();
         callbacks.payload = &progress;
         callbacks.transfer_progress = [](const git_transfer_progress* stats, void* payload) -> int {
             if (!payload)
@@ -193,6 +198,13 @@ int try_pull(const fs::path& repo, string& out_pull_log,
             }
             if (pd->up_limit > 0) {
                 double ms = (double)stats->received_bytes / (pd->up_limit * 1024.0) * 1000.0;
+                if (ms > expected_ms)
+                    expected_ms = ms;
+            }
+            if (pd->disk_limit > 0) {
+                auto du = procutil::get_disk_usage();
+                double ms =
+                    (double)(du.read_bytes + du.write_bytes) / (pd->disk_limit * 1024.0) * 1000.0;
                 if (ms > expected_ms)
                     expected_ms = ms;
             }
