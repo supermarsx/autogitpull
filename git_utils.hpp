@@ -125,7 +125,7 @@ bool has_uncommitted_changes(const fs::path& repo);
 int try_pull(const fs::path& repo, std::string& out_pull_log,
              const std::function<void(int)>* progress_cb = nullptr, bool use_credentials = false,
              bool* auth_failed = nullptr, size_t down_limit_kbps = 0, size_t up_limit_kbps = 0,
-             bool force_pull = false);
+             size_t disk_limit_kbps = 0, bool force_pull = false);
 
 } // namespace git
 

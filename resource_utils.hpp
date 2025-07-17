@@ -34,6 +34,14 @@ void init_network_usage();
  *         the call to @ref init_network_usage. */
 NetUsage get_network_usage();
 
+struct DiskUsage {
+    std::size_t read_bytes;
+    std::size_t write_bytes;
+};
+
+void init_disk_usage();
+DiskUsage get_disk_usage();
+
 } // namespace procutil
 
 #endif // RESOURCE_UTILS_HPP

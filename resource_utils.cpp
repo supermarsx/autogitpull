@@ -333,4 +333,59 @@ NetUsage get_network_usage() {
     return u;
 }
 
+#ifdef __linux__
+static std::pair<std::size_t, std::size_t> read_io_bytes() {
+    std::ifstream io("/proc/self/io");
+    std::string key;
+    std::size_t read_b = 0, write_b = 0;
+    while (io >> key) {
+        if (key == "read_bytes:") {
+            io >> read_b;
+        } else if (key == "write_bytes:") {
+            io >> write_b;
+        } else {
+            std::string rest;
+            std::getline(io, rest);
+        }
+    }
+    return {read_b, write_b};
+}
+#elif defined(_WIN32)
+static std::pair<std::size_t, std::size_t> read_io_bytes() {
+    IO_COUNTERS counters;
+    if (GetProcessIoCounters(GetCurrentProcess(), &counters))
+        return {static_cast<std::size_t>(counters.ReadTransferCount),
+                static_cast<std::size_t>(counters.WriteTransferCount)};
+    return {0, 0};
+}
+#elif defined(__APPLE__)
+#include <libproc.h>
+static std::pair<std::size_t, std::size_t> read_io_bytes() {
+    rusage_info_v2 info;
+    if (proc_pid_rusage(getpid(), RUSAGE_INFO_V2, reinterpret_cast<rusage_info_t*>(&info)) == 0)
+        return {static_cast<std::size_t>(info.ri_diskio_bytesread),
+                static_cast<std::size_t>(info.ri_diskio_byteswritten)};
+    return {0, 0};
+}
+#else
+static std::pair<std::size_t, std::size_t> read_io_bytes() { return {0, 0}; }
+#endif
+
+static std::size_t base_read = 0;
+static std::size_t base_write = 0;
+
+void init_disk_usage() {
+    auto b = read_io_bytes();
+    base_read = b.first;
+    base_write = b.second;
+}
+
+DiskUsage get_disk_usage() {
+    auto b = read_io_bytes();
+    DiskUsage u;
+    u.read_bytes = b.first - base_read;
+    u.write_bytes = b.second - base_write;
+    return u;
+}
+
 } // namespace procutil

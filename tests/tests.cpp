@@ -43,7 +43,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, bool silent, bool force_pull);
+                size_t up_limit, size_t disk_limit, bool silent, bool force_pull);
 
 TEST_CASE("ArgParser basic parsing") {
     const char* argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
@@ -240,6 +240,12 @@ TEST_CASE("ArgParser network limits") {
     REQUIRE(parser.get_option("--upload-limit") == std::string("50"));
 }
 
+TEST_CASE("ArgParser disk limit") {
+    const char* argv[] = {"prog", "--disk-limit", "250"};
+    ArgParser parser(3, const_cast<char**>(argv), {"--disk-limit"});
+    REQUIRE(parser.get_option("--disk-limit") == std::string("250"));
+}
+
 TEST_CASE("ArgParser recursive flag") {
     const char* argv[] = {"prog", "--recursive"};
     ArgParser parser(2, const_cast<char**>(argv), {"--recursive"});
@@ -305,7 +311,7 @@ TEST_CASE("scan_repos respects concurrency limit") {
 
     std::thread t([&]() {
         scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false, fs::path(),
-                   true, true, concurrency, 0, 0, 0, 0, true, false);
+                   true, true, concurrency, 0, 0, 0, 0, 0, true, false);
     });
     while (scanning) {
         max_seen = std::max(max_seen, read_thread_count());
@@ -348,13 +354,13 @@ TEST_CASE("try_pull handles dirty repos") {
 
     std::string log;
     bool auth_fail = false;
-    int ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, false);
+    int ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, 0, false);
     REQUIRE(ret == 3);
     REQUIRE(fs::exists(repo / "file.txt"));
     std::string after = git::get_local_hash(repo);
     REQUIRE(after != git::get_local_hash(src));
 
-    ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, true);
+    ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, 0, true);
     REQUIRE(ret == 0);
     {
         std::ifstream ifs(repo / "file.txt");

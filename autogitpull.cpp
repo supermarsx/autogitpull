@@ -83,6 +83,7 @@ void print_help(const char* prog) {
               << "  -r, --refresh-rate <ms> TUI refresh rate\n"
               << "  -d, --log-dir <path>    Directory for pull logs\n"
               << "  -l, --log-file <path>   File for general logs\n"
+              << "      --disk-limit <KB/s> Limit disk throughput\n"
               << "      --recursive         Scan subdirectories recursively\n"
               << "  -c, --cli               Use console output\n"
               << "  -s, --silent            Disable console output\n"
@@ -130,7 +131,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
-                  size_t up_limit, bool silent, bool force_pull) {
+                  size_t up_limit, size_t disk_limit, bool silent, bool force_pull) {
     if (!running)
         return;
     if (logger_initialized())
@@ -254,7 +255,8 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                         };
                         bool pull_auth_fail = false;
                         int code = git::try_pull(p, pull_log, &progress_cb, include_private,
-                                                 &pull_auth_fail, down_limit, up_limit, force_pull);
+                                                 &pull_auth_fail, down_limit, up_limit, disk_limit,
+                                                 force_pull);
                         ri.auth_failed = pull_auth_fail;
                         ri.last_pull_log = pull_log;
                         fs::path log_file_path;
@@ -328,7 +330,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, bool silent, bool force_pull) {
+                size_t up_limit, size_t disk_limit, bool silent, bool force_pull) {
     git::GitInitGuard guard;
 
     {
@@ -353,7 +355,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                          include_private, log_dir, check_only, hash_check, down_limit, up_limit,
-                         silent, force_pull);
+                         disk_limit, silent, force_pull);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;
@@ -397,19 +399,41 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
-        const std::set<std::string> known{
-            "--include-private", "--show-skipped",      "--show-version",
-            "--version",         "--interval",          "--refresh-rate",
-            "--cpu-poll",        "--mem-poll",          "--thread-poll",
-            "--log-dir",         "--log-file",          "--concurrency",
-            "--check-only",      "--no-hash-check",     "--log-level",
-            "--verbose",         "--max-threads",       "--cpu-percent",
-            "--cpu-cores",       "--mem-limit",         "--no-cpu-tracker",
-            "--no-mem-tracker",  "--no-thread-tracker", "--help",
-            "--threads",         "--single-thread",     "--net-tracker",
-            "--download-limit",  "--upload-limit",      "--cli",
-            "--silent",          "--recursive",         "--force-pull",
-            "--discard-dirty"};
+        const std::set<std::string> known{"--include-private",
+                                          "--show-skipped",
+                                          "--show-version",
+                                          "--version",
+                                          "--interval",
+                                          "--refresh-rate",
+                                          "--cpu-poll",
+                                          "--mem-poll",
+                                          "--thread-poll",
+                                          "--log-dir",
+                                          "--log-file",
+                                          "--concurrency",
+                                          "--check-only",
+                                          "--no-hash-check",
+                                          "--log-level",
+                                          "--verbose",
+                                          "--max-threads",
+                                          "--cpu-percent",
+                                          "--cpu-cores",
+                                          "--mem-limit",
+                                          "--no-cpu-tracker",
+                                          "--no-mem-tracker",
+                                          "--no-thread-tracker",
+                                          "--help",
+                                          "--threads",
+                                          "--single-thread",
+                                          "--net-tracker",
+                                          "--download-limit",
+                                          "--upload-limit",
+                                          "--disk-limit",
+                                          "--cli",
+                                          "--silent",
+                                          "--recursive",
+                                          "--force-pull",
+                                          "--discard-dirty"};
         const std::map<char, std::string> short_opts{
             {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
             {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -486,6 +510,7 @@ int main(int argc, char* argv[]) {
         size_t mem_limit = 0;
         size_t down_limit = 0;
         size_t up_limit = 0;
+        size_t disk_limit = 0;
         bool cpu_tracker = true;
         bool mem_tracker = true;
         bool thread_tracker = true;
@@ -703,6 +728,21 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
+        if (parser.has_flag("--disk-limit")) {
+            std::string val = parser.get_option("--disk-limit");
+            if (val.empty()) {
+                if (!silent)
+                    std::cerr << "--disk-limit requires a numeric value\n";
+                return 1;
+            }
+            try {
+                disk_limit = static_cast<size_t>(std::stoul(val));
+            } catch (...) {
+                if (!silent)
+                    std::cerr << "Invalid value for --disk-limit: " << val << "\n";
+                return 1;
+            }
+        }
         cpu_tracker = !parser.has_flag("--no-cpu-tracker");
         mem_tracker = !parser.has_flag("--no-mem-tracker");
         thread_tracker = !parser.has_flag("--no-thread-tracker");
@@ -834,7 +874,7 @@ int main(int argc, char* argv[]) {
                     std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
                     std::ref(action_mtx), include_private, std::cref(log_dir), check_only,
                     hash_check, concurrency, cpu_percent_limit, mem_limit, down_limit, up_limit,
-                    silent, force_pull);
+                    disk_limit, silent, force_pull);
                 countdown_ms = std::chrono::seconds(interval);
             }
             {
