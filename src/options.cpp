@@ -39,17 +39,18 @@ Options parse_options(int argc, char* argv[]) {
     }
 
     const std::set<std::string> known{
-        "--include-private", "--show-skipped",   "--show-version",      "--version",
-        "--interval",        "--refresh-rate",   "--cpu-poll",          "--mem-poll",
-        "--thread-poll",     "--log-dir",        "--log-file",          "--concurrency",
-        "--check-only",      "--no-hash-check",  "--log-level",         "--verbose",
-        "--max-threads",     "--cpu-percent",    "--cpu-cores",         "--mem-limit",
-        "--no-cpu-tracker",  "--no-mem-tracker", "--no-thread-tracker", "--help",
-        "--threads",         "--single-thread",  "--net-tracker",       "--download-limit",
-        "--upload-limit",    "--disk-limit",     "--max-depth",         "--cli",
-        "--single-run",      "--silent",         "--recursive",         "--config-yaml",
-        "--config-json",     "--ignore",         "--force-pull",        "--discard-dirty",
-        "--debug-memory",    "--dump-state",     "--dump-large"};
+        "--include-private",  "--show-skipped",   "--show-version",      "--version",
+        "--interval",         "--refresh-rate",   "--cpu-poll",          "--mem-poll",
+        "--thread-poll",      "--log-dir",        "--log-file",          "--concurrency",
+        "--check-only",       "--no-hash-check",  "--log-level",         "--verbose",
+        "--max-threads",      "--cpu-percent",    "--cpu-cores",         "--mem-limit",
+        "--no-cpu-tracker",   "--no-mem-tracker", "--no-thread-tracker", "--help",
+        "--threads",          "--single-thread",  "--net-tracker",       "--download-limit",
+        "--upload-limit",     "--disk-limit",     "--max-depth",         "--cli",
+        "--single-run",       "--silent",         "--recursive",         "--config-yaml",
+        "--config-json",      "--ignore",         "--force-pull",        "--discard-dirty",
+        "--debug-memory",     "--dump-state",     "--dump-large",        "--install-daemon",
+        "--uninstall-daemon", "--daemon-config"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -79,6 +80,14 @@ Options parse_options(int argc, char* argv[]) {
     opts.single_run = parser.has_flag("--single-run") || cfg_flag("--single-run");
     if (opts.single_run)
         opts.cli = true;
+    opts.install_daemon = parser.has_flag("--install-daemon") || cfg_flag("--install-daemon");
+    opts.uninstall_daemon = parser.has_flag("--uninstall-daemon") || cfg_flag("--uninstall-daemon");
+    if (parser.has_flag("--daemon-config") || cfg_opts.count("--daemon-config")) {
+        std::string val = parser.get_option("--daemon-config");
+        if (val.empty())
+            val = cfg_opt("--daemon-config");
+        opts.daemon_config = val;
+    }
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");

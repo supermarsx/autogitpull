@@ -43,6 +43,9 @@ struct Options {
     bool dump_state = false;
     size_t dump_threshold = 0;
     bool single_run = false;
+    bool install_daemon = false;
+    bool uninstall_daemon = false;
+    std::string daemon_config;
     bool show_help = false;
     bool print_version = false;
 };
