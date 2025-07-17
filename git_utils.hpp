@@ -36,6 +36,7 @@ using repo_ptr = GitHandle<git_repository, git_repository_free>;
 using remote_ptr = GitHandle<git_remote, git_remote_free>;
 using object_ptr = GitHandle<git_object, git_object_free>;
 using reference_ptr = GitHandle<git_reference, git_reference_free>;
+using status_list_ptr = GitHandle<git_status_list, git_status_list_free>;
 
 // The utility functions below assume libgit2 is already initialized.
 
@@ -102,6 +103,11 @@ bool is_github_url(const std::string& url);
 bool remote_accessible(const fs::path& repo);
 
 /**
+ * @brief Check if there are uncommitted changes in the repository.
+ */
+bool has_uncommitted_changes(const fs::path& repo);
+
+/**
  * @brief Perform a fast-forward pull from the `origin` remote.
  *
  * `try_pull` fetches the current branch from `origin` and resets the local
@@ -118,7 +124,8 @@ bool remote_accessible(const fs::path& repo);
  */
 int try_pull(const fs::path& repo, std::string& out_pull_log,
              const std::function<void(int)>* progress_cb = nullptr, bool use_credentials = false,
-             bool* auth_failed = nullptr, size_t down_limit_kbps = 0, size_t up_limit_kbps = 0);
+             bool* auth_failed = nullptr, size_t down_limit_kbps = 0, size_t up_limit_kbps = 0,
+             bool force_pull = false);
 
 } // namespace git
 

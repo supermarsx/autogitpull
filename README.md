@@ -142,7 +142,7 @@ valgrind ./build/memory_leak_test
 Valgrind should finish with the message `All heap blocks were freed -- no leaks
 are possible`.
 
-Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--cli] [--silent] [--help]`
+Usage: `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--recursive] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--cli] [--silent] [--force-pull] [--help]`
 
 Most options have single-letter shorthands. Run `autogitpull --help` to see a concise list.
 
@@ -177,7 +177,11 @@ Available options:
 - `--net-tracker` – show total network usage since startup.
 - `--cli` – output text updates to stdout instead of the TUI.
 - `--silent` – disable all console output; only logs are written.
+- `--force-pull` – discard local changes when pulling updates.
 - `--help` – show the usage information and exit.
+
+Repositories with uncommitted changes are skipped by default to avoid losing
+work. Use `--force-pull` to reset such repositories to the remote state.
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
 

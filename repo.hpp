@@ -16,6 +16,7 @@ enum RepoStatus {
     RS_ERROR,         ///< An error occurred while processing
     RS_SKIPPED,       ///< Repository was skipped
     RS_HEAD_PROBLEM,  ///< HEAD/branch mismatch detected
+    RS_DIRTY,         ///< Uncommitted changes prevented pull
     RS_REMOTE_AHEAD   ///< Remote contains newer commits
 };
 

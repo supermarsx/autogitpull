@@ -152,6 +152,10 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             color = COLOR_RED;
             status_s = "HEAD/BR  ";
             break;
+        case RS_DIRTY:
+            color = COLOR_RED;
+            status_s = "Dirty    ";
+            break;
         case RS_REMOTE_AHEAD:
             color = COLOR_MAGENTA;
             status_s = "RemoteUp";

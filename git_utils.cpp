@@ -124,9 +124,24 @@ bool remote_accessible(const fs::path& repo) {
     return ok;
 }
 
+bool has_uncommitted_changes(const fs::path& repo) {
+    git_repository* raw_repo = nullptr;
+    if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
+        return false;
+    repo_ptr r(raw_repo);
+    git_status_options opts = GIT_STATUS_OPTIONS_INIT;
+    opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
+    opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED | GIT_STATUS_OPT_RENAMES_HEAD_TO_INDEX;
+    git_status_list* raw_list = nullptr;
+    if (git_status_list_new(&raw_list, r.get(), &opts) != 0)
+        return false;
+    status_list_ptr list(raw_list);
+    return git_status_list_entrycount(list.get()) > 0;
+}
+
 int try_pull(const fs::path& repo, string& out_pull_log,
              const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed,
-             size_t down_limit_kbps, size_t up_limit_kbps) {
+             size_t down_limit_kbps, size_t up_limit_kbps, bool force_pull) {
 
     if (progress_cb)
         (*progress_cb)(0);
@@ -218,6 +233,11 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         out_pull_log = "Already up to date";
         finalize();
         return 0;
+    }
+    if (!force_pull && has_uncommitted_changes(repo)) {
+        out_pull_log = "Local changes present";
+        finalize();
+        return 3;
     }
     git_object* raw_target = nullptr;
     if (git_object_lookup(&raw_target, r.get(), &remote_oid, GIT_OBJECT_COMMIT) != 0) {
