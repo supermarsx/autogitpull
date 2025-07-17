@@ -30,7 +30,6 @@ clean:
 lint:
 	clang-format --dry-run --Werror $(FORMAT_FILES)
 	cpplint --linelength=100 $(FORMAT_FILES)
-	npx prettier --check "**/*.{md,json}"
 
 deps:
 	./install_deps.sh

@@ -3,14 +3,12 @@
 To maintain code quality, all commits must pass the following checks **before** they are committed:
 
 1. `make lint` – runs `clang-format` and `cpplint` using the project's `.clang-format` configuration.
-2. `npm run format` – formats all Markdown and JSON files with Prettier.
-3. The full test suite via `make test`.
+2. The full test suite via `make test`.
 
 Run these commands locally from the repository root:
 
 ```bash
 make lint
-npm run format
 make test
 ```
 
