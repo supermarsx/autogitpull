@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -e
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
 CXX=${CXX:-g++}
 if ! command -v "$CXX" >/dev/null; then
     if command -v clang++ >/dev/null; then

@@ -1,6 +1,8 @@
 @echo off
 setlocal
 set "SCRIPT_DIR=%~dp0"
+set "ROOT_DIR=%SCRIPT_DIR%.."
+cd /d "%ROOT_DIR%"
 
 where cl >nul 2>nul
 if errorlevel 1 (
