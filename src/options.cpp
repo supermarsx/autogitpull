@@ -50,7 +50,8 @@ Options parse_options(int argc, char* argv[]) {
         "--single-run",       "--silent",         "--recursive",         "--config-yaml",
         "--config-json",      "--ignore",         "--force-pull",        "--discard-dirty",
         "--debug-memory",     "--dump-state",     "--dump-large",        "--install-daemon",
-        "--uninstall-daemon", "--daemon-config"};
+        "--uninstall-daemon", "--daemon-config",  "--install-service",   "--uninstall-service",
+        "--service-config"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -87,6 +88,15 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty())
             val = cfg_opt("--daemon-config");
         opts.daemon_config = val;
+    }
+    opts.install_service = parser.has_flag("--install-service") || cfg_flag("--install-service");
+    opts.uninstall_service =
+        parser.has_flag("--uninstall-service") || cfg_flag("--uninstall-service");
+    if (parser.has_flag("--service-config") || cfg_opts.count("--service-config")) {
+        std::string val = parser.get_option("--service-config");
+        if (val.empty())
+            val = cfg_opt("--service-config");
+        opts.service_config = val;
     }
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");

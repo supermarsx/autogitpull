@@ -9,6 +9,7 @@
 #include "config_utils.hpp"
 #include "parse_utils.hpp"
 #include "lock_utils.hpp"
+#include "options.hpp"
 #include <filesystem>
 #include <thread>
 #include <fstream>
@@ -371,6 +372,16 @@ TEST_CASE("ArgParser daemon flags") {
     const char* argv2[] = {"prog", "--uninstall-daemon"};
     ArgParser parser2(2, const_cast<char**>(argv2), {"--install-daemon", "--uninstall-daemon"});
     REQUIRE(parser2.has_flag("--uninstall-daemon"));
+}
+
+TEST_CASE("parse_options service flags") {
+    const char* argv[] = {"prog", "path", "--install-service", "--service-config", "cfg"};
+    Options opts = parse_options(5, const_cast<char**>(argv));
+    REQUIRE(opts.install_service);
+    REQUIRE(opts.service_config == std::string("cfg"));
+    const char* argv2[] = {"prog", "path", "--uninstall-service"};
+    Options opts2 = parse_options(3, const_cast<char**>(argv2));
+    REQUIRE(opts2.uninstall_service);
 }
 
 TEST_CASE("YAML config loading") {

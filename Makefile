@@ -25,7 +25,8 @@ SRC = \
     src/options.cpp \
     src/parse_utils.cpp \
     src/lock_utils.cpp \
-    src/linux_daemon.cpp
+    src/linux_daemon.cpp \
+    src/windows_service.cpp
 OBJ = $(SRC:.cpp=.o)
 FORMAT_FILES = $(SRC) include/*.hpp
 
