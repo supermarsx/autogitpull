@@ -62,7 +62,9 @@ will attempt to install a C++ compiler if one isn't present. Windows users get
 `compile.bat` (MinGW) and `compile-cl.bat` (MSVC) along with
 `install_deps.bat`, `install_libgit2_mingw.bat` and `run.bat`.
 
-Clean up intermediate files with `make clean`.
+Clean up intermediate files with `make clean`. You can also run
+`./clean.sh` on Unix-like systems or `clean.bat` on Windows to remove the
+generated binary, object files and the `build` directory.
 
 ### Debug builds for leak analysis
 
