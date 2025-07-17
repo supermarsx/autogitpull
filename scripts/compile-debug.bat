@@ -17,8 +17,8 @@ if errorlevel 1 (
 
 rem ──────────────────────────────────────────────────────────────
 rem 2. libgit2 paths
-set "LIBGIT2_INC=libgit2_install\include"
-set "LIBGIT2_LIB=libgit2_install\lib"
+set "LIBGIT2_INC=libs\libgit2_install\include"
+set "LIBGIT2_LIB=libs\libgit2_install\lib"
 
 if not exist "%LIBGIT2_LIB%\libgit2.a" (
     call "%SCRIPT_DIR%install_libgit2_mingw.bat"

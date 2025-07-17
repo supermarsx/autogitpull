@@ -19,12 +19,14 @@ if errorlevel 1 (
 )
 
 REM Download libgit2 if not present
-if not exist libgit2 (
+if not exist libs mkdir libs
+REM Clone libgit2 into libs\libgit2 if missing
+if not exist libs\libgit2 (
     echo Cloning libgit2...
-    git clone --depth 1 https://github.com/libgit2/libgit2
+    git clone --depth 1 https://github.com/libgit2/libgit2 libs\libgit2
 )
 
-cd libgit2
+cd libs\libgit2
 
 REM Clean any old builds
 if exist build rmdir /s /q build
@@ -33,7 +35,7 @@ mkdir build
 cd build
 
 REM Configure for static build with MinGW
-cmake -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=..\_install ..
+cmake -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=..\libgit2_install ..
 if errorlevel 1 (
     echo CMake configuration failed!
     exit /b 1
@@ -52,5 +54,5 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo libgit2 built and installed to libgit2\_install
+echo libgit2 built and installed to libs\libgit2_install
 cd ..\..
