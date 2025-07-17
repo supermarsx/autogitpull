@@ -33,7 +33,7 @@ lint:
 	npx prettier --check "**/*.{md,json}"
 
 deps:
-	./install_deps.sh
+	./scripts/install_deps.sh
 
 test:
 	cmake -S . -B build

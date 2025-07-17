@@ -42,9 +42,9 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
-            cmd.exe /c compile.bat
+            cmd.exe /c scripts\compile.bat
           else
-            ./compile.sh
+            ./scripts/compile.sh
           fi
 
       - name: Upload executable

@@ -5,7 +5,7 @@ Automatic Git Puller & Monitor
 ## Dependencies
 
 This tool relies on [libgit2](https://libgit2.org/). The helper scripts
-`install_deps.sh` (Linux/macOS) and `install_deps.bat` (Windows) automatically
+`scripts/install_deps.sh` (Linux/macOS) and `scripts/install_deps.bat` (Windows) automatically
 download and install `libgit2` when needed. You can also run `make deps` on
 Unix-like systems to invoke the installer. The build requires the development
 package (named `libgit2-dev` on Debian/Ubuntu). The Makefile tries to link
@@ -16,7 +16,7 @@ instructions below.
 Running the unit tests (`make test`) additionally requires the development
 headers and libraries for `yaml-cpp` and
 [nlohmann/json](https://github.com/nlohmann/json). The same installer scripts
-(`install_deps.sh` or `install_deps.bat`) will install these packages along with
+(`scripts/install_deps.sh` or `scripts/install_deps.bat`) will install these packages along with
 `libgit2`.
 
 ### Installing libgit2 on Linux
@@ -43,13 +43,13 @@ paths when compiling with `compile-cl.bat`.
 
 #### MinGW
 
-Run `install_libgit2_mingw.bat` to build libgit2 natively with MinGW. The
+Run `scripts/install_libgit2_mingw.bat` to build libgit2 natively with MinGW. The
 script installs the static library and headers under `libgit2\_install`.
 
-`compile-cl.bat` expects a vcpkg installation while `compile.bat` uses the
-library produced by `install_libgit2_mingw.bat` and will call it
+`scripts/compile-cl.bat` expects a vcpkg installation while `scripts/compile.bat` uses the
+library produced by `scripts/install_libgit2_mingw.bat` and will call it
 automatically if `libgit2\_install` is missing. When linking with MinGW,
-additional Windows system libraries are required. `compile.bat` now attempts
+additional Windows system libraries are required. `scripts/compile.bat` now attempts
 to install MinGW through Chocolatey if `g++` is not found and already
 includes `winhttp`, `ole32`, `rpcrt4` and `crypt32` so that the build
 succeeds without manual tweaks.
@@ -58,15 +58,15 @@ succeeds without manual tweaks.
 
 ### Using the provided scripts
 
-Run `make` (Linux/macOS), `compile.bat` (MinGW) or `compile-cl.bat` (MSVC) to
-build the project. `compile.bat` invokes `install_libgit2_mingw.bat` when
+Run `make` (Linux/macOS), `scripts/compile.bat` (MinGW) or `scripts/compile-cl.bat` (MSVC) to
+build the project. `scripts/compile.bat` invokes `scripts/install_libgit2_mingw.bat` when
 `libgit2` is missing. The binary is produced as `autogitpull` (or
 `autogitpull.exe` on Windows).
 
-The repository also ships with `compile.sh` for Unix-like environments which
+The repository also ships with `scripts/compile.sh` for Unix-like environments which
 will attempt to install a C++ compiler if one isn't present. Windows users get
-`compile.bat` (MinGW) and `compile-cl.bat` (MSVC) along with
-`install_deps.bat`, `install_libgit2_mingw.bat` and `run.bat`.
+`scripts/compile.bat` (MinGW) and `scripts/compile-cl.bat` (MSVC) along with
+`scripts/install_deps.bat`, `scripts/install_libgit2_mingw.bat` and `scripts/run.bat`.
 
 Clean up intermediate files with `make clean`. You can also run
 `./clean.sh` on Unix-like systems or `clean.bat` on Windows to remove the
@@ -74,15 +74,15 @@ generated binary, object files and the `build` directory.
 
 ### Debug builds for leak analysis
 
-The scripts `compile-debug.sh`, `compile-debug.bat` and `compile-debug-cl.bat`
+The scripts `scripts/compile-debug.sh`, `scripts/compile-debug.bat` and `scripts/compile-debug-cl.bat`
 compile the program with AddressSanitizer and debug information enabled. They
 produce `autogitpull_debug` (or `autogitpull_debug.exe` on Windows). Use these
 builds when running leak detection tools:
 
 ```bash
-./compile-debug.sh      # Linux/macOS
-compile-debug.bat       # MinGW
-compile-debug-cl.bat    # MSVC
+scripts/compile-debug.sh      # Linux/macOS
+scripts/compile-debug.bat       # MinGW
+scripts/compile-debug-cl.bat    # MSVC
 ```
 
 ### Manual compilation
@@ -129,7 +129,7 @@ The resulting executable will be in the `build` directory.
 Unit tests use [Catch2](https://github.com/catchorg/Catch2). If the library is
 not installed, CMake will automatically download it using `FetchContent`.
 `make test` requires the development packages for `libgit2`, `yaml-cpp` and
-`nlohmann-json`. Use `./install_deps.sh` (Linux/macOS) or `install_deps.bat`
+`nlohmann-json`. Use `scripts/install_deps.sh` (Linux/macOS) or `scripts/install_deps.bat`
 (Windows) to install them before configuring and building the tests.
 Once the dependencies are in place, run `ctest`:
 

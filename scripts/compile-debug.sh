@@ -1,5 +1,6 @@
 #!/ usr / bin / env bash
-set - e
+set -e
+SCRIPT_DIR="$(dirname "$0")"
 
           os = "$(uname -s)"
 
@@ -26,8 +27,8 @@ then sudo yum install - y gcc - c++ CXX =
 then : else if[["$os" == "Darwin"]];
 then if command - v brew > / dev / null&& brew ls-- versions libgit2 > / dev / null;
 then echo "libgit2 found via brew" else echo "libgit2 not found, attempting to install..."./
-    install_deps.sh fi else echo "libgit2 not found, attempting to install..."./
-    install_deps.sh fi fi
+    "$SCRIPT_DIR/install_deps.sh" fi else echo "libgit2 not found, attempting to install..."./
+    "$SCRIPT_DIR/install_deps.sh" fi fi
 
         PKG_CFLAGS =
     "$(pkg-config --cflags libgit2 2>/dev/null || echo '') $(pkg-config --cflags yaml-cpp "

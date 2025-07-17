@@ -41,7 +41,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.check_releases.outputs.skip_build != 'true'
-        run: ./install_deps.sh
+        run: ./scripts/install_deps.sh
 
       - name: Install lint tools
         if: steps.check_releases.outputs.skip_build != 'true'

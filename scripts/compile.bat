@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "SCRIPT_DIR=%~dp0"
 
 where g++ >nul 2>nul
 if errorlevel 1 (
@@ -18,7 +19,7 @@ set "LIBGIT2_LIB=libgit2\_install\lib"
 
 rem Build libgit2 if not already installed
 if not exist "%LIBGIT2_LIB%\libgit2.a" (
-    call install_libgit2_mingw.bat
+    call "%SCRIPT_DIR%install_libgit2_mingw.bat"
     if errorlevel 1 exit /b 1
 )
 
