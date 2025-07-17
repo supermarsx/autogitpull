@@ -15,4 +15,4 @@ mkdir -p dist
 $CXX -std=c++20 -Iinclude $PKG_CFLAGS \
     src/autogitpull.cpp src/git_utils.cpp src/tui.cpp src/logger.cpp \
     src/resource_utils.cpp src/system_utils.cpp src/time_utils.cpp \
-    src/config_utils.cpp src/debug_utils.cpp $PKG_LIBS -o dist/autogitpull
+    src/config_utils.cpp src/debug_utils.cpp src/parse_utils.cpp $PKG_LIBS -o dist/autogitpull

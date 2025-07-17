@@ -7,6 +7,7 @@
 #include "thread_utils.hpp"
 #include "time_utils.hpp"
 #include "config_utils.hpp"
+#include "parse_utils.hpp"
 #include <filesystem>
 #include <thread>
 #include <fstream>
@@ -250,6 +251,31 @@ TEST_CASE("ArgParser disk limit") {
     const char* argv[] = {"prog", "--disk-limit", "250"};
     ArgParser parser(3, const_cast<char**>(argv), {"--disk-limit"});
     REQUIRE(parser.get_option("--disk-limit") == std::string("250"));
+}
+
+TEST_CASE("parse_int helper valid") {
+    const char* argv[] = {"prog", "--num", "5"};
+    ArgParser parser(3, const_cast<char**>(argv), {"--num"});
+    bool ok = false;
+    int v = parse_int(parser, "--num", 0, 10, ok);
+    REQUIRE(ok);
+    REQUIRE(v == 5);
+}
+
+TEST_CASE("parse_int helper invalid") {
+    const char* argv[] = {"prog", "--num", "bad"};
+    ArgParser parser(3, const_cast<char**>(argv), {"--num"});
+    bool ok = false;
+    parse_int(parser, "--num", 0, 10, ok);
+    REQUIRE_FALSE(ok);
+}
+
+TEST_CASE("parse_size_t helper range") {
+    const char* argv[] = {"prog", "--num", "100"};
+    ArgParser parser(3, const_cast<char**>(argv), {"--num"});
+    bool ok = false;
+    parse_size_t(parser, "--num", 0, 50, ok);
+    REQUIRE_FALSE(ok);
 }
 
 TEST_CASE("ArgParser debug flags") {
