@@ -1,4 +1,4 @@
-#autogitpull
+# autogitpull
 
 Automatic Git Puller & Monitor
 
