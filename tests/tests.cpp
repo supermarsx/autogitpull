@@ -240,6 +240,39 @@ TEST_CASE("ArgParser network limits") {
     REQUIRE(parser.get_option("--upload-limit") == std::string("50"));
 }
 
+TEST_CASE("ArgParser recursive flag") {
+    const char* argv[] = {"prog", "--recursive"};
+    ArgParser parser(2, const_cast<char**>(argv), {"--recursive"});
+    REQUIRE(parser.has_flag("--recursive"));
+}
+
+TEST_CASE("recursive iterator finds nested repo") {
+    git::GitInitGuard guard;
+    fs::path root = fs::temp_directory_path() / "recursive_test";
+    fs::remove_all(root);
+    fs::create_directories(root / "sub/inner/nested");
+    fs::path repo = root / "sub/inner/nested";
+    REQUIRE(std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
+    std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    std::ofstream(repo / "file.txt") << "hello";
+    std::system(("git -C " + repo.string() + " add file.txt").c_str());
+    std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
+
+    std::vector<fs::path> flat;
+    for (const auto& e : fs::directory_iterator(root))
+        flat.push_back(e.path());
+    REQUIRE(std::find(flat.begin(), flat.end(), repo) == flat.end());
+
+    std::vector<fs::path> rec;
+    for (const auto& e : fs::recursive_directory_iterator(root))
+        if (e.is_directory())
+            rec.push_back(e.path());
+    REQUIRE(std::find(rec.begin(), rec.end(), repo) != rec.end());
+
+    fs::remove_all(root);
+}
+
 TEST_CASE("scan_repos respects concurrency limit") {
     git::GitInitGuard guard;
     std::vector<fs::path> repos;

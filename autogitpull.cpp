@@ -81,6 +81,7 @@ void print_help(const char* prog) {
               << "  -r, --refresh-rate <ms> TUI refresh rate\n"
               << "  -d, --log-dir <path>    Directory for pull logs\n"
               << "  -l, --log-file <path>   File for general logs\n"
+              << "      --recursive         Scan subdirectories recursively\n"
               << "  -c, --cli               Use console output\n"
               << "  -s, --silent            Disable console output\n"
               << "  -h, --help              Show this message\n";
@@ -402,7 +403,7 @@ int main(int argc, char* argv[]) {
             "--no-mem-tracker",  "--no-thread-tracker", "--help",
             "--threads",         "--single-thread",     "--net-tracker",
             "--download-limit",  "--upload-limit",      "--cli",
-            "--silent"};
+            "--silent",          "--recursive"};
         const std::map<char, std::string> short_opts{
             {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
             {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -412,6 +413,7 @@ int main(int argc, char* argv[]) {
 
         bool cli = parser.has_flag("--cli");
         bool silent = parser.has_flag("--silent");
+        bool recursive_scan = parser.has_flag("--recursive");
 
         if (parser.has_flag("--version")) {
             std::cout << AUTOGITPULL_VERSION << "\n";
@@ -762,10 +764,17 @@ int main(int argc, char* argv[]) {
                 std::cerr << "Failed to open log file: " << log_file << "\n";
         }
 
-        // Grab all first-level subdirs at startup (fixed list)
+        // Grab subdirectories at startup
         std::vector<fs::path> all_repos;
-        for (const auto& entry : fs::directory_iterator(root)) {
-            all_repos.push_back(entry.path());
+        if (recursive_scan) {
+            for (const auto& entry : fs::recursive_directory_iterator(root)) {
+                if (entry.is_directory())
+                    all_repos.push_back(entry.path());
+            }
+        } else {
+            for (const auto& entry : fs::directory_iterator(root)) {
+                all_repos.push_back(entry.path());
+            }
         }
         std::map<fs::path, RepoInfo> repo_infos;
         for (const auto& p : all_repos) {
