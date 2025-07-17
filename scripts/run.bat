@@ -1,1 +1,1 @@
-autogitpull.exe "C:\path\to\your\dev"
+dist\autogitpull.exe "C:\path\to\your\dev"

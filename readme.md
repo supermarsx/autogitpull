@@ -60,8 +60,8 @@ succeeds without manual tweaks.
 
 Run `make` (Linux/macOS), `scripts/compile.bat` (MinGW) or `scripts/compile-cl.bat` (MSVC) to
 build the project. `scripts/compile.bat` invokes `scripts/install_libgit2_mingw.bat` when
-`libgit2` is missing. The binary is produced as `autogitpull` (or
-`autogitpull.exe` on Windows).
+`libgit2` is missing. The binary is produced in `dist` as `dist/autogitpull` (or
+`dist/autogitpull.exe` on Windows).
 
 The repository also ships with `scripts/compile.sh` for Unix-like environments which
 will attempt to install a C++ compiler if one isn't present. Windows users get
@@ -76,7 +76,7 @@ generated binary, object files and the `build` directory.
 
 The scripts `scripts/compile-debug.sh`, `scripts/compile-debug.bat` and `scripts/compile-debug-cl.bat`
 compile the program with AddressSanitizer and debug information enabled. They
-produce `autogitpull_debug` (or `autogitpull_debug.exe` on Windows). Use these
+produce `dist/autogitpull_debug` (or `dist/autogitpull_debug.exe` on Windows). Use these
 builds when running leak detection tools:
 
 ```bash
@@ -96,13 +96,13 @@ On Linux with `g++`:
 g++ -std=c++20 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp \
     $(pkg-config --cflags libgit2) \
     $(pkg-config --static --libs libgit2 2>/dev/null || pkg-config --libs libgit2) \
-    -pthread -o autogitpull
+    -pthread -o dist/autogitpull
 ```
 
 On macOS with `clang++`:
 
 ```bash
-clang++ -std=c++20 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp $(pkg-config --cflags --libs libgit2) -pthread -o autogitpull
+clang++ -std=c++20 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp $(pkg-config --cflags --libs libgit2) -pthread -o dist/autogitpull
 ```
 
 On Windows with MSVC's `cl`:

@@ -33,6 +33,8 @@ set "CXX=clang++"
 set "CXXFLAGS=-std=c++20 -O0 -g -fsanitize=address"
 set "LDFLAGS=-fsanitize=address"
 
+if not exist dist mkdir dist
+
 %CXX% %CXXFLAGS% ^
     -I"%LIBGIT2_INC%" -Iinclude ^
     src\autogitpull.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\debug_utils.cpp ^
@@ -40,13 +42,13 @@ set "LDFLAGS=-fsanitize=address"
     "%LIBGIT2_LIB%\libgit2.a" ^
     -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -lyaml-cpp ^
     %LDFLAGS% ^
-    -o autogitpull_debug.exe
+    -o dist\autogitpull_debug.exe
 
 if errorlevel 1 (
     echo Build failed.
     exit /b 1
 ) else (
-    echo Build succeeded: autogitpull_debug.exe
+    echo Build succeeded: dist\autogitpull_debug.exe
 )
 
 endlocal
