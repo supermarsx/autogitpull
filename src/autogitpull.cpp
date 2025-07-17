@@ -16,6 +16,7 @@
 #include <csignal>
 #include <memory>
 #include <cstring>
+#include "thread_compat.hpp"
 #include "arg_parser.hpp"
 #include "git_utils.hpp"
 #include "tui.hpp"
@@ -497,7 +498,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
         }
     };
 
-    std::vector<std::jthread> threads;
+    std::vector<th_compat::jthread> threads;
     threads.reserve(concurrency);
     const size_t max_threads = concurrency;
     for (size_t i = 0; i < max_threads; ++i) {
