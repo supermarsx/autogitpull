@@ -15,6 +15,7 @@
 #include <cctype>
 #include <csignal>
 #include <memory>
+#include <cstring>
 #include "arg_parser.hpp"
 #include "git_utils.hpp"
 #include "tui.hpp"
@@ -42,6 +43,14 @@ std::atomic<bool>* g_running_ptr = nullptr;
 bool debugMemory = false;
 bool dumpState = false;
 size_t dumpThreshold = 0;
+
+struct OptionInfo {
+    const char* long_flag;
+    const char* short_flag;
+    const char* arg;
+    const char* desc;
+    const char* category;
+};
 
 void handle_signal(int) {
     if (g_running_ptr)
@@ -115,28 +124,86 @@ std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
 
 /** Print the command line help text. */
 void print_help(const char* prog) {
-    std::cout << "Usage: " << prog << " <root-folder> [options]\n\n"
-              << "Options:\n"
-              << "  -p, --include-private   Include private repositories\n"
-              << "  -k, --show-skipped      Show skipped repositories\n"
-              << "  -v, --show-version      Display program version in TUI\n"
-              << "  -V, --version           Print program version and exit\n"
-              << "  -i, --interval <sec>    Delay between scans\n"
-              << "  -r, --refresh-rate <ms> TUI refresh rate\n"
-              << "  -d, --log-dir <path>    Directory for pull logs\n"
-              << "  -l, --log-file <path>   File for general logs\n"
-              << "  -y, --config-yaml <f>  Load options from YAML file\n"
-              << "  -j, --config-json <f>  Load options from JSON file\n"
-              << "      --ignore <dir>      Directory to ignore (repeatable)\n"
-              << "      --disk-limit <KB/s> Limit disk throughput\n"
-              << "      --recursive         Scan subdirectories recursively\n"
-              << "  -D, --max-depth <n>    Limit recursive scan depth\n"
-              << "  -c, --cli               Use console output\n"
-              << "  -s, --silent            Disable console output\n"
-              << "      --debug-memory      Log memory usage each scan\n"
-              << "      --dump-state        Dump container state when large\n"
-              << "      --dump-large <n>    Dump threshold for --dump-state\n"
-              << "  -h, --help              Show this message\n";
+    static const std::vector<OptionInfo> opts = {
+        {"--include-private", "-p", "", "Include private repositories", "General"},
+        {"--show-skipped", "-k", "", "Show skipped repositories", "General"},
+        {"--show-version", "-v", "", "Display program version in TUI", "General"},
+        {"--version", "-V", "", "Print program version and exit", "General"},
+        {"--interval", "-i", "<sec>", "Delay between scans", "General"},
+        {"--refresh-rate", "-r", "<ms>", "TUI refresh rate", "General"},
+        {"--recursive", "", "", "Scan subdirectories recursively", "General"},
+        {"--max-depth", "-D", "<n>", "Limit recursive scan depth", "General"},
+        {"--ignore", "", "<dir>", "Directory to ignore (repeatable)", "General"},
+        {"--config-yaml", "-y", "<file>", "Load options from YAML file", "General"},
+        {"--config-json", "-j", "<file>", "Load options from JSON file", "General"},
+        {"--cli", "-c", "", "Use console output", "General"},
+        {"--silent", "-s", "", "Disable console output", "General"},
+        {"--check-only", "", "", "Only check for updates", "Actions"},
+        {"--no-hash-check", "", "", "Always pull without hash check", "Actions"},
+        {"--force-pull", "", "", "Discard local changes when pulling", "Actions"},
+        {"--discard-dirty", "", "", "Alias for --force-pull", "Actions"},
+        {"--log-dir", "-d", "<path>", "Directory for pull logs", "Logging"},
+        {"--log-file", "-l", "<path>", "File for general logs", "Logging"},
+        {"--log-level", "", "<level>", "Set log verbosity", "Logging"},
+        {"--verbose", "", "", "Shorthand for --log-level DEBUG", "Logging"},
+        {"--debug-memory", "", "", "Log memory usage each scan", "Logging"},
+        {"--dump-state", "", "", "Dump container state when large", "Logging"},
+        {"--dump-large", "", "<n>", "Dump threshold for --dump-state", "Logging"},
+        {"--concurrency", "", "<n>", "Number of worker threads", "Concurrency"},
+        {"--threads", "", "<n>", "Alias for --concurrency", "Concurrency"},
+        {"--single-thread", "", "", "Run using a single worker thread", "Concurrency"},
+        {"--max-threads", "", "<n>", "Cap the scanning worker threads", "Concurrency"},
+        {"--cpu-poll", "", "<s>", "CPU usage polling interval", "Tracking"},
+        {"--mem-poll", "", "<s>", "Memory usage polling interval", "Tracking"},
+        {"--thread-poll", "", "<s>", "Thread count polling interval", "Tracking"},
+        {"--no-cpu-tracker", "", "", "Disable CPU usage tracker", "Tracking"},
+        {"--no-mem-tracker", "", "", "Disable memory usage tracker", "Tracking"},
+        {"--no-thread-tracker", "", "", "Disable thread tracker", "Tracking"},
+        {"--net-tracker", "", "", "Track network usage", "Tracking"},
+        {"--cpu-percent", "", "<n>", "Approximate CPU usage limit", "Resource limits"},
+        {"--cpu-cores", "", "<mask>", "Set CPU affinity mask", "Resource limits"},
+        {"--mem-limit", "", "<MB>", "Abort if memory exceeds this amount", "Resource limits"},
+        {"--download-limit", "", "<KB/s>", "Limit total download rate", "Resource limits"},
+        {"--upload-limit", "", "<KB/s>", "Limit total upload rate", "Resource limits"},
+        {"--disk-limit", "", "<KB/s>", "Limit disk throughput", "Resource limits"},
+        {"--help", "-h", "", "Show this message", "General"}};
+
+    std::map<std::string, std::vector<const OptionInfo*>> groups;
+    size_t width = 0;
+    for (const auto& o : opts) {
+        groups[o.category].push_back(&o);
+        std::string flag = "  ";
+        if (std::strlen(o.short_flag))
+            flag += std::string(o.short_flag) + ", ";
+        else
+            flag += "    ";
+        flag += o.long_flag;
+        if (std::strlen(o.arg))
+            flag += " " + std::string(o.arg);
+        width = std::max(width, flag.size());
+    }
+
+    std::cout << "Usage: " << prog << " <root-folder> [options]\n\n";
+    const std::vector<std::string> order{"General",         "Logging",  "Concurrency",
+                                         "Resource limits", "Tracking", "Actions"};
+    for (const auto& cat : order) {
+        if (!groups.count(cat))
+            continue;
+        std::cout << cat << ":\n";
+        for (const auto* o : groups[cat]) {
+            std::string flag = "  ";
+            if (std::strlen(o->short_flag))
+                flag += std::string(o->short_flag) + ", ";
+            else
+                flag += "    ";
+            flag += o->long_flag;
+            if (std::strlen(o->arg))
+                flag += " " + std::string(o->arg);
+            std::cout << std::left << std::setw(static_cast<int>(width) + 2) << flag << o->desc
+                      << "\n";
+        }
+        std::cout << "\n";
+    }
 }
 
 void draw_cli(const std::vector<fs::path>& all_repos,
