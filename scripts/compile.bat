@@ -14,8 +14,8 @@ if errorlevel 1 (
 )
 
 rem Path to libgit2 built with install_libgit2_mingw.bat
-set "LIBGIT2_INC=libgit2\_install\include"
-set "LIBGIT2_LIB=libgit2\_install\lib"
+set "LIBGIT2_INC=libs\libgit2_install\include"
+set "LIBGIT2_LIB=libs\libgit2_install\lib"
 
 rem Build libgit2 if not already installed
 if not exist "%LIBGIT2_LIB%\libgit2.a" (
