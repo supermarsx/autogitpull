@@ -71,7 +71,12 @@ class ArgParser {
                         unknown_flags_.push_back(arg);
                     }
                 }
-            } else if (arg.rfind('-', 0) == 0 && arg.size() >= 2 && short_map_.count(arg[1])) {
+            } else if (arg.rfind('-', 0) == 0 && arg.size() >= 2) {
+                if (!short_map_.count(arg[1])) {
+                    unknown_flags_.push_back("-" + std::string(1, arg[1]));
+                    continue;
+                }
+
                 size_t eq = arg.find('=');
                 std::string before =
                     arg.substr(1, eq != std::string::npos ? eq - 1 : std::string::npos);

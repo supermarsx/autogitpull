@@ -99,6 +99,14 @@ TEST_CASE("ArgParser unknown flag detection") {
     REQUIRE(parser.unknown_flags()[0] == "--foo");
 }
 
+TEST_CASE("ArgParser unknown short flag") {
+    const char* argv[] = {"prog", "-x"};
+    ArgParser parser(2, const_cast<char**>(argv), {"--bar"}, {{'a', "--bar"}});
+    REQUIRE(parser.positional().empty());
+    REQUIRE(parser.unknown_flags().size() == 1);
+    REQUIRE(parser.unknown_flags()[0] == "-x");
+}
+
 TEST_CASE("Git utils local repo") {
     git::GitInitGuard guard;
     fs::path repo = fs::temp_directory_path() / "git_utils_test_repo";
