@@ -1,5 +1,6 @@
 @echo off
 setlocal
+echo Compiling compressed executable...
 
 REM Determine script directory
 pushd "%~dp0\.."
@@ -64,6 +65,8 @@ strip "%SCRIPT_DIR%dist\autogitpull.exe"
 
 if exist "%SCRIPT_DIR%dist\autogitpull.exe" (
     upx --best --lzma "%SCRIPT_DIR%dist\autogitpull.exe"
+    echo Build succeeded: %SCRIPT_DIR%dist\autogitpull.exe
 )
 
 endlocal
+

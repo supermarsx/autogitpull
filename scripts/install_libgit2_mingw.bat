@@ -1,4 +1,5 @@
 @echo off
+echo Installing libgit2 and related libraries...
 REM Check for MinGW g++
 where g++ >nul 2>nul
 if errorlevel 1 (
@@ -92,3 +93,4 @@ if not exist ..\libs\nlohmann-json\single_include\nlohmann\json.hpp (
 )
 
 echo Dependencies installed under libs\yaml-cpp_install and libs\nlohmann-json
+

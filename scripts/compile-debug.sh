@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+echo "Compiling debug build..."
 CXX=${CXX:-g++}
 if ! command -v "$CXX" >/dev/null; then
     if command -v clang++ >/dev/null; then
@@ -21,3 +22,5 @@ $CXX -std=c++20 -O0 -g -fsanitize=address -DYAML_CPP_STATIC_DEFINE -I"${ROOT_DIR
     "${ROOT_DIR}/src/config_utils.cpp" "${ROOT_DIR}/src/debug_utils.cpp" "${ROOT_DIR}/src/options.cpp" \
     "${ROOT_DIR}/src/parse_utils.cpp" "${ROOT_DIR}/src/lock_utils.cpp" "${ROOT_DIR}/src/linux_daemon.cpp" $PKG_LIBS \
     -fsanitize=address -o "${ROOT_DIR}/dist/autogitpull_debug"
+echo "Build complete: ${ROOT_DIR}/dist/autogitpull_debug"
+

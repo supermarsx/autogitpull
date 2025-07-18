@@ -1,5 +1,6 @@
 @echo off
 setlocal
+echo Generating platform icons...
 
 REM Generate platform icons from graphics\icon.png
 pushd "%~dp0\.."
@@ -77,3 +78,4 @@ popd
 
 echo Icons generated in %DST%
 endlocal
+

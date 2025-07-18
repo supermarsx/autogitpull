@@ -1,4 +1,5 @@
 @echo off
+echo Installing dependencies...
 rem Install cpplint if missing
 where cpplint >nul 2>nul
 if errorlevel 1 (
@@ -47,4 +48,5 @@ cd vcpkg
 call bootstrap-vcpkg.bat
 cd ..
 vcpkg\vcpkg install%PKGS%
+
 

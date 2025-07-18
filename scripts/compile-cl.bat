@@ -1,4 +1,7 @@
-@echo off setlocal set "SCRIPT_DIR=%~dp0"
+@echo off
+setlocal
+set "SCRIPT_DIR=%~dp0"
+echo Compiling release build with MSVC...
 
         where cl > nul 2 >
         nul if errorlevel 1(echo MSVC cl compiler not found in PATH.exit / b 1)
@@ -21,3 +24,4 @@
     "%LIB%\git2.lib" advapi32.lib Ws2_32.lib Shell32.lib Ole32.lib Rpcrt4.lib Crypt32.lib winhttp
             .lib Psapi.lib yaml
         - cpp.lib / Fedist\autogitpull.exe endlocal
+
