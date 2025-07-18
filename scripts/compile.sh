@@ -11,6 +11,9 @@ if ! command -v "$CXX" >/dev/null; then
 fi
 PKG_CFLAGS="$(pkg-config --cflags libgit2 2>/dev/null || echo '') $(pkg-config --cflags yaml-cpp 2>/dev/null || echo '')"
 PKG_LIBS="$(pkg-config --libs libgit2 2>/dev/null || echo '-lgit2') $(pkg-config --libs yaml-cpp 2>/dev/null || echo '-lyaml-cpp')"
+if [ ! -f ../graphics/icon.ico ] || [ ! -f ../graphics/icon.icns ]; then
+    "$(dirname "$0")/generate_icons.sh"
+fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="${SCRIPT_DIR}/.."
 
@@ -22,4 +25,3 @@ $CXX -std=c++20 -O2 -DNDEBUG -DYAML_CPP_STATIC_DEFINE -I"${ROOT_DIR}/include" $P
     "${ROOT_DIR}/src/parse_utils.cpp" "${ROOT_DIR}/src/lock_utils.cpp" "${ROOT_DIR}/src/linux_daemon.cpp" \
     "${ROOT_DIR}/src/windows_service.cpp" $PKG_LIBS \
     -o "${ROOT_DIR}/dist/autogitpull"
-
