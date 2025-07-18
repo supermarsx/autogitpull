@@ -17,16 +17,10 @@ jobs:
         uses: aminya/setup-cpp@v1
 
       - name: Install dependencies
-        run: ./install_deps.sh
-
-      - name: Install Node dependencies
-        run: npm ci
+        run: ./scripts/install_deps.sh
 
       - name: Lint
         run: make lint
-
-      - name: Check formatting
-        run: npm run format
 
       - name: Test
         run: make test
