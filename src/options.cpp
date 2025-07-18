@@ -51,13 +51,14 @@ Options parse_options(int argc, char* argv[]) {
         "--config-json",      "--ignore",         "--force-pull",        "--discard-dirty",
         "--debug-memory",     "--dump-state",     "--dump-large",        "--install-daemon",
         "--uninstall-daemon", "--daemon-config",  "--install-service",   "--uninstall-service",
-        "--service-config",   "--attach"};
+        "--service-config",   "--attach",         "--remove-lock"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
         {'d', "--log-dir"},         {'l', "--log-file"},     {'y', "--config-yaml"},
         {'j', "--config-json"},     {'c', "--cli"},          {'s', "--silent"},
-        {'D', "--max-depth"},       {'h', "--help"},         {'A', "--attach"}};
+        {'D', "--max-depth"},       {'h', "--help"},         {'A', "--attach"},
+        {'R', "--remove-lock"}};
     ArgParser parser(argc, argv, known, short_opts);
 
     auto cfg_flag = [&](const std::string& k) {
@@ -119,6 +120,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.include_private = parser.has_flag("--include-private") || cfg_flag("--include-private");
     opts.show_skipped = parser.has_flag("--show-skipped") || cfg_flag("--show-skipped");
     opts.show_version = parser.has_flag("--show-version") || cfg_flag("--show-version");
+    opts.remove_lock = parser.has_flag("--remove-lock") || cfg_flag("--remove-lock");
     opts.check_only = parser.has_flag("--check-only") || cfg_flag("--check-only");
     opts.hash_check = !(parser.has_flag("--no-hash-check") || cfg_flag("--no-hash-check"));
     opts.force_pull = parser.has_flag("--force-pull") || parser.has_flag("--discard-dirty") ||

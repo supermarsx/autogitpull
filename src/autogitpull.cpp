@@ -155,6 +155,7 @@ void print_help(const char* prog) {
         {"--no-hash-check", "", "", "Always pull without hash check", "Actions"},
         {"--force-pull", "", "", "Discard local changes when pulling", "Actions"},
         {"--discard-dirty", "", "", "Alias for --force-pull", "Actions"},
+        {"--remove-lock", "-R", "", "Remove directory lock file and exit", "Actions"},
         {"--log-dir", "-d", "<path>", "Directory for pull logs", "Logging"},
         {"--log-file", "-l", "<path>", "File for general logs", "Logging"},
         {"--log-level", "", "<level>", "Set log verbosity", "Logging"},
@@ -800,6 +801,13 @@ int main(int argc, char* argv[]) {
         }
         if (opts.print_version) {
             std::cout << AUTOGITPULL_VERSION << "\n";
+            return 0;
+        }
+        if (opts.remove_lock) {
+            if (!opts.root.empty()) {
+                fs::path lock = opts.root / ".autogitpull.lock";
+                procutil::release_lock_file(lock);
+            }
             return 0;
         }
         return run_event_loop(opts);
