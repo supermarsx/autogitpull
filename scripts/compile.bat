@@ -1,28 +1,57 @@
-@echo off setlocal set "SCRIPT_DIR=%~dp0"
+@echo on
+setlocal
 
-    where g++ > nul 2 >
-    nul if errorlevel 1(echo MinGW g++ not found.Attempting to
-                            install... if defined ChocolateyInstall(choco install - y mingw) else(
-                                echo Please install MinGW and ensure g++ is in PATH.exit / b 1))
+REM Temporarily change to parent of script folder
+pushd "%~dp0\.."
+  set "SCRIPT_DIR=%CD%\"
+popd
 
-            rem Path to libgit2 built with install_libgit2_mingw.bat set
-        "LIBGIT2_INC=..\libs\libgit2\_install\include" set
-        "LIBGIT2_LIB=..\libs\libgit2\_install\lib"
+REM Check for g++
+where g++ >nul 2>nul
+if errorlevel 1 (
+    echo MinGW g++ not found. Attempting to install...
+    if defined ChocolateyInstall (
+        choco install -y mingw
+    ) else (
+        echo Please install MinGW and ensure g++ is in PATH.
+        exit /b 1
+    )
+)
 
-        rem Build libgit2 if not already installed if not exist
-        "%LIBGIT2_LIB%\libgit2.a"(call
-                                  "%SCRIPT_DIR%install_libgit2_mingw.bat" if errorlevel 1 exit /
-                                  b 1)
+REM Paths to libgit2
+set "LIBGIT2_INC=%SCRIPT_DIR%libs\libgit2\libgit2_install\include"
+set "LIBGIT2_LIB=%SCRIPT_DIR%libs\libgit2\libgit2_install\lib"
 
-            if not exist dist mkdir dist g++ -
-        std = c++ 20 - static - I "%LIBGIT2_INC%" -
-              Iinclude..\src\autogitpull.cpp..\src\git_utils.cpp..\src\tui.cpp..\src\logger.cpp.
-                  .\src\resource_utils.cpp..\src\system_utils.cpp..\src\time_utils.cpp.
-                  .\src\config_utils.cpp..\src\debug_utils.cpp..\src\options.cpp..\src\parse_utils
-                  .cpp..\src\lock_utils.cpp..\src\linux_daemon.cpp..\src\windows_service.cpp
-              "%LIBGIT2_LIB%\libgit2.a" -
-              lz - lssh2 - lws2_32 - lwinhttp - lole32 - lrpcrt4 - lcrypt32 - lpsapi - ladvapi32
-              - lyaml - cpp -
-              o..\dist\autogitpull.exe
+REM Build libgit2 if not already installed
+if not exist "%LIBGIT2_LIB%\libgit2.a" (
+    call "%SCRIPT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
+)
 
-              endlocal
+REM Create dist directory
+if not exist "%SCRIPT_DIR%dist" (
+    mkdir "%SCRIPT_DIR%dist"
+)
+
+REM Compile sources
+g++ -std=c++20 -static ^
+    -I "%LIBGIT2_INC%" ^
+    -I "%SCRIPT_DIR%include" ^
+    "%SCRIPT_DIR%src\autogitpull.cpp" ^
+    "%SCRIPT_DIR%src\git_utils.cpp" ^
+    "%SCRIPT_DIR%src\tui.cpp" ^
+    "%SCRIPT_DIR%src\logger.cpp" ^
+    "%SCRIPT_DIR%src\resource_utils.cpp" ^
+    "%SCRIPT_DIR%src\system_utils.cpp" ^
+    "%SCRIPT_DIR%src\time_utils.cpp" ^
+    "%SCRIPT_DIR%src\config_utils.cpp" ^
+    "%SCRIPT_DIR%src\debug_utils.cpp" ^
+    "%SCRIPT_DIR%src\options.cpp" ^
+    "%SCRIPT_DIR%src\parse_utils.cpp" ^
+    "%SCRIPT_DIR%src\lock_utils.cpp" ^
+    "%SCRIPT_DIR%src\linux_daemon.cpp" ^
+    "%SCRIPT_DIR%src\windows_service.cpp" ^
+    "%LIBGIT2_LIB%\libgit2.a" ^
+    -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32 -lyaml-cpp ^
+    -o "%SCRIPT_DIR%dist\autogitpull.exe"
+
+endlocal
