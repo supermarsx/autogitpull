@@ -1,10 +1,14 @@
 #include "config_utils.hpp"
+#if __has_include(<yaml-cpp/yaml.h>)
 #include <yaml-cpp/yaml.h>
+#define HAVE_YAMLCPP 1
+#endif
 #include <fstream>
 #include <nlohmann/json.hpp>
 
 bool load_yaml_config(const std::string& path, std::map<std::string, std::string>& opts,
                       std::string& error) {
+#ifdef HAVE_YAMLCPP
     try {
         YAML::Node root = YAML::LoadFile(path);
         if (!root.IsMap()) {
@@ -30,6 +34,12 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
         error = e.what();
         return false;
     }
+#else
+    (void)path;
+    (void)opts;
+    error = "YAML support not available";
+    return false;
+#endif
 }
 
 bool load_json_config(const std::string& path, std::map<std::string, std::string>& opts,

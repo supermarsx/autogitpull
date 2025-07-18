@@ -16,6 +16,9 @@
 #include <tlhelp32.h>
 #include <winternl.h>
 #include <vector>
+#ifndef STATUS_INFO_LENGTH_MISMATCH
+#define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004)
+#endif
 #elif defined(__APPLE__)
 #include <mach/mach.h>
 #include <unistd.h>
