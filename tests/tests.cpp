@@ -4,14 +4,12 @@
 #include "repo.hpp"
 #include "logger.hpp"
 #include "resource_utils.hpp"
-#include "thread_utils.hpp"
 #include "time_utils.hpp"
 #include "config_utils.hpp"
 #include "parse_utils.hpp"
 #include "lock_utils.hpp"
 #include "options.hpp"
 #include <filesystem>
-#include <thread>
 #include <fstream>
 #include <cstdlib>
 #include <map>
@@ -198,7 +196,7 @@ TEST_CASE("Thread count reflects running threads") {
     procutil::set_thread_poll_interval(1);
     std::size_t before = procutil::get_thread_count();
     {
-        ThreadGuard tg(std::thread([] { std::this_thread::sleep_for(std::chrono::seconds(2)); }));
+        std::jthread tg([] { std::this_thread::sleep_for(std::chrono::seconds(2)); });
         std::this_thread::sleep_for(std::chrono::seconds(3));
         std::size_t during = procutil::get_thread_count();
         // Account for environments where thread polling may lag

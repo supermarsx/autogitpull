@@ -26,7 +26,6 @@
 #include "resource_utils.hpp"
 #include "system_utils.hpp"
 #include "version.hpp"
-#include "thread_utils.hpp"
 #include "config_utils.hpp"
 #include "debug_utils.hpp"
 #include "parse_utils.hpp"
@@ -648,7 +647,7 @@ int run_event_loop(const Options& opts) {
 #ifndef _WIN32
     std::signal(SIGTERM, handle_signal);
 #endif
-    ThreadGuard scan_thread;
+    std::jthread scan_thread;
     std::chrono::milliseconds countdown_ms(0);
     std::chrono::milliseconds cli_countdown_ms(0);
     std::unique_ptr<AltScreenGuard> guard;
@@ -679,8 +678,8 @@ int run_event_loop(const Options& opts) {
             }
         }
 #endif
-        if (!scanning && scan_thread.t.joinable()) {
-            scan_thread.t.join();
+        if (!scanning && scan_thread.joinable()) {
+            scan_thread.join();
             git_libgit2_shutdown();
             git_libgit2_init();
             if (opts.single_run)
@@ -699,7 +698,7 @@ int run_event_loop(const Options& opts) {
                 }
             }
             scanning = true;
-            scan_thread.t = std::thread(
+            scan_thread = std::jthread(
                 scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
                 std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
                 std::ref(action_mtx), opts.include_private, std::cref(opts.log_dir),
@@ -746,8 +745,8 @@ int run_event_loop(const Options& opts) {
         cli_countdown_ms -= opts.refresh_ms;
     }
     running = false;
-    if (scan_thread.t.joinable()) {
-        scan_thread.t.join();
+    if (scan_thread.joinable()) {
+        scan_thread.join();
         git_libgit2_shutdown();
         git_libgit2_init();
     }
