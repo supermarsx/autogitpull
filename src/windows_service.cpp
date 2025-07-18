@@ -6,12 +6,13 @@
 #include "options.hpp"
 #include "logger.hpp"
 
+extern std::atomic<bool>* g_running_ptr;
+
 namespace winservice {
 
 static SERVICE_STATUS_HANDLE g_status_handle = nullptr;
 static SERVICE_STATUS g_status{};
 static Options g_opts;
-extern std::atomic<bool>* g_running_ptr;
 
 static void report_status(DWORD state) {
     g_status.dwCurrentState = state;
