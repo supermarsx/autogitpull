@@ -27,6 +27,17 @@ jobs:
       - name: Install lint tools
         run: pip install cpplint
 
+      - name: Install clang-format
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y clang-format
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            brew install clang-format
+          elif [ "$RUNNER_OS" = "Windows" ]; then
+            choco install -y llvm
+          fi
+
 
       - name: Lint
         run: make lint
