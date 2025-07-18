@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -e
 
+
+# Install cpplint if missing
+if ! command -v cpplint >/dev/null; then
+    if command -v pip3 >/dev/null; then
+        pip3 install --user cpplint
+        export PATH="$HOME/.local/bin:$PATH"
+    elif command -v pip >/dev/null; then
+        pip install --user cpplint
+        export PATH="$HOME/.local/bin:$PATH"
+    else
+        echo "pip not found. Please install cpplint manually." >&2
+    fi
+fi
+
 # Install libgit2 if missing
 if command -v pkg-config >/dev/null && pkg-config --exists libgit2; then
     echo "libgit2 already installed"

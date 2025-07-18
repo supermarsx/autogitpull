@@ -1,4 +1,9 @@
 @echo off
+rem Install cpplint if missing
+where cpplint >nul 2>nul
+if errorlevel 1 (
+    pip install cpplint
+)
 rem vcpkg places static libraries under .lib
 if exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\git2.lib" (
 if exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\yaml-cpp.lib" (
