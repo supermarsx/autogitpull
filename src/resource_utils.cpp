@@ -212,28 +212,25 @@ double get_cpu_percent() {
     auto now = std::chrono::steady_clock::now();
     if (now - prev_time < cpu_poll_interval)
         return last_cpu_percent;
-    host_cpu_load_info_data_t info;
-    mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
-    if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, reinterpret_cast<host_info_t>(&info),
-                        &count) != KERN_SUCCESS)
+    mach_task_basic_info_data_t info;
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info),
+                  &count) != KERN_SUCCESS)
         return last_cpu_percent;
-    static natural_t prev_user = 0, prev_system = 0, prev_idle = 0, prev_nice = 0;
-    natural_t user = info.cpu_ticks[CPU_STATE_USER];
-    natural_t system = info.cpu_ticks[CPU_STATE_SYSTEM];
-    natural_t idle = info.cpu_ticks[CPU_STATE_IDLE];
-    natural_t nice = info.cpu_ticks[CPU_STATE_NICE];
-    natural_t user_diff = user - prev_user;
-    natural_t system_diff = system - prev_system;
-    natural_t idle_diff = idle - prev_idle;
-    natural_t nice_diff = nice - prev_nice;
-    prev_user = user;
-    prev_system = system;
-    prev_idle = idle;
-    prev_nice = nice;
-    natural_t total = user_diff + system_diff + idle_diff + nice_diff;
-    if (total == 0)
+    static uint64_t prev_user = 0, prev_system = 0;
+    uint64_t user_us =
+        static_cast<uint64_t>(info.user_time.seconds) * 1000000ULL + info.user_time.microseconds;
+    uint64_t system_us = static_cast<uint64_t>(info.system_time.seconds) * 1000000ULL +
+                         info.system_time.microseconds;
+    uint64_t diff_us = (user_us - prev_user) + (system_us - prev_system);
+    prev_user = user_us;
+    prev_system = system_us;
+    double diff_time =
+        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count();
+    prev_time = now;
+    if (diff_time <= 0)
         return last_cpu_percent;
-    last_cpu_percent = 100.0 * static_cast<double>(total - idle_diff) / total;
+    last_cpu_percent = 100.0 * static_cast<double>(diff_us) / diff_time;
     return last_cpu_percent;
 #else
     return last_cpu_percent;
@@ -258,10 +255,14 @@ std::size_t get_memory_usage_mb() {
     else
         last_mem_usage = 0;
 #elif defined(__APPLE__)
-    mach_task_basic_info info;
+    mach_task_basic_info_data_t info;
     mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
-    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info),
-                  &count) == KERN_SUCCESS)
+    task_flavor_t flavor = MACH_TASK_BASIC_INFO;
+#ifdef TASK_BASIC_INFO_64
+    flavor = TASK_BASIC_INFO_64;
+#endif
+    if (task_info(mach_task_self(), flavor, reinterpret_cast<task_info_t>(&info), &count) ==
+        KERN_SUCCESS)
         last_mem_usage = static_cast<std::size_t>(info.resident_size / (1024 * 1024));
     else
         last_mem_usage = 0;
@@ -286,10 +287,14 @@ std::size_t get_virtual_memory_kb() {
         return static_cast<std::size_t>(pmc.PrivateUsage / 1024);
     return 0;
 #elif defined(__APPLE__)
-    mach_task_basic_info info;
+    mach_task_basic_info_data_t info;
     mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
-    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info),
-                  &count) == KERN_SUCCESS)
+    task_flavor_t flavor = MACH_TASK_BASIC_INFO;
+#ifdef TASK_BASIC_INFO_64
+    flavor = TASK_BASIC_INFO_64;
+#endif
+    if (task_info(mach_task_self(), flavor, reinterpret_cast<task_info_t>(&info), &count) ==
+        KERN_SUCCESS)
         return static_cast<std::size_t>(info.virtual_size / 1024);
     return 0;
 #else
@@ -334,7 +339,7 @@ std::size_t get_thread_count() {
     thread_act_array_t threads;
     mach_msg_type_number_t count;
     if (task_threads(mach_task_self(), &threads, &count) != KERN_SUCCESS) {
-        last_thread_count = 1;
+        last_thread_count = 0;
     } else {
         vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threads),
                       count * sizeof(thread_act_t));
