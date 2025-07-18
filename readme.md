@@ -243,6 +243,9 @@ make lint
 
 The CI workflow also executes this command and will fail on formatting or lint errors.
 
+`scripts/install_deps.sh` and `scripts/install_deps.bat` automatically install
+`cpplint` if it is missing.
+
 ### Status labels
 
 When the program starts, each repository is listed with the **Pending** status
