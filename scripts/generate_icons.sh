@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+echo "Generating platform icons..."
 
 # Generate platform icons from graphics/icon.png
 SRC="$(dirname "$0")/../graphics/icon.png"

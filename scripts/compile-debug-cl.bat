@@ -1,6 +1,7 @@
 @echo off
 setlocal
 set "SCRIPT_DIR=%~dp0"
+echo Compiling debug build with MSVC...
 
 where cl >nul 2>nul
 if errorlevel 1 (
@@ -23,3 +24,4 @@ cl /nologo /std:c++20 /EHsc /Zi /D YAML_CPP_STATIC_DEFINE /I"%INC%" -Iinclude sr
     "%LIB%\git2.lib" advapi32.lib Ws2_32.lib Shell32.lib Ole32.lib Rpcrt4.lib Crypt32.lib winhttp.lib Psapi.lib yaml-cpp.lib /fsanitize=address /Fedist\autogitpull_debug.exe
 
 endlocal
+

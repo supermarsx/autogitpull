@@ -1,6 +1,7 @@
 @echo off
 setlocal
 set "SCRIPT_DIR=%~dp0"
+echo Compiling debug build...
 
 rem ──────────────────────────────────────────────────────────────
 rem 1. Ensure clang/clang++ is available
@@ -64,3 +65,4 @@ if errorlevel 1 (
 )
 
 endlocal
+

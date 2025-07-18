@@ -1,5 +1,6 @@
 @echo off
 setlocal
+echo Compiling release build...
 
 REM Temporarily change to parent of script folder
 pushd "%~dp0\.."
@@ -78,4 +79,12 @@ g++ -std=c++20 -static -DYAML_CPP_STATIC_DEFINE ^
     -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32 ^
     -o "%SCRIPT_DIR%dist\autogitpull.exe"
 
+if errorlevel 1 (
+    echo Build failed.
+    exit /b 1
+) else (
+    echo Build succeeded: %SCRIPT_DIR%dist\autogitpull.exe
+)
+
 endlocal
+
