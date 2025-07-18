@@ -41,7 +41,7 @@ rem 3. Build with clang++ and AddressSanitizer
 
 rem Common flags
 set "CXX=clang++"
-set "CXXFLAGS=-std=c++20 -O0 -g -fsanitize=address"
+set "CXXFLAGS=-std=c++20 -O0 -g -fsanitize=address -DYAML_CPP_STATIC_DEFINE"
 set "LDFLAGS=-fsanitize=address"
 
 if not exist dist mkdir dist

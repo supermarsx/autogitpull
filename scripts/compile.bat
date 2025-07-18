@@ -42,7 +42,7 @@ if not exist "%SCRIPT_DIR%dist" (
 )
 
 REM Compile sources
-g++ -std=c++20 -static ^
+g++ -std=c++20 -static -DYAML_CPP_STATIC_DEFINE ^
     -I "%LIBGIT2_INC%" ^
     -I "%YAMLCPP_INC%" ^
     -I "%JSON_INC%" ^
