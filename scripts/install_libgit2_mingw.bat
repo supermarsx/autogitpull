@@ -56,3 +56,39 @@ if errorlevel 1 (
 
 echo libgit2 built and installed to libs\libgit2_install
 cd ..\..
+
+REM Build yaml-cpp if not already installed
+if not exist ..\libs\yaml-cpp\yaml-cpp_install\lib\libyaml-cpp.a (
+    if not exist ..\libs\yaml-cpp (
+        echo Cloning yaml-cpp...
+        git clone --depth 1 https://github.com/jbeder/yaml-cpp ..\libs\yaml-cpp
+    )
+    cd ..\libs\yaml-cpp
+    if exist build rmdir /s /q build
+    mkdir build
+    cd build
+    cmake -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=..\yaml-cpp_install ..
+    if errorlevel 1 (
+        echo yaml-cpp CMake configuration failed!
+        exit /b 1
+    )
+    mingw32-make
+    if errorlevel 1 (
+        echo yaml-cpp build failed!
+        exit /b 1
+    )
+    mingw32-make install
+    if errorlevel 1 (
+        echo yaml-cpp install failed!
+        exit /b 1
+    )
+    cd ..\..
+)
+
+REM Download nlohmann/json headers if not present
+if not exist ..\libs\nlohmann-json\single_include\nlohmann\json.hpp (
+    echo Downloading nlohmann/json...
+    git clone --depth 1 https://github.com/nlohmann/json ..\libs\nlohmann-json
+)
+
+echo Dependencies installed under libs\yaml-cpp_install and libs\nlohmann-json

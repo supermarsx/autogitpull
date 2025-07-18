@@ -120,8 +120,10 @@ paths when compiling with `compile-cl.bat`.
 
 #### MinGW
 
-Run `scripts/install_libgit2_mingw.bat` to build libgit2 natively with MinGW. The
-script installs the static library and headers under `libs/libgit2_install`.
+Run `scripts/install_libgit2_mingw.bat` to build libgit2 and yaml-cpp natively
+with MinGW. The script installs the static libraries and headers under the
+`libs` directory and also downloads the header-only `nlohmann-json` library to
+complete the dependencies.
 
 `scripts/compile-cl.bat` expects a vcpkg installation while `scripts/compile.bat` uses the
 library produced by `scripts/install_libgit2_mingw.bat` and will call it

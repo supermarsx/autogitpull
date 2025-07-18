@@ -16,11 +16,22 @@ if errorlevel 1 (
 )
 
 rem ──────────────────────────────────────────────────────────────
-rem 2. libgit2 paths
+rem 2. dependency paths
 set "LIBGIT2_INC=libs\libgit2\_install\include"
 set "LIBGIT2_LIB=libs\libgit2\_install\lib"
+set "YAMLCPP_INC=libs\yaml-cpp\yaml-cpp_install\include"
+set "YAMLCPP_LIB=libs\yaml-cpp\yaml-cpp_install\lib"
+set "JSON_INC=libs\nlohmann-json\single_include"
 
 if not exist "%LIBGIT2_LIB%\libgit2.a" (
+    call "%SCRIPT_DIR%install_libgit2_mingw.bat"
+    if errorlevel 1 exit /b 1
+)
+if not exist "%YAMLCPP_LIB%\libyaml-cpp.a" (
+    call "%SCRIPT_DIR%install_libgit2_mingw.bat"
+    if errorlevel 1 exit /b 1
+)
+if not exist "%JSON_INC%\nlohmann\json.hpp" (
     call "%SCRIPT_DIR%install_libgit2_mingw.bat"
     if errorlevel 1 exit /b 1
 )
@@ -36,11 +47,12 @@ set "LDFLAGS=-fsanitize=address"
 if not exist dist mkdir dist
 
 %CXX% %CXXFLAGS% ^
-    -I"%LIBGIT2_INC%" -Iinclude ^
+    -I"%LIBGIT2_INC%" -I"%YAMLCPP_INC%" -I"%JSON_INC%" -Iinclude ^
     src\autogitpull.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\debug_utils.cpp src\parse_utils.cpp src\lock_utils.cpp src\linux_daemon.cpp ^
     src\config_utils.cpp src\options.cpp ^
     "%LIBGIT2_LIB%\libgit2.a" ^
-    -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -lyaml-cpp ^
+    "%YAMLCPP_LIB%\libyaml-cpp.a" ^
+    -lz -lssh2 -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi ^
     %LDFLAGS% ^
     -o dist\autogitpull_debug.exe
 

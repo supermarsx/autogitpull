@@ -18,12 +18,21 @@ if errorlevel 1 (
     )
 )
 
-REM Paths to libgit2
+REM Paths to dependencies
 set "LIBGIT2_INC=%SCRIPT_DIR%libs\libgit2\libgit2_install\include"
 set "LIBGIT2_LIB=%SCRIPT_DIR%libs\libgit2\libgit2_install\lib"
+set "YAMLCPP_INC=%SCRIPT_DIR%libs\yaml-cpp\yaml-cpp_install\include"
+set "YAMLCPP_LIB=%SCRIPT_DIR%libs\yaml-cpp\yaml-cpp_install\lib"
+set "JSON_INC=%SCRIPT_DIR%libs\nlohmann-json\single_include"
 
-REM Build libgit2 if not already installed
+REM Build dependencies if not already installed
 if not exist "%LIBGIT2_LIB%\libgit2.a" (
+    call "%SCRIPT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
+)
+if not exist "%YAMLCPP_LIB%\libyaml-cpp.a" (
+    call "%SCRIPT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
+)
+if not exist "%JSON_INC%\nlohmann\json.hpp" (
     call "%SCRIPT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
 )
 
@@ -35,6 +44,8 @@ if not exist "%SCRIPT_DIR%dist" (
 REM Compile sources
 g++ -std=c++20 -static ^
     -I "%LIBGIT2_INC%" ^
+    -I "%YAMLCPP_INC%" ^
+    -I "%JSON_INC%" ^
     -I "%SCRIPT_DIR%include" ^
     "%SCRIPT_DIR%src\autogitpull.cpp" ^
     "%SCRIPT_DIR%src\git_utils.cpp" ^
@@ -51,7 +62,8 @@ g++ -std=c++20 -static ^
     "%SCRIPT_DIR%src\linux_daemon.cpp" ^
     "%SCRIPT_DIR%src\windows_service.cpp" ^
     "%LIBGIT2_LIB%\libgit2.a" ^
-    -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32 -lyaml-cpp ^
+    "%YAMLCPP_LIB%\libyaml-cpp.a" ^
+    -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32 ^
     -o "%SCRIPT_DIR%dist\autogitpull.exe"
 
 endlocal
