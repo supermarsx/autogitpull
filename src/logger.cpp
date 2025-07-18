@@ -39,7 +39,7 @@ void log_info(const std::string& msg) { log(LogLevel::INFO, "INFO", msg); }
 
 void log_warning(const std::string& msg) { log(LogLevel::WARNING, "WARNING", msg); }
 
-void log_error(const std::string& msg) { log(LogLevel::ERROR, "ERROR", msg); }
+void log_error(const std::string& msg) { log(LogLevel::ERR, "ERROR", msg); }
 
 static void close_logger() {
     std::lock_guard<std::mutex> lk(g_log_mtx);

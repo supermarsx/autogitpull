@@ -2,7 +2,7 @@
 #define LOGGER_HPP
 #include <string>
 
-enum class LogLevel { DEBUG = 0, INFO, WARNING, ERROR };
+enum class LogLevel { DEBUG = 0, INFO, WARNING, ERR };
 
 void init_logger(const std::string& path, LogLevel level = LogLevel::INFO);
 void set_log_level(LogLevel level);

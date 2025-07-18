@@ -142,7 +142,7 @@ Options parse_options(int argc, char* argv[]) {
         else if (val == "WARNING" || val == "WARN")
             opts.log_level = LogLevel::WARNING;
         else if (val == "ERROR")
-            opts.log_level = LogLevel::ERROR;
+            opts.log_level = LogLevel::ERR;
         else
             throw std::runtime_error("Invalid log level: " + val);
     }
