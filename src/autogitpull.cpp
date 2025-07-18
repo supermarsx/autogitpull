@@ -677,7 +677,8 @@ int run_event_loop(const Options& opts) {
     }
     setup_environment(opts);
     setup_logging(opts);
-    fs::create_directories(opts.log_dir);
+    if (!opts.log_dir.empty())
+        fs::create_directories(opts.log_dir);
     std::vector<fs::path> all_repos;
     std::map<fs::path, RepoInfo> repo_infos;
     prepare_repos(opts, all_repos, repo_infos);
