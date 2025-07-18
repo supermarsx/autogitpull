@@ -301,6 +301,172 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
     }
 }
 
+// Validate repository and gather basic info
+static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& skip_repos,
+                          bool include_private) {
+    if (!fs::exists(p)) {
+        ri.status = RS_ERROR;
+        ri.message = "Missing";
+        if (logger_initialized())
+            log_error(p.string() + " missing");
+        return false;
+    }
+    if (skip_repos.count(p)) {
+        ri.status = RS_SKIPPED;
+        ri.message = "Skipped after fatal error";
+        if (logger_initialized())
+            log_warning(p.string() + " skipped after fatal error");
+        return false;
+    }
+    ri.status = RS_CHECKING;
+    ri.message = "";
+    if (!fs::is_directory(p) || !git::is_git_repo(p)) {
+        ri.status = RS_SKIPPED;
+        ri.message = "Not a git repo (skipped)";
+        skip_repos.insert(p);
+        if (logger_initialized())
+            log_debug(p.string() + " skipped: not a git repo");
+        return false;
+    }
+    ri.commit = git::get_local_hash(p);
+    if (ri.commit.size() > 7)
+        ri.commit = ri.commit.substr(0, 7);
+    std::string origin = git::get_origin_url(p);
+    if (!include_private) {
+        if (!git::is_github_url(origin)) {
+            ri.status = RS_SKIPPED;
+            ri.message = "Non-GitHub repo (skipped)";
+            if (logger_initialized())
+                log_debug(p.string() + " skipped: non-GitHub repo");
+            return false;
+        }
+        if (!git::remote_accessible(p)) {
+            ri.status = RS_SKIPPED;
+            ri.message = "Private or inaccessible repo";
+            if (logger_initialized())
+                log_debug(p.string() + " skipped: private or inaccessible");
+            return false;
+        }
+    }
+    ri.branch = git::get_current_branch(p);
+    if (ri.branch.empty() || ri.branch == "HEAD") {
+        ri.status = RS_HEAD_PROBLEM;
+        ri.message = "Detached HEAD or branch error";
+        skip_repos.insert(p);
+        return false;
+    }
+    return true;
+}
+
+// Determine whether a pull is required and set RepoInfo accordingly
+static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_only, bool hash_check,
+                                  bool include_private, std::set<fs::path>& skip_repos) {
+    if (hash_check) {
+        std::string local = git::get_local_hash(p);
+        bool auth_fail = false;
+        std::string remote = git::get_remote_hash(p, ri.branch, include_private, &auth_fail);
+        ri.auth_failed = auth_fail;
+        if (local.empty() || remote.empty()) {
+            ri.status = RS_ERROR;
+            ri.message = "Error getting hashes or remote";
+            skip_repos.insert(p);
+            return false;
+        }
+        if (local == remote) {
+            ri.status = RS_UP_TO_DATE;
+            ri.message = "Up to date";
+            ri.commit = local.substr(0, 7);
+            return false;
+        }
+    }
+
+    if (check_only) {
+        ri.status = RS_REMOTE_AHEAD;
+        ri.message = hash_check ? "Remote ahead" : "Update possible";
+        ri.commit = git::get_local_hash(p);
+        if (ri.commit.size() > 7)
+            ri.commit = ri.commit.substr(0, 7);
+        if (logger_initialized())
+            log_debug(p.string() + " remote ahead");
+        return false;
+    }
+
+    ri.status = RS_PULLING;
+    ri.message = "Remote ahead, pulling...";
+    ri.progress = 0;
+    return true;
+}
+
+// Execute the git pull and update RepoInfo
+static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, RepoInfo>& repo_infos,
+                         std::set<fs::path>& skip_repos, std::mutex& mtx, std::string& action,
+                         std::mutex& action_mtx, const fs::path& log_dir, bool include_private,
+                         size_t down_limit, size_t up_limit, size_t disk_limit, bool force_pull) {
+    {
+        std::lock_guard<std::mutex> lk(action_mtx);
+        action = "Pulling " + p.filename().string();
+    }
+    {
+        std::lock_guard<std::mutex> lk(mtx);
+        repo_infos[p] = ri;
+    }
+
+    std::string pull_log;
+    std::function<void(int)> progress_cb = [&](int pct) {
+        std::lock_guard<std::mutex> lk(mtx);
+        repo_infos[p].progress = pct;
+    };
+    bool pull_auth_fail = false;
+    int code = git::try_pull(p, pull_log, &progress_cb, include_private, &pull_auth_fail,
+                             down_limit, up_limit, disk_limit, force_pull);
+    ri.auth_failed = pull_auth_fail;
+    ri.last_pull_log = pull_log;
+
+    fs::path log_file_path;
+    if (!log_dir.empty()) {
+        std::string ts = timestamp();
+        for (char& ch : ts) {
+            if (ch == ' ' || ch == ':')
+                ch = '_';
+            else if (ch == '/')
+                ch = '-';
+        }
+        log_file_path = log_dir / (p.filename().string() + "_" + ts + ".log");
+        std::ofstream ofs(log_file_path);
+        ofs << pull_log;
+    }
+
+    if (code == 0) {
+        ri.status = RS_PULL_OK;
+        ri.message = "Pulled successfully";
+        ri.commit = git::get_local_hash(p);
+        if (ri.commit.size() > 7)
+            ri.commit = ri.commit.substr(0, 7);
+        if (logger_initialized())
+            log_info(p.string() + " pulled successfully");
+    } else if (code == 1) {
+        ri.status = RS_PKGLOCK_FIXED;
+        ri.message = "package-lock.json auto-reset & pulled";
+        ri.commit = git::get_local_hash(p);
+        if (ri.commit.size() > 7)
+            ri.commit = ri.commit.substr(0, 7);
+        if (logger_initialized())
+            log_info(p.string() + " package-lock reset and pulled");
+    } else if (code == 3) {
+        ri.status = RS_DIRTY;
+        ri.message = "Local changes present";
+    } else {
+        ri.status = RS_ERROR;
+        ri.message = "Pull failed (see log)";
+        skip_repos.insert(p);
+        if (logger_initialized())
+            log_error(p.string() + " pull failed");
+    }
+
+    if (!log_file_path.empty())
+        ri.message += " - " + log_file_path.string();
+}
+
 // Process a single repository
 void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
@@ -331,160 +497,18 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         std::lock_guard<std::mutex> lk(action_mtx);
         action = "Checking " + p.filename().string();
     }
-    if (!fs::exists(p)) {
-        ri.status = RS_ERROR;
-        ri.message = "Missing";
-        if (logger_initialized())
-            log_error(p.string() + " missing");
-        std::lock_guard<std::mutex> lk(mtx);
-        repo_infos[p] = ri;
-        return;
-    }
-    if (skip_repos.count(p)) {
-        ri.status = RS_SKIPPED;
-        ri.message = "Skipped after fatal error";
-        if (logger_initialized())
-            log_warning(p.string() + " skipped after fatal error");
-        std::lock_guard<std::mutex> lk(mtx);
-        repo_infos[p] = ri;
-        return;
-    }
     try {
-        ri.status = RS_CHECKING;
-        ri.message = "";
-        if (fs::is_directory(p) && git::is_git_repo(p)) {
-            ri.commit = git::get_local_hash(p);
-            if (ri.commit.size() > 7)
-                ri.commit = ri.commit.substr(0, 7);
-            std::string origin = git::get_origin_url(p);
-            if (!include_private) {
-                if (!git::is_github_url(origin)) {
-                    ri.status = RS_SKIPPED;
-                    ri.message = "Non-GitHub repo (skipped)";
-                    if (logger_initialized())
-                        log_debug(p.string() + " skipped: non-GitHub repo");
-                    std::lock_guard<std::mutex> lk(mtx);
-                    repo_infos[p] = ri;
-                    return;
-                }
-                if (!git::remote_accessible(p)) {
-                    ri.status = RS_SKIPPED;
-                    ri.message = "Private or inaccessible repo";
-                    if (logger_initialized())
-                        log_debug(p.string() + " skipped: private or inaccessible");
-                    std::lock_guard<std::mutex> lk(mtx);
-                    repo_infos[p] = ri;
-                    return;
-                }
-            }
-            ri.branch = git::get_current_branch(p);
-            if (ri.branch.empty() || ri.branch == "HEAD") {
-                ri.status = RS_HEAD_PROBLEM;
-                ri.message = "Detached HEAD or branch error";
-                skip_repos.insert(p);
-            } else {
-                bool needs_pull = true;
-                if (hash_check) {
-                    std::string local = git::get_local_hash(p);
-                    bool auth_fail = false;
-                    std::string remote =
-                        git::get_remote_hash(p, ri.branch, include_private, &auth_fail);
-                    ri.auth_failed = auth_fail;
-                    if (local.empty() || remote.empty()) {
-                        ri.status = RS_ERROR;
-                        ri.message = "Error getting hashes or remote";
-                        skip_repos.insert(p);
-                        needs_pull = false;
-                    } else if (local == remote) {
-                        ri.status = RS_UP_TO_DATE;
-                        ri.message = "Up to date";
-                        ri.commit = local.substr(0, 7);
-                        needs_pull = false;
-                    }
-                }
-                if (needs_pull) {
-                    if (check_only) {
-                        ri.status = RS_REMOTE_AHEAD;
-                        ri.message = hash_check ? "Remote ahead" : "Update possible";
-                        ri.commit = git::get_local_hash(p);
-                        if (ri.commit.size() > 7)
-                            ri.commit = ri.commit.substr(0, 7);
-                        if (logger_initialized())
-                            log_debug(p.string() + " remote ahead");
-                    } else {
-                        ri.status = RS_PULLING;
-                        ri.message = "Remote ahead, pulling...";
-                        ri.progress = 0;
-                        {
-                            std::lock_guard<std::mutex> lk(action_mtx);
-                            action = "Pulling " + p.filename().string();
-                        }
-                        {
-                            std::lock_guard<std::mutex> lk(mtx);
-                            repo_infos[p] = ri;
-                        }
-                        std::string pull_log;
-                        std::function<void(int)> progress_cb = [&](int pct) {
-                            std::lock_guard<std::mutex> lk(mtx);
-                            repo_infos[p].progress = pct;
-                        };
-                        bool pull_auth_fail = false;
-                        int code = git::try_pull(p, pull_log, &progress_cb, include_private,
-                                                 &pull_auth_fail, down_limit, up_limit, disk_limit,
-                                                 force_pull);
-                        ri.auth_failed = pull_auth_fail;
-                        ri.last_pull_log = pull_log;
-                        fs::path log_file_path;
-                        if (!log_dir.empty()) {
-                            std::string ts = timestamp();
-                            for (char& ch : ts) {
-                                if (ch == ' ' || ch == ':')
-                                    ch = '_';
-                                else if (ch == '/')
-                                    ch = '-';
-                            }
-                            log_file_path = log_dir / (p.filename().string() + "_" + ts + ".log");
-                            std::ofstream ofs(log_file_path);
-                            ofs << pull_log;
-                        }
-                        if (code == 0) {
-                            ri.status = RS_PULL_OK;
-                            ri.message = "Pulled successfully";
-                            ri.commit = git::get_local_hash(p);
-                            if (ri.commit.size() > 7)
-                                ri.commit = ri.commit.substr(0, 7);
-                            if (logger_initialized())
-                                log_info(p.string() + " pulled successfully");
-                        } else if (code == 1) {
-                            ri.status = RS_PKGLOCK_FIXED;
-                            ri.message = "package-lock.json auto-reset & pulled";
-                            ri.commit = git::get_local_hash(p);
-                            if (ri.commit.size() > 7)
-                                ri.commit = ri.commit.substr(0, 7);
-                            if (logger_initialized())
-                                log_info(p.string() + " package-lock reset and pulled");
-                        } else if (code == 3) {
-                            ri.status = RS_DIRTY;
-                            ri.message = "Local changes present";
-                        } else {
-                            ri.status = RS_ERROR;
-                            ri.message = "Pull failed (see log)";
-                            skip_repos.insert(p);
-                            if (logger_initialized())
-                                log_error(p.string() + " pull failed");
-                        }
-                        if (!log_file_path.empty()) {
-                            ri.message += " - " + log_file_path.string();
-                        }
-                    }
-                }
-            }
-        } else {
-            ri.status = RS_SKIPPED;
-            ri.message = "Not a git repo (skipped)";
-            skip_repos.insert(p);
-            if (logger_initialized())
-                log_debug(p.string() + " skipped: not a git repo");
+        if (!validate_repo(p, ri, skip_repos, include_private)) {
+            std::lock_guard<std::mutex> lk(mtx);
+            repo_infos[p] = ri;
+            return;
+        }
+
+        bool do_pull =
+            determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos);
+        if (do_pull) {
+            execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
+                         include_private, down_limit, up_limit, disk_limit, force_pull);
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
@@ -493,8 +517,10 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         if (logger_initialized())
             log_error(p.string() + " error: " + ri.message);
     }
-    std::lock_guard<std::mutex> lk(mtx);
-    repo_infos[p] = ri;
+    {
+        std::lock_guard<std::mutex> lk(mtx);
+        repo_infos[p] = ri;
+    }
     if (logger_initialized())
         log_debug(p.string() + " -> " + ri.message);
 }
