@@ -43,6 +43,13 @@ if not exist "%SCRIPT_DIR%dist" (
 
 REM Compile version resource
 windres "%SCRIPT_DIR%src\version.rc" -I "%SCRIPT_DIR%include" -O coff -o "%SCRIPT_DIR%src\version.o"
+REM Compile application icon
+if not exist "%SCRIPT_DIR%graphics\icon.ico" (
+    call "%SCRIPT_DIR%scripts\generate_icons.bat" || exit /b 1
+)
+if exist "%SCRIPT_DIR%graphics\icon.rc" (
+    windres "%SCRIPT_DIR%graphics\icon.rc" -I "%SCRIPT_DIR%graphics" -O coff -o "%SCRIPT_DIR%graphics\icon.o"
+)
 
 REM Compile sources
 g++ -std=c++20 -static -DYAML_CPP_STATIC_DEFINE ^
@@ -65,6 +72,7 @@ g++ -std=c++20 -static -DYAML_CPP_STATIC_DEFINE ^
     "%SCRIPT_DIR%src\linux_daemon.cpp" ^
     "%SCRIPT_DIR%src\windows_service.cpp" ^
     "%SCRIPT_DIR%src\version.o" ^
+    "%SCRIPT_DIR%graphics\icon.o" ^
     "%LIBGIT2_LIB%\libgit2.a" ^
     "%YAMLCPP_LIB%\libyaml-cpp.a" ^
     -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32 ^
