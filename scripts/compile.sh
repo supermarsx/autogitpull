@@ -11,12 +11,15 @@ if ! command -v "$CXX" >/dev/null; then
 fi
 PKG_CFLAGS="$(pkg-config --cflags libgit2 2>/dev/null || echo '') $(pkg-config --cflags yaml-cpp 2>/dev/null || echo '')"
 PKG_LIBS="$(pkg-config --libs libgit2 2>/dev/null || echo '-lgit2') $(pkg-config --libs yaml-cpp 2>/dev/null || echo '-lyaml-cpp')"
-mkdir -p dist
-$CXX -std=c++20 -O2 -DNDEBUG -DYAML_CPP_STATIC_DEFINE -Iinclude $PKG_CFLAGS \
-    ../src/autogitpull.cpp ../src/git_utils.cpp ../src/tui.cpp ../src/logger.cpp \
-    ../src/resource_utils.cpp ../src/system_utils.cpp ../src/time_utils.cpp \
-    ../src/config_utils.cpp ../src/debug_utils.cpp ../src/options.cpp \
-    ../src/parse_utils.cpp ../src/lock_utils.cpp ../src/linux_daemon.cpp \
-    ../src/windows_service.cpp $PKG_LIBS \
-    -o ../dist/autogitpull
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="${SCRIPT_DIR}/.."
+
+mkdir -p "${ROOT_DIR}/dist"
+$CXX -std=c++20 -O2 -DNDEBUG -DYAML_CPP_STATIC_DEFINE -I"${ROOT_DIR}/include" $PKG_CFLAGS \
+    "${ROOT_DIR}/src/autogitpull.cpp" "${ROOT_DIR}/src/git_utils.cpp" "${ROOT_DIR}/src/tui.cpp" "${ROOT_DIR}/src/logger.cpp" \
+    "${ROOT_DIR}/src/resource_utils.cpp" "${ROOT_DIR}/src/system_utils.cpp" "${ROOT_DIR}/src/time_utils.cpp" \
+    "${ROOT_DIR}/src/config_utils.cpp" "${ROOT_DIR}/src/debug_utils.cpp" "${ROOT_DIR}/src/options.cpp" \
+    "${ROOT_DIR}/src/parse_utils.cpp" "${ROOT_DIR}/src/lock_utils.cpp" "${ROOT_DIR}/src/linux_daemon.cpp" \
+    "${ROOT_DIR}/src/windows_service.cpp" $PKG_LIBS \
+    -o "${ROOT_DIR}/dist/autogitpull"
 
