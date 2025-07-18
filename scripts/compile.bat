@@ -1,4 +1,4 @@
-@echo on
+@echo off
 setlocal
 
 REM Temporarily change to parent of script folder
