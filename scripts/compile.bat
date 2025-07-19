@@ -120,7 +120,9 @@ for %%F in (
 rem --------------------------------------------------------------------
 rem Compiler & linker flags                                               
 rem --------------------------------------------------------------------
-set "CXXFLAGS=-std=c++20 -O2 -pipe -static -static-libgcc -static-libstdc++ -DYAML_CPP_STATIC_DEFINE"
+if not defined CXXFLAGS (
+    set "CXXFLAGS=-std=c++20 -O2 -pipe -static -static-libgcc -static-libstdc++ -DYAML_CPP_STATIC_DEFINE"
+)
 set "INCLUDE_FLAGS=-I%LIBGIT2_INC% -I%YAMLCPP_INC% -I%JSON_INC% -I%ROOT_DIR%\include"
 set "LDFLAGS=%LIBGIT2_LIB%\libgit2.a %YAMLCPP_LIB%\libyaml-cpp.a -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32"
 

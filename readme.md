@@ -141,6 +141,9 @@ Run `make` (Linux/macOS), `scripts/compile.bat` (MinGW) or `scripts/compile-cl.b
 build the project. `scripts/compile.bat` invokes `scripts/install_libgit2_mingw.bat` when
 `libgit2` is missing. All helper scripts place the resulting executable in the `dist/`
 directory as `dist/autogitpull` (or `dist/autogitpull.exe` on Windows).
+For an extra-small Windows binary run `scripts/compile-compress.bat` which
+reuses `compile.bat` with size optimizations and then compresses the result
+with UPX.
 
 The repository also ships with `scripts/compile.sh` for Unix-like environments which
 will attempt to install a C++ compiler if one isn't present. Windows users get
