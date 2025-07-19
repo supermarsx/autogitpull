@@ -8,15 +8,14 @@
 #define AUTOGITPULL_VERSION_PATCH 0
 
 #define AUTOGITPULL_VERSION_STR "1.0.0"
-#define AUTOGITPULL_VERSION_RC \
-    AUTOGITPULL_VERSION_MAJOR, AUTOGITPULL_VERSION_MINOR, \
-    AUTOGITPULL_VERSION_PATCH, 0
+#define AUTOGITPULL_VERSION_RC                                                                     \
+    AUTOGITPULL_VERSION_MAJOR, AUTOGITPULL_VERSION_MINOR, AUTOGITPULL_VERSION_PATCH, 0
 /* ------------------------------------------------------------------ */
 
 /* Everything below is **C++-only**.  Keep it out of windres runs.   */
 #ifndef RC_INVOKED
 /* Human-friendly version string for the C++ codebase */
 constexpr const char* AUTOGITPULL_VERSION = AUTOGITPULL_VERSION_STR;
-#endif  /* RC_INVOKED */
+#endif /* RC_INVOKED */
 
-#endif  /* AUTOGITPULL_VERSION_HPP */
+#endif /* AUTOGITPULL_VERSION_HPP */
