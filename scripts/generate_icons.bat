@@ -1,81 +1,83 @@
 @echo off
-setlocal
+setlocal enableextensions enabledelayedexpansion
+echo =========================================
 echo Generating platform icons...
+echo =========================================
 
-REM Generate platform icons from graphics\icon.png
-pushd "%~dp0\.."
+REM -- Move to project root (assumes script is in scripts\)
+pushd "%~dp0.." || exit /b 1
 set "SRC=%CD%\graphics\icon.png"
 set "DST=%CD%\graphics"
 
-REM Check for ImageMagick's convert
-where convert >nul 2>nul
-if errorlevel 1 (
-    echo ImageMagick not found. Cloning and building from source...
-    set "TMPDIR=%TEMP%\im-build-%RANDOM%"
-    if exist "%TMPDIR%" rmdir /s /q "%TMPDIR%"
-    mkdir "%TMPDIR%"
-    pushd "%TMPDIR%"
-    git clone --depth 1 https://github.com/ImageMagick/ImageMagick ImageMagick
-    pushd ImageMagick
-    if exist configure (
-        bash configure --prefix="%TMPDIR%\im-install"
-        if errorlevel 1 (
-            echo configure failed
-            popd
-            popd
-            exit /b 1
-        )
-        mingw32-make -j%NUMBER_OF_PROCESSORS%
-        mingw32-make install
-        set "PATH=%TMPDIR%\im-install\bin;%PATH%"
-    ) else (
-        echo configure script not found. Please install ImageMagick manually.
-        popd
-        popd
+echo [Step] Installing ImageMagick via winget if necessary
+where magick >nul 2>&1 || (
+    echo [Info] Installing ImageMagick using winget...
+    winget install --id ImageMagick.ImageMagick -e --silent
+    if errorlevel 1 (
+        echo [Error] winget installation failed; please install ImageMagick manually.
         exit /b 1
     )
-    popd
-    popd
 )
+set "IM_CMD=magick"
 
-cd "%DST%"
+echo [Step] Changing directory to %DST%
+cd /d "%DST%" || exit /b 1
 
-REM Windows ICO
+REM -- Windows ICO generation
+echo [Step] Generating Windows .ico files...
 if not exist icon.ico (
-    convert "%SRC%" -resize 16x16 icon_16.png
-    convert "%SRC%" -resize 32x32 icon_32.png
-    convert "%SRC%" -resize 48x48 icon_48.png
-    convert "%SRC%" -resize 256x256 icon_256.png
-    convert icon_16.png icon_32.png icon_48.png icon_256.png icon.ico
+    "%IM_CMD%" "%SRC%" -resize 16x16   icon_16.png
+    "%IM_CMD%" "%SRC%" -resize 32x32   icon_32.png
+    "%IM_CMD%" "%SRC%" -resize 48x48   icon_48.png
+    "%IM_CMD%" "%SRC%" -resize 256x256 icon_256.png
+    "%IM_CMD%" icon_16.png icon_32.png icon_48.png icon_256.png icon.ico
+    echo [Done] icon.ico created in %DST%
+) else (
+    echo [Skip] icon.ico already exists
 )
 
-REM macOS ICNS
+REM -- macOS .icns generation using Python icnsutil
+echo [Step] Generating macOS .icns file...
 if not exist icon.icns (
-    mkdir icon.iconset 2>nul
-    convert "%SRC%" -resize 16x16 icon.iconset\icon_16x16.png
-    convert "%SRC%" -resize 32x32 icon.iconset\icon_16x16@2x.png
-    convert "%SRC%" -resize 32x32 icon.iconset\icon_32x32.png
-    convert "%SRC%" -resize 64x64 icon.iconset\icon_32x32@2x.png
-    convert "%SRC%" -resize 128x128 icon.iconset\icon_128x128.png
-    convert "%SRC%" -resize 256x256 icon.iconset\icon_128x128@2x.png
-    convert "%SRC%" -resize 256x256 icon.iconset\icon_256x256.png
-    convert "%SRC%" -resize 512x512 icon.iconset\icon_256x256@2x.png
-    convert "%SRC%" -resize 512x512 icon.iconset\icon_512x512.png
-    convert "%SRC%" -resize 1024x1024 icon.iconset\icon_512x512@2x.png
-    if exist "%ProgramFiles%\icnsutil\bin\png2icns.exe" (
-        "%ProgramFiles%\icnsutil\bin\png2icns.exe" icon.icns icon.iconset\icon_*.png
+    if not exist icon.iconset mkdir icon.iconset
+    "%IM_CMD%" "%SRC%" -resize 16x16   icon.iconset\icon_16x16.png
+    "%IM_CMD%" "%SRC%" -resize 32x32   icon.iconset\icon_16x16@2x.png
+    "%IM_CMD%" "%SRC%" -resize 32x32   icon.iconset\icon_32x32.png
+    "%IM_CMD%" "%SRC%" -resize 64x64   icon.iconset\icon_32x32@2x.png
+    "%IM_CMD%" "%SRC%" -resize 128x128 icon.iconset\icon_128x128.png
+    "%IM_CMD%" "%SRC%" -resize 256x256 icon.iconset\icon_128x128@2x.png
+    "%IM_CMD%" "%SRC%" -resize 256x256 icon.iconset\icon_256x256.png
+    "%IM_CMD%" "%SRC%" -resize 512x512 icon.iconset\icon_256x256@2x.png
+    "%IM_CMD%" "%SRC%" -resize 512x512 icon.iconset\icon_512x512.png
+    "%IM_CMD%" "%SRC%" -resize 1024x1024 icon.iconset\icon_512x512@2x.png
+    echo [Info] Ensuring icnsutil is installed
+    python -m pip install --upgrade icnsutil
+    if errorlevel 1 (
+        echo [Error] Failed to install 'icnsutil'; please install it manually.
+    )
+    echo [Info] Composing .icns file using icnsutil CLI
+    python -m icnsutil compose icon.icns icon.iconset\icon_16x16.png icon.iconset\icon_16x16@2x.png icon.iconset\icon_32x32.png icon.iconset\icon_32x32@2x.png icon.iconset\icon_128x128.png icon.iconset\icon_128x128@2x.png icon.iconset\icon_256x256.png icon.iconset\icon_256x256@2x.png icon.iconset\icon_512x512.png icon.iconset\icon_512x512@2x.png
+    if errorlevel 1 (
+        echo [Error] icnsutil CLI failed; ensure 'icnsutil' is installed and in PATH.
     ) else (
-        echo png2icns not found; skipping ICNS generation
+        echo [Done] icon.icns created in %DST%
+    )
+) else (
+    echo [Skip] icon.icns already exists
+)
+
+REM -- Linux PNG variants
+echo [Step] Generating Linux PNG variants...
+for %%S in (16 32 48 128 256) do (
+    if not exist icon_%%S.png (
+        "%IM_CMD%" "%SRC%" -resize %%Sx%%S icon_%%S.png && echo [Done] icon_%%S.png
+    ) else (
+        echo [Skip] icon_%%S.png
     )
 )
 
-REM Linux PNGs
-for %%S in (16 32 48 128 256) do (
-    if not exist icon_%%S.png convert "%SRC%" -resize %%Sx%%S icon_%%S.png
-)
-
+echo =========================================
+echo All icons are generated in %DST%
+echo =========================================
 popd
-
-echo Icons generated in %DST%
 endlocal
-
