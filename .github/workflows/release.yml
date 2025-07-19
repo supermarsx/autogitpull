@@ -12,8 +12,6 @@ permissions:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -23,7 +21,14 @@ jobs:
       - name: Set up C++ build environment
         uses: aminya/setup-cpp@v1
 
-
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            scripts\install_deps.bat
+          else
+            ./scripts/install_deps.sh
+          fi
       - name: Install lint tools
         run: pip install cpplint
 
