@@ -8,15 +8,17 @@ DST_DIR="$(dirname "$0")/../graphics"
 
 # Ensure ImageMagick's magick is available
 if ! command -v magick >/dev/null; then
-    echo "ImageMagick not found. Cloning and building from source..."
-    TMPDIR=$(mktemp -d)
-    git clone --depth 1 https://github.com/ImageMagick/ImageMagick "$TMPDIR/ImageMagick"
-    pushd "$TMPDIR/ImageMagick" >/dev/null
-    ./configure --prefix="$TMPDIR/im-install"
-    make -j"$(nproc)"
-    make install
-    export PATH="$TMPDIR/im-install/bin:$PATH"
-    popd >/dev/null
+    echo "ImageMagick not found. Attempting package installation..."
+    if command -v apt-get >/dev/null; then
+        sudo apt-get update && sudo apt-get install -y imagemagick
+    elif command -v dnf >/dev/null; then
+        sudo dnf install -y imagemagick
+    elif command -v yum >/dev/null; then
+        sudo yum install -y imagemagick
+    else
+        echo "No supported package manager found; please install ImageMagick manually." >&2
+        exit 1
+    fi
 fi
 
 mkdir -p "$DST_DIR"

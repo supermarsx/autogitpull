@@ -233,9 +233,10 @@ valgrind ./build/memory_leak_test
 
 Run `scripts/generate_icons.sh` (Linux/macOS) or `scripts/generate_icons.bat`
 (Windows) to create platform icons from `graphics/icon.png`. If ImageMagick's
-`convert` tool is missing the scripts automatically clone the ImageMagick
-repository, build it, and place the binaries in a temporary directory. Windows
-builds embed the generated `icon.ico` and macOS uses `icon.icns`.
+`magick` command is missing, the Unix script attempts to install the
+`imagemagick` package using `apt`, `dnf`, or `yum`. Windows relies on
+`winget` to install ImageMagick automatically. Windows builds embed the
+generated `icon.ico` and macOS uses `icon.icns`.
 
 ## Linting
 
