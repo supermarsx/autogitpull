@@ -43,7 +43,10 @@ if not exist "%SCRIPT_DIR%dist" (
 )
 
 REM Compile version resource
-windres "%SCRIPT_DIR%src\version.rc" -I "%SCRIPT_DIR%include" -O coff -o "%SCRIPT_DIR%src\version.o"
+windres ^
+    "%SCRIPT_DIR%src\version.rc" ^
+    -I "%SCRIPT_DIR%include" ^
+    -O coff -o "%SCRIPT_DIR%src\version.o"
 REM Compile application icon
 if not exist "%SCRIPT_DIR%graphics\icon.ico" (
     call "%SCRIPT_DIR%scripts\generate_icons.bat" || exit /b 1

@@ -32,7 +32,10 @@ if not exist "%JSON_INC%\nlohmann\json.hpp" (
 
 if not exist "%SCRIPT_DIR%dist" mkdir "%SCRIPT_DIR%dist"
 
-windres "%SCRIPT_DIR%src\version.rc" -I "%SCRIPT_DIR%include" -O coff -o "%SCRIPT_DIR%src\version.o"
+windres ^
+    "%SCRIPT_DIR%src\version.rc" ^
+    -I "%SCRIPT_DIR%include" ^
+    -O coff -o "%SCRIPT_DIR%src\version.o"
 
 REM Compile with size optimizations
 "g++" -std=c++20 -Os -flto -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -s -DYAML_CPP_STATIC_DEFINE ^
