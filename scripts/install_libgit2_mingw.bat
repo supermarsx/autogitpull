@@ -20,14 +20,14 @@ if errorlevel 1 (
 )
 
 REM Download libgit2 if not present
-if not exist ..\libs mkdir ..\libs
+if not exist libs mkdir ..\libs
 REM Clone libgit2 into libs\libgit2 if missing
-if not exist ..\libs\libgit2 (
+if not exist libs\libgit2 (
     echo Cloning libgit2...
     git clone --depth 1 https://github.com/libgit2/libgit2 ..\libs\libgit2
 )
 
-cd ..\libs\libgit2
+cd libs\libgit2
 
 REM Clean any old builds
 if exist build rmdir /s /q build

@@ -1,31 +1,31 @@
-#include "version.hpp"
+// version.rc  – fixed
+#include <winver.h>      // ← gives FILEOS / FILETYPE / flag constants
+#include "version.hpp"   // ← your version macros
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION AUTOGITPULL_VERSION_RC
- PRODUCTVERSION AUTOGITPULL_VERSION_RC
- FILEFLAGSMASK 0x3fL
+ FILEVERSION     AUTOGITPULL_VERSION_RC
+ PRODUCTVERSION  AUTOGITPULL_VERSION_RC
+ FILEFLAGSMASK   0x3fL
 #ifdef _DEBUG
- FILEFLAGS VS_FF_DEBUG
+ FILEFLAGS       VS_FF_DEBUG
 #else
- FILEFLAGS 0x0L
+ FILEFLAGS       0x0L
 #endif
- FILEOS VOS__WINDOWS32
- FILETYPE VFT_APP
- FILESUBTYPE 0x0L
+ FILEOS          VOS__WINDOWS32
+ FILETYPE        VFT_APP
+ FILESUBTYPE     VFT2_UNKNOWN
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "040904b0"
+        BLOCK "040904B0"
         BEGIN
-            VALUE "CompanyName", "supermarsx"
-            VALUE "FileDescription", "AutoGitPull"
-            VALUE "FileVersion", AUTOGITPULL_VERSION_STR
-            VALUE "InternalName", "autogitpull.exe"
-            VALUE "OriginalFilename", "autogitpull.exe"
-            VALUE "ProductName", "autogitpull"
-            VALUE "ProductVersion", AUTOGITPULL_VERSION_STR
-            VALUE "Language", "English"
-            VALUE "LegalCopyright", "Copyright (c) supermarsx"
+            VALUE "CompanyName",      "supermarsx\\0"
+            VALUE "FileDescription",  "AutoGitPull\\0"
+            VALUE "FileVersion",      AUTOGITPULL_VERSION_STR "\\0"
+            VALUE "InternalName",     "autogitpull.exe\\0"
+            VALUE "OriginalFilename", "autogitpull.exe\\0"
+            VALUE "ProductName",      "autogitpull\\0"
+            VALUE "ProductVersion",   AUTOGITPULL_VERSION_STR "\\0"
         END
     END
     BLOCK "VarFileInfo"

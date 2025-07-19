@@ -1,94 +1,143 @@
 @echo off
-setlocal
-echo Compiling release build...
+rem *********************************************************************
+rem  AutoGitPull - release build script (Windows / MinGW‑w64)
+rem *********************************************************************
+rem  Builds a fully static release binary, compiling third‑party libs on demand.
+rem  Invoke from anywhere; the script locates the project root automatically.
+rem *********************************************************************
 
-REM Temporarily change to parent of script folder
-pushd "%~dp0\.."
-  set "SCRIPT_DIR=%CD%\"
-popd
+setlocal EnableDelayedExpansion
 
-REM Check for g++
+rem --------------------------------------------------------------------
+rem Resolve project root directory                                       
+rem --------------------------------------------------------------------
+for %%I in ("%~dp0..") do set "ROOT_DIR=%%~fI"
+if not defined ROOT_DIR (
+    echo [ERROR] Unable to determine project root. Aborting.
+    exit /b 1
+)
+cd /d "%ROOT_DIR%" || (
+    echo [ERROR] Could not change directory to project root: %ROOT_DIR%
+    exit /b 1
+)
+
+echo ============================================================
+echo  AutoGitPull - Release Build Started
+echo  Project root: %ROOT_DIR%
+echo ============================================================
+
+rem --------------------------------------------------------------------
+rem Ensure MinGW‑w64 toolchain is present                                
+rem --------------------------------------------------------------------
+echo Checking for g++ in PATH...
 where g++ >nul 2>nul
 if errorlevel 1 (
-    echo MinGW g++ not found. Attempting to install...
+    echo [WARN] g++ not found.
     if defined ChocolateyInstall (
-        choco install -y mingw
+        echo Installing MinGW‑w64 via Chocolatey...
+        choco install -y mingw || exit /b 1
+        echo MinGW‑w64 installed.
     ) else (
-        echo Please install MinGW and ensure g++ is in PATH.
+        echo [ERROR] Chocolatey not detected. Install MinGW‑w64 and add g++ to PATH.
         exit /b 1
     )
-)
-
-REM Paths to dependencies
-set "LIBGIT2_INC=%SCRIPT_DIR%libs\libgit2\libgit2_install\include"
-set "LIBGIT2_LIB=%SCRIPT_DIR%libs\libgit2\libgit2_install\lib"
-set "YAMLCPP_INC=%SCRIPT_DIR%libs\yaml-cpp\yaml-cpp_install\include"
-set "YAMLCPP_LIB=%SCRIPT_DIR%libs\yaml-cpp\yaml-cpp_install\lib"
-set "JSON_INC=%SCRIPT_DIR%libs\nlohmann-json\single_include"
-
-REM Build dependencies if not already installed
-if not exist "%LIBGIT2_LIB%\libgit2.a" (
-    call "%SCRIPT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
-)
-if not exist "%YAMLCPP_LIB%\libyaml-cpp.a" (
-    call "%SCRIPT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
-)
-if not exist "%JSON_INC%\nlohmann\json.hpp" (
-    call "%SCRIPT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
-)
-
-REM Create dist directory
-if not exist "%SCRIPT_DIR%dist" (
-    mkdir "%SCRIPT_DIR%dist"
-)
-
-REM Compile version resource
-windres ^
-    "%SCRIPT_DIR%src\version.rc" ^
-    -I "%SCRIPT_DIR%include" ^
-    -O coff -o "%SCRIPT_DIR%src\version.o"
-REM Compile application icon
-if not exist "%SCRIPT_DIR%graphics\icon.ico" (
-    call "%SCRIPT_DIR%scripts\generate_icons.bat" || exit /b 1
-)
-set "OBJ_FILES=%SCRIPT_DIR%src\version.o"
-if exist "%SCRIPT_DIR%graphics\icon.rc" (
-    windres "%SCRIPT_DIR%graphics\icon.rc" -I "%SCRIPT_DIR%graphics" -O coff -o "%SCRIPT_DIR%graphics\icon.o"
-    set "OBJ_FILES=%OBJ_FILES% %SCRIPT_DIR%graphics\icon.o"
-)
-
-REM Compile sources
-g++ -std=c++20 -static -DYAML_CPP_STATIC_DEFINE ^
-    -I "%LIBGIT2_INC%" ^
-    -I "%YAMLCPP_INC%" ^
-    -I "%JSON_INC%" ^
-    -I "%SCRIPT_DIR%include" ^
-    "%SCRIPT_DIR%src\autogitpull.cpp" ^
-    "%SCRIPT_DIR%src\git_utils.cpp" ^
-    "%SCRIPT_DIR%src\tui.cpp" ^
-    "%SCRIPT_DIR%src\logger.cpp" ^
-    "%SCRIPT_DIR%src\resource_utils.cpp" ^
-    "%SCRIPT_DIR%src\system_utils.cpp" ^
-    "%SCRIPT_DIR%src\time_utils.cpp" ^
-    "%SCRIPT_DIR%src\config_utils.cpp" ^
-    "%SCRIPT_DIR%src\debug_utils.cpp" ^
-    "%SCRIPT_DIR%src\options.cpp" ^
-    "%SCRIPT_DIR%src\parse_utils.cpp" ^
-    "%SCRIPT_DIR%src\lock_utils.cpp" ^
-    "%SCRIPT_DIR%src\linux_daemon.cpp" ^
-    "%SCRIPT_DIR%src\windows_service.cpp" ^
-    %OBJ_FILES% ^
-    "%LIBGIT2_LIB%\libgit2.a" ^
-    "%YAMLCPP_LIB%\libyaml-cpp.a" ^
-    -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32 ^
-    -o "%SCRIPT_DIR%dist\autogitpull.exe"
-
-if errorlevel 1 (
-    echo Build failed.
-    exit /b 1
 ) else (
-    echo Build succeeded: %SCRIPT_DIR%dist\autogitpull.exe
+    for /f "tokens=2 delims== " %%v in ('g++ -v 2^>^&1 ^| findstr "gcc version"') do set "GCC_VERSION=%%v"
+    echo g++ found, version !GCC_VERSION!.
 )
+
+rem --------------------------------------------------------------------
+rem Dependency locations                                                 
+rem --------------------------------------------------------------------
+set "LIBGIT2_INC=%ROOT_DIR%\libs\libgit2\libgit2_install\include"
+set "LIBGIT2_LIB=%ROOT_DIR%\libs\libgit2\libgit2_install\lib"
+set "YAMLCPP_INC=%ROOT_DIR%\libs\yaml-cpp\yaml-cpp_install\include"
+set "YAMLCPP_LIB=%ROOT_DIR%\libs\yaml-cpp\yaml-cpp_install\lib"
+set "JSON_INC=%ROOT_DIR%\libs\nlohmann-json\single_include"
+
+rem --------------------------------------------------------------------
+rem Build / fetch third‑party libs if missing                             
+rem --------------------------------------------------------------------
+echo.
+echo ============================================================
+echo  Checking third‑party dependencies
+echo ============================================================
+if not exist "%LIBGIT2_LIB%\libgit2.a" (
+    call "%ROOT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
+) else echo libgit2 detected.
+
+if not exist "%YAMLCPP_LIB%\libyaml-cpp.a" (
+    call "%ROOT_DIR%\scripts\install_yamlcpp_mingw.bat" || exit /b 1
+) else echo yaml‑cpp detected.
+
+if not exist "%JSON_INC%\nlohmann\json.hpp" (
+    call "%ROOT_DIR%\scripts\install_nlohmann_json.bat" || exit /b 1
+) else echo nlohmann‑json detected.
+
+rem --------------------------------------------------------------------
+rem Output & intermediate directories                                    
+rem --------------------------------------------------------------------
+set "BUILD_DIR=%ROOT_DIR%\build"
+set "OBJ_DIR=%BUILD_DIR%\obj"
+set "DIST_DIR=%ROOT_DIR%\dist"
+if not exist "%OBJ_DIR%"  mkdir "%OBJ_DIR%"
+if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
+
+echo.
+echo ============================================================
+echo  Resource compilation
+echo ============================================================
+windres -I "%ROOT_DIR%\include" -F pe-x86-64 -O coff -i "%ROOT_DIR%\src\version.rc" -o "%OBJ_DIR%\version.o" || exit /b 1
+
+if not exist "%ROOT_DIR%\graphics\icon.ico" (
+    call "%ROOT_DIR%\scripts\generate_icons.bat" || exit /b 1
+)
+windres -I "%ROOT_DIR%\graphics" -F pe-x86-64 -O coff -i "%ROOT_DIR%\graphics\icon.rc" -o "%OBJ_DIR%\icon.o" || exit /b 1
+set "RES_OBJS=%OBJ_DIR%\version.o %OBJ_DIR%\icon.o"
+
+rem --------------------------------------------------------------------
+rem Compose source list (no quotes to avoid ld issues)                    
+rem --------------------------------------------------------------------
+set "SRCS="
+for %%F in ( 
+    "%ROOT_DIR%\src\autogitpull.cpp" 
+    "%ROOT_DIR%\src\git_utils.cpp" 
+    "%ROOT_DIR%\src\tui.cpp" 
+    "%ROOT_DIR%\src\logger.cpp" 
+    "%ROOT_DIR%\src\resource_utils.cpp" 
+    "%ROOT_DIR%\src\system_utils.cpp" 
+    "%ROOT_DIR%\src\time_utils.cpp" 
+    "%ROOT_DIR%\src\config_utils.cpp" 
+    "%ROOT_DIR%\src\debug_utils.cpp" 
+    "%ROOT_DIR%\src\options.cpp" 
+    "%ROOT_DIR%\src\parse_utils.cpp" 
+    "%ROOT_DIR%\src\lock_utils.cpp" 
+    "%ROOT_DIR%\src\windows_service.cpp" 
+) do set "SRCS=!SRCS! %%~F"
+
+rem --------------------------------------------------------------------
+rem Compiler & linker flags                                               
+rem --------------------------------------------------------------------
+set "CXXFLAGS=-std=c++20 -O2 -pipe -static -static-libgcc -static-libstdc++ -DYAML_CPP_STATIC_DEFINE"
+set "INCLUDE_FLAGS=-I%LIBGIT2_INC% -I%YAMLCPP_INC% -I%JSON_INC% -I%ROOT_DIR%\include"
+set "LDFLAGS=%LIBGIT2_LIB%\libgit2.a %YAMLCPP_LIB%\libyaml-cpp.a -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32"
+
+rem --------------------------------------------------------------------
+rem Build                                                                 
+rem --------------------------------------------------------------------
+echo.
+echo ============================================================
+echo  Compiling and linking
+echo ============================================================
+echo This may take a moment...
+
+g++ %CXXFLAGS% %INCLUDE_FLAGS% !SRCS! %RES_OBJS% %LDFLAGS% -o "%DIST_DIR%\autogitpull.exe"
+if errorlevel 1 (
+    echo [ERROR] Build failed.
+    exit /b 1
+)
+
+echo.
+echo Build completed successfully. Binary: %DIST_DIR%\autogitpull.exe
 
 endlocal
-
