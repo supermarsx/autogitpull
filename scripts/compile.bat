@@ -25,6 +25,8 @@ echo ============================================================
 echo  AutoGitPull - Release Build Started
 echo  Project root: %ROOT_DIR%
 echo ============================================================
+echo.
+echo [1/4] Checking toolchain
 
 rem --------------------------------------------------------------------
 rem Ensure MinGW‑w64 toolchain is present                                
@@ -60,7 +62,7 @@ rem Build / fetch third‑party libs if missing
 rem --------------------------------------------------------------------
 echo.
 echo ============================================================
-echo  Checking third‑party dependencies
+echo  [2/4] Checking third‑party dependencies
 echo ============================================================
 if not exist "%LIBGIT2_LIB%\libgit2.a" (
     call "%ROOT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
@@ -85,7 +87,7 @@ if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
 
 echo.
 echo ============================================================
-echo  Resource compilation
+echo  [3/4] Resource compilation
 echo ============================================================
 windres -I "%ROOT_DIR%\include" -F pe-x86-64 -O coff -i "%ROOT_DIR%\src\version.rc" -o "%OBJ_DIR%\version.o" || exit /b 1
 
@@ -127,7 +129,7 @@ rem Build
 rem --------------------------------------------------------------------
 echo.
 echo ============================================================
-echo  Compiling and linking
+echo  [4/4] Compiling and linking
 echo ============================================================
 echo This may take a moment...
 
