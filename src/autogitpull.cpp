@@ -170,6 +170,8 @@ void print_help(const char* prog) {
         {"--single-run", "", "", "Run a single scan cycle and exit", "General"},
         {"--silent", "-s", "", "Disable console output", "General"},
         {"--attach", "-A", "<name>", "Attach to daemon and show status", "General"},
+        {"--background", "-b", "<name>", "Run in background with attach name", "General"},
+        {"--reattach", "-B", "<name>", "Reattach to background process", "General"},
         {"--check-only", "", "", "Only check for updates", "Actions"},
         {"--no-hash-check", "", "", "Always pull without hash check", "Actions"},
         {"--force-pull", "", "", "Discard local changes when pulling", "Actions"},
@@ -642,6 +644,21 @@ int run_event_loop(const Options& opts) {
     dumpState = opts.dump_state;
     dumpThreshold = opts.dump_threshold;
 #ifndef _WIN32
+    if (opts.reattach) {
+        int fd = procutil::connect_status_socket(opts.attach_name);
+        if (fd < 0) {
+            std::cerr << "Failed to connect to background" << std::endl;
+            return 1;
+        }
+        char buf[256];
+        ssize_t n;
+        while ((n = read(fd, buf, sizeof(buf) - 1)) > 0) {
+            buf[n] = 0;
+            std::cout << buf << std::flush;
+        }
+        close(fd);
+        return 0;
+    }
     if (opts.root.empty() && !opts.attach_name.empty()) {
         int fd = procutil::connect_status_socket(opts.attach_name);
         if (fd < 0) {
@@ -658,6 +675,12 @@ int run_event_loop(const Options& opts) {
         return 0;
     }
 #endif
+    if (opts.run_background) {
+        if (!procutil::daemonize()) {
+            std::cerr << "Failed to daemonize" << std::endl;
+            return 1;
+        }
+    }
     if (opts.root.empty())
         return 0;
     if (!fs::exists(opts.root) || !fs::is_directory(opts.root))

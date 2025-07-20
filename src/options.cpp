@@ -51,14 +51,15 @@ Options parse_options(int argc, char* argv[]) {
         "--config-json",      "--ignore",         "--force-pull",        "--discard-dirty",
         "--debug-memory",     "--dump-state",     "--dump-large",        "--install-daemon",
         "--uninstall-daemon", "--daemon-config",  "--install-service",   "--uninstall-service",
-        "--service-config",   "--attach",         "--remove-lock"};
+        "--service-config",   "--attach",         "--background",        "--reattach",
+        "--remove-lock"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
         {'d', "--log-dir"},         {'l', "--log-file"},     {'y', "--config-yaml"},
         {'j', "--config-json"},     {'c', "--cli"},          {'s', "--silent"},
         {'D', "--max-depth"},       {'h', "--help"},         {'A', "--attach"},
-        {'R', "--remove-lock"}};
+        {'b', "--background"},      {'B', "--reattach"},     {'R', "--remove-lock"}};
     ArgParser parser(argc, argv, known, short_opts);
 
     auto cfg_flag = [&](const std::string& k) {
@@ -107,12 +108,30 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("--attach requires a name");
         opts.attach_name = val;
     }
+    opts.run_background = parser.has_flag("--background") || cfg_opts.count("--background");
+    if (opts.run_background) {
+        std::string val = parser.get_option("--background");
+        if (val.empty())
+            val = cfg_opt("--background");
+        if (val.empty())
+            throw std::runtime_error("--background requires a name");
+        opts.attach_name = val;
+    }
+    if (parser.has_flag("--reattach") || cfg_opts.count("--reattach")) {
+        std::string val = parser.get_option("--reattach");
+        if (val.empty())
+            val = cfg_opt("--reattach");
+        if (val.empty())
+            throw std::runtime_error("--reattach requires a name");
+        opts.attach_name = val;
+        opts.reattach = true;
+    }
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");
     opts.print_version = parser.has_flag("--version");
     if (parser.positional().size() != 1 && !opts.show_help && !opts.print_version &&
-        opts.attach_name.empty())
+        ((opts.attach_name.empty() && !opts.reattach) || opts.run_background))
         throw std::runtime_error("Root path required");
     if (!parser.unknown_flags().empty()) {
         throw std::runtime_error("Unknown option: " + parser.unknown_flags().front());
