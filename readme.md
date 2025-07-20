@@ -8,7 +8,7 @@ and shows progress either in an interactive TUI or with plain console output.
 ## Features
 
 - Periodic scanning and automatic `git pull`
-- Optional CLI mode without the TUI
+ - Optional CLI mode that prints logs without the TUI
 - YAML or JSON configuration files
 - Detailed logging with resource tracking
 - Throttling and CPU/memory limits
@@ -51,7 +51,7 @@ Available options:
 - `--no-thread-tracker` – disable thread count display in the TUI.
 - `--net-tracker` – show total network usage since startup.
 - `--disk-limit <KB/s>` – throttle disk reads and writes.
-- `--cli` – output text updates to stdout instead of the TUI.
+- `--cli` – disable the TUI and only print log messages.
 - `--single-run` – perform one scan cycle and exit.
 - `--silent` – disable all console output; only logs are written.
 - `--force-pull` – discard local changes when pulling updates.
