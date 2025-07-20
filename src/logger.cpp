@@ -1,6 +1,7 @@
 #include "logger.hpp"
 #include <fstream>
 #include <mutex>
+#include <iostream>
 #include "time_utils.hpp"
 
 static std::ofstream g_log_ofs;
@@ -14,6 +15,10 @@ void init_logger(const std::string& path, LogLevel level) {
         g_log_ofs.close();
     }
     g_log_ofs.open(path, std::ios::app);
+    if (!g_log_ofs.is_open()) {
+        std::cerr << "Failed to open log file: " << path << std::endl;
+        return;
+    }
     g_min_level = level;
 }
 
