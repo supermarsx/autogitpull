@@ -13,6 +13,8 @@ void init_logger(const std::string& path, LogLevel level) {
     if (g_log_ofs.is_open()) {
         g_log_ofs.flush();
         g_log_ofs.close();
+    } else {
+        g_log_ofs.clear();
     }
     g_log_ofs.open(path, std::ios::app);
     if (!g_log_ofs.is_open()) {
