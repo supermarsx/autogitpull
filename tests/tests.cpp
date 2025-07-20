@@ -396,6 +396,20 @@ TEST_CASE("parse_options attach option") {
     REQUIRE(opts.attach_name == std::string("foo"));
 }
 
+TEST_CASE("parse_options background option") {
+    const char* argv[] = {"prog", "path", "--background", "foo"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.run_background);
+    REQUIRE(opts.attach_name == std::string("foo"));
+}
+
+TEST_CASE("parse_options reattach option") {
+    const char* argv[] = {"prog", "--reattach", "foo"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.reattach);
+    REQUIRE(opts.attach_name == std::string("foo"));
+}
+
 TEST_CASE("YAML config loading") {
     fs::path cfg = fs::temp_directory_path() / "cfg.yaml";
     {
