@@ -313,9 +313,6 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
         draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act, opts.show_skipped,
                  opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
                  opts.net_tracker, opts.cpu_core_mask != 0);
-    } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
-        draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped);
-        cli_countdown_ms = std::chrono::milliseconds(1000);
     }
 }
 
