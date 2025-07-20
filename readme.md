@@ -54,7 +54,7 @@ Available options:
 - `--cli` – disable the TUI and only print log messages.
 - `--single-run` – perform one scan cycle and exit.
 - `--silent` – disable all console output; only logs are written.
-- `--force-pull` – discard local changes when pulling updates.
+- `--force-pull` – discard local changes when pulling updates (alias: `--discard-dirty`).
 - `--remove-lock` – delete the `.autogitpull.lock` file in the root and exit.
 - `--debug-memory` – log container sizes and memory usage after each scan.
 - `--dump-state` – dump repository state when container size exceeds a limit.
@@ -62,7 +62,7 @@ Available options:
 - `--attach <name>` – connect to a running daemon started with the same name and print status updates.
 - `--help` – show the usage information and exit.
 
-Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` to reset such repositories to the remote state.
+Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` (alias: `--discard-dirty`) to reset such repositories to the remote state.
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
 
