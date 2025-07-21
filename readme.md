@@ -1,3 +1,5 @@
+<img width="625" height="646" alt="image" src="https://github.com/user-attachments/assets/678db386-a9b8-4e39-9ae5-ef1ea762ae7d" />
+
 # autogitpull
 
 Automatic Git Puller & Monitor
