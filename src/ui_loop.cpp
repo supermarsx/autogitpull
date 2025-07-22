@@ -281,7 +281,7 @@ int run_event_loop(const Options& opts) {
 #ifndef _WIN32
     std::signal(SIGTERM, handle_signal);
 #endif
-    std::jthread scan_thread;
+    th_compat::jthread scan_thread;
     std::chrono::milliseconds countdown_ms(0);
     std::chrono::milliseconds cli_countdown_ms(0);
     std::unique_ptr<AltScreenGuard> guard;
@@ -338,7 +338,7 @@ int run_event_loop(const Options& opts) {
                 }
             }
             scanning = true;
-            scan_thread = std::jthread(
+            scan_thread = th_compat::jthread(
                 scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
                 std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
                 std::ref(action_mtx), opts.include_private, std::cref(opts.log_dir),

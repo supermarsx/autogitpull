@@ -191,6 +191,9 @@ On macOS with `clang++`:
 clang++ -std=c++20 autogitpull.cpp git_utils.cpp tui.cpp logger.cpp $(pkg-config --cflags --libs libgit2) -pthread -o dist/autogitpull
 ```
 
+macOS builds automatically fall back to the header-only implementation
+`include/thread_compat.hpp` when the system libc++ lacks `std::jthread`.
+
 On Windows with MSVC's `cl`:
 
 ```batch
