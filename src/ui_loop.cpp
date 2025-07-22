@@ -194,7 +194,8 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
         draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act, opts.show_skipped,
                  opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
                  opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem, opts.show_commit_date,
-                 opts.show_commit_author, opts.no_colors, opts.custom_color, runtime_sec);
+                 opts.show_commit_author, opts.no_colors, opts.custom_color, runtime_sec,
+                 opts.show_datetime_line, opts.show_header);
     } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
         draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped, runtime_sec);
         cli_countdown_ms = opts.refresh_ms;

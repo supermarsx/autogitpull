@@ -100,6 +100,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--kill-all",
                                       "--show-commit-date",
                                       "--show-commit-author",
+                                      "--hide-date-time",
+                                      "--hide-header",
                                       "--vmem",
                                       "--no-colors",
                                       "--color",
@@ -457,6 +459,9 @@ Options parse_options(int argc, char* argv[]) {
     opts.show_commit_date = parser.has_flag("--show-commit-date") || cfg_flag("--show-commit-date");
     opts.show_commit_author =
         parser.has_flag("--show-commit-author") || cfg_flag("--show-commit-author");
+    opts.show_datetime_line =
+        !(parser.has_flag("--hide-date-time") || cfg_flag("--hide-date-time"));
+    opts.show_header = !(parser.has_flag("--hide-header") || cfg_flag("--hide-header"));
     opts.show_vmem = parser.has_flag("--vmem") || cfg_flag("--vmem");
     opts.no_colors = parser.has_flag("--no-colors") || cfg_flag("--no-colors");
     if (parser.has_flag("--color") || cfg_opts.count("--color")) {

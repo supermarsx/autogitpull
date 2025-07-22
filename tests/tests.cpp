@@ -621,7 +621,7 @@ TEST_CASE("scan_repos respects concurrency limit") {
 
     std::map<fs::path, RepoInfo> infos;
     for (const auto& p : repos)
-        infos[p] = RepoInfo{p, RS_PENDING, "", "", "", "", 0, false};
+        infos[p] = RepoInfo{p, RS_PENDING, "", "", "", "", "", "", 0, false};
     std::set<fs::path> skip;
     std::mutex mtx;
     std::atomic<bool> scanning(true);
