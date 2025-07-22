@@ -45,7 +45,8 @@ void draw_tui(const std::vector<fs::path>& all_repos,
               bool scanning, const std::string& action, bool show_skipped, bool show_version,
               bool track_cpu, bool track_mem, bool track_threads, bool track_net,
               bool show_affinity, bool track_vmem, bool show_commit_date, bool show_commit_author,
-              bool no_colors, const std::string& custom_color, int runtime_sec) {
+              bool no_colors, const std::string& custom_color, int runtime_sec,
+              bool show_datetime_line, bool show_header) {
     std::ostringstream out;
     auto choose = [&](const char* def) {
         return no_colors ? "" : (custom_color.empty() ? def : custom_color.c_str());
@@ -63,7 +64,8 @@ void draw_tui(const std::vector<fs::path>& all_repos,
     if (show_version)
         out << " v" << AUTOGITPULL_VERSION;
     out << reset << "\n";
-    out << "Date: " << cyan << timestamp() << reset << "\n";
+    if (show_datetime_line)
+        out << "Date: " << cyan << timestamp() << reset << "\n";
     out << "Monitoring: " << yellow
         << (all_repos.empty() ? "" : all_repos[0].parent_path().string()) << reset << "\n";
     out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
@@ -113,11 +115,13 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         };
         out << "Net: D " << fmt(usage.download_bytes) << "  U " << fmt(usage.upload_bytes) << "\n";
     }
-    out << "--------------------------------------------------------------";
-    out << "-------------------\n";
-    out << bold << "  Status     Repo" << reset << "\n";
-    out << "--------------------------------------------------------------";
-    out << "-------------------\n";
+    if (show_header) {
+        out << "--------------------------------------------------------------";
+        out << "-------------------\n";
+        out << bold << " [" << std::left << std::setw(9) << "Status" << "]  Repo" << reset << "\n";
+        out << "--------------------------------------------------------------";
+        out << "-------------------\n";
+    }
     for (const auto& p : all_repos) {
         RepoInfo ri;
         auto it = repo_infos.find(p);
@@ -208,8 +212,10 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             out << " (" << ri.progress << "%)";
         out << "\n";
     }
-    out << "--------------------------------------------------------------";
-    out << "-------------------\n";
+    if (show_header) {
+        out << "--------------------------------------------------------------";
+        out << "-------------------\n";
+    }
     std::cout << out.str() << std::flush;
     // Explicitly clear the string buffer to avoid stale allocations
     out.str("");

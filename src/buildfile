@@ -1,4 +1,5 @@
 import libs = libgit2 yaml-cpp nlohmann-json
+using rc
 
 
 lib_sources = git_utils logger resource_utils system_utils time_utils \
@@ -7,5 +8,7 @@ lib_sources = git_utils logger resource_utils system_utils time_utils \
 
 lib{autogitpull}: cxx{$lib_sources} $libs
 
+rc{icon}: ../graphics/icon.rc
+rc{version}: version.rc
 
-exe{autogitpull}: cxx{autogitpull} lib{autogitpull}
+exe{autogitpull}: cxx{autogitpull} lib{autogitpull} rc{icon} rc{version}

@@ -42,6 +42,8 @@ struct Options {
     bool show_vmem = false;
     bool show_commit_date = false;
     bool show_commit_author = false;
+    bool show_datetime_line = true;
+    bool show_header = true;
     bool no_colors = false;
     std::string custom_color;
     std::vector<std::filesystem::path> ignore_dirs;

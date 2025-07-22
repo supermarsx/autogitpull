@@ -77,6 +77,8 @@ void print_help(const char* prog) {
         {"--show-commit-date", "", "", "Display last commit time", "General"},
         {"--disk-limit", "", "<KB/s>", "Limit disk throughput", "Resource limits"},
         {"--show-commit-author", "", "", "Display last commit author", "General"},
+        {"--hide-date-time", "", "", "Hide date/time line in TUI", "General"},
+        {"--hide-header", "", "", "Hide status header", "General"},
         {"--row-order", "", "<mode>", "Row ordering (alpha/reverse)", "General"},
         {"--color", "", "<ansi>", "Override status color", "General"},
         {"--no-colors", "", "", "Disable ANSI colors", "General"},
