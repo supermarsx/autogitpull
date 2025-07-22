@@ -4,7 +4,8 @@ using rc
 
 lib_sources = git_utils logger resource_utils system_utils time_utils \
               config_utils debug_utils scanner ui_loop options parse_utils \
-              lock_utils process_monitor linux_daemon windows_service tui
+              lock_utils process_monitor linux_daemon windows_service tui \
+              help_text
 
 lib{autogitpull}: cxx{$lib_sources} $libs
 
