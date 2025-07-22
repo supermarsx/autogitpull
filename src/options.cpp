@@ -52,7 +52,7 @@ Options parse_options(int argc, char* argv[]) {
         "--debug-memory",     "--dump-state",     "--dump-large",        "--install-daemon",
         "--uninstall-daemon", "--daemon-config",  "--install-service",   "--uninstall-service",
         "--service-config",   "--attach",         "--background",        "--reattach",
-        "--remove-lock"};
+        "--remove-lock",      "--show-runtime",   "--max-runtime"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -125,6 +125,17 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("--reattach requires a name");
         opts.attach_name = val;
         opts.reattach = true;
+    }
+    opts.show_runtime = parser.has_flag("--show-runtime") || cfg_flag("--show-runtime");
+    if (parser.has_flag("--max-runtime") || cfg_opts.count("--max-runtime")) {
+        std::string val = parser.get_option("--max-runtime");
+        if (val.empty())
+            val = cfg_opt("--max-runtime");
+        bool ok = false;
+        int sec = parse_int(val, 1, INT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --max-runtime");
+        opts.runtime_limit = std::chrono::seconds(sec);
     }
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
