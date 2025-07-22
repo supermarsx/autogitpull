@@ -410,6 +410,13 @@ TEST_CASE("parse_options reattach option") {
     REQUIRE(opts.attach_name == std::string("foo"));
 }
 
+TEST_CASE("parse_options runtime options") {
+    const char* argv[] = {"prog", "path", "--show-runtime", "--max-runtime", "5"};
+    Options opts = parse_options(5, const_cast<char**>(argv));
+    REQUIRE(opts.show_runtime);
+    REQUIRE(opts.runtime_limit == std::chrono::seconds(5));
+}
+
 TEST_CASE("YAML config loading") {
     fs::path cfg = fs::temp_directory_path() / "cfg.yaml";
     {
@@ -589,4 +596,22 @@ TEST_CASE("try_pull handles dirty repos") {
     fs::remove_all(remote);
     fs::remove_all(src);
     fs::remove_all(repo);
+}
+
+TEST_CASE("run_event_loop runtime limit") {
+    fs::path dir = fs::temp_directory_path() / "runtime_limit_test";
+    fs::create_directories(dir);
+    Options opts;
+    opts.root = dir;
+    opts.cli = true;
+    opts.interval = 1;
+    opts.refresh_ms = std::chrono::milliseconds(100);
+    opts.runtime_limit = std::chrono::seconds(2);
+    auto start = std::chrono::steady_clock::now();
+    int ret = run_event_loop(opts);
+    auto elapsed = std::chrono::steady_clock::now() - start;
+    fs::remove_all(dir);
+    REQUIRE(ret == 0);
+    REQUIRE(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() >= 2);
+    REQUIRE(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() < 5);
 }

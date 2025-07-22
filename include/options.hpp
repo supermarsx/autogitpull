@@ -53,6 +53,8 @@ struct Options {
     bool run_background = false;
     bool reattach = false;
     std::string attach_name;
+    bool show_runtime = false;
+    std::chrono::seconds runtime_limit{0};
     bool show_help = false;
     bool print_version = false;
 };

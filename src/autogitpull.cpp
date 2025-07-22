@@ -172,6 +172,8 @@ void print_help(const char* prog) {
         {"--attach", "-A", "<name>", "Attach to daemon and show status", "General"},
         {"--background", "-b", "<name>", "Run in background with attach name", "General"},
         {"--reattach", "-B", "<name>", "Reattach to background process", "General"},
+        {"--show-runtime", "", "", "Display elapsed runtime", "General"},
+        {"--max-runtime", "", "<sec>", "Exit after given runtime", "General"},
         {"--check-only", "", "", "Only check for updates", "Actions"},
         {"--no-hash-check", "", "", "Always pull without hash check", "Actions"},
         {"--force-pull", "", "", "Discard local changes when pulling", "Actions"},
@@ -252,13 +254,16 @@ void print_help(const char* prog) {
 
 void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
-              const std::string& action, bool show_skipped) {
+              const std::string& action, bool show_skipped, int runtime_sec) {
     std::cout << "Status: ";
     if (scanning)
         std::cout << action;
     else
         std::cout << "Idle";
-    std::cout << " - Next scan in " << seconds_left << "s\n";
+    std::cout << " - Next scan in " << seconds_left << "s";
+    if (runtime_sec >= 0)
+        std::cout << " - Runtime " << runtime_sec << "s";
+    std::cout << "\n";
     for (const auto& p : all_repos) {
         RepoInfo ri;
         auto it = repo_infos.find(p);
@@ -317,11 +322,15 @@ static void prepare_repos(const Options& opts, std::vector<fs::path>& all_repos,
 // Render either the TUI or CLI output
 static void update_ui(const Options& opts, const std::vector<fs::path>& all_repos,
                       const std::map<fs::path, RepoInfo>& repo_infos, int sec_left, bool scanning,
-                      const std::string& act, std::chrono::milliseconds& cli_countdown_ms) {
+                      const std::string& act, std::chrono::milliseconds& cli_countdown_ms,
+                      int runtime_sec) {
     if (!opts.silent && !opts.cli) {
         draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act, opts.show_skipped,
                  opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
-                 opts.net_tracker, opts.cpu_core_mask != 0);
+                 opts.net_tracker, opts.cpu_core_mask != 0, runtime_sec);
+    } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
+        draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped, runtime_sec);
+        cli_countdown_ms = opts.refresh_ms;
     }
 }
 
@@ -726,6 +735,7 @@ int run_event_loop(const Options& opts) {
     std::unique_ptr<AltScreenGuard> guard;
     if (!opts.cli && !opts.silent)
         guard = std::make_unique<AltScreenGuard>();
+    auto start_time = std::chrono::steady_clock::now();
     size_t concurrency = opts.concurrency;
     if (opts.max_threads > 0 && concurrency > opts.max_threads)
         concurrency = opts.max_threads;
@@ -741,6 +751,11 @@ int run_event_loop(const Options& opts) {
     }
 #endif
     while (running) {
+        auto elapsed = std::chrono::steady_clock::now() - start_time;
+        int runtime_sec =
+            static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
+        if (opts.runtime_limit.count() > 0 && elapsed >= opts.runtime_limit)
+            running = false;
 #ifndef _WIN32
         if (status_fd >= 0) {
             int c = accept(status_fd, nullptr, nullptr);
@@ -797,7 +812,8 @@ int run_event_loop(const Options& opts) {
 #ifndef _WIN32
             status_msg = act + "\n";
 #endif
-            update_ui(opts, all_repos, repo_infos, sec_left, scanning, act, cli_countdown_ms);
+            update_ui(opts, all_repos, repo_infos, sec_left, scanning, act, cli_countdown_ms,
+                      opts.show_runtime ? runtime_sec : -1);
         }
 #ifndef _WIN32
         if (status_fd >= 0) {
