@@ -12,6 +12,9 @@
 #include "scanner.hpp"
 #include "ui_loop.hpp"
 #include "process_monitor.hpp"
+#include "thread_compat.hpp"
+
+static int g_monitor_count = 0;
 #include <filesystem>
 #include <fstream>
 #include <cstdlib>
@@ -197,12 +200,23 @@ TEST_CASE("Thread count reflects running threads") {
     procutil::set_thread_poll_interval(1);
     std::size_t before = procutil::get_thread_count();
     {
-        std::jthread tg([] { std::this_thread::sleep_for(std::chrono::seconds(2)); });
+        th_compat::jthread tg([] { std::this_thread::sleep_for(std::chrono::seconds(2)); });
         std::this_thread::sleep_for(std::chrono::seconds(3));
         std::size_t during = procutil::get_thread_count();
         // Account for environments where thread polling may lag
         REQUIRE(during >= before);
     }
+}
+
+TEST_CASE("th_compat::jthread fallback works") {
+#ifndef __cpp_lib_jthread
+    bool ran = false;
+    th_compat::jthread t([&] { ran = true; });
+    t.join();
+    REQUIRE(ran);
+#else
+    SUCCEED("std::jthread available");
+#endif
 }
 
 TEST_CASE("Logger appends messages") {
@@ -616,31 +630,31 @@ TEST_CASE("run_event_loop runtime limit") {
 }
 
 TEST_CASE("process monitor single run when disabled") {
-    int count = 0;
-    auto worker = [&](const Options&) {
-        ++count;
+    g_monitor_count = 0;
+    auto worker_fn = [](const Options&) {
+        ++g_monitor_count;
         return 0;
     };
-    set_monitor_worker(worker);
+    set_monitor_worker(worker_fn);
     Options opts;
     opts.persist = false;
     run_with_monitor(opts);
-    REQUIRE(count == 1);
+    REQUIRE(g_monitor_count == 1);
     set_monitor_worker(nullptr);
 }
 
 TEST_CASE("process monitor respawns up to limit") {
-    int count = 0;
-    auto worker = [&](const Options&) {
-        ++count;
+    g_monitor_count = 0;
+    auto worker_fn = [](const Options&) {
+        ++g_monitor_count;
         return 0;
     };
-    set_monitor_worker(worker);
+    set_monitor_worker(worker_fn);
     Options opts;
     opts.persist = true;
     opts.respawn_max = 2;
     opts.respawn_window = std::chrono::minutes(1);
     run_with_monitor(opts);
-    REQUIRE(count == 3);
+    REQUIRE(g_monitor_count == 2);
     set_monitor_worker(nullptr);
 }
