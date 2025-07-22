@@ -29,6 +29,8 @@ struct RepoInfo {
     std::string message;            ///< Human readable status message
     std::string branch;             ///< Currently checked-out branch
     std::string commit;             ///< Short hash of HEAD
+    std::string commit_date;        ///< Date of last commit
+    std::string commit_author;      ///< Author of last commit
     std::string last_pull_log;      ///< Result of last pull attempt
     int progress = 0;               ///< Fetch progress percentage
     bool auth_failed = false;       ///< Authentication error flag

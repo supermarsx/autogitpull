@@ -1,9 +1,11 @@
 import libs = libgit2 yaml-cpp nlohmann-json
 
+
 lib_sources = git_utils logger resource_utils system_utils time_utils \
               config_utils debug_utils scanner ui_loop options parse_utils \
               lock_utils process_monitor linux_daemon windows_service tui
 
 lib{autogitpull}: cxx{$lib_sources} $libs
+
 
 exe{autogitpull}: cxx{autogitpull} lib{autogitpull}

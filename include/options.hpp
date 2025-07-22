@@ -39,11 +39,17 @@ struct Options {
     bool mem_tracker = true;
     bool thread_tracker = true;
     bool net_tracker = false;
+    bool show_vmem = false;
+    bool show_commit_date = false;
+    bool show_commit_author = false;
+    bool no_colors = false;
+    std::string custom_color;
     std::vector<std::filesystem::path> ignore_dirs;
     bool debug_memory = false;
     bool dump_state = false;
     size_t dump_threshold = 0;
     bool single_run = false;
+    bool single_repo = false;
     bool install_daemon = false;
     bool uninstall_daemon = false;
     std::string daemon_config;
@@ -59,8 +65,11 @@ struct Options {
     int respawn_max = 0;
     std::chrono::minutes respawn_window{10};
     bool kill_all = false;
+    bool use_syslog = false;
+    int syslog_facility = 0;
     bool show_help = false;
     bool print_version = false;
+    enum SortMode { DEFAULT, ALPHA, REVERSE } sort_mode = DEFAULT;
 };
 
 Options parse_options(int argc, char* argv[]);
