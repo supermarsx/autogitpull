@@ -38,22 +38,74 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Failed to load config: " + err);
     }
 
-    const std::set<std::string> known{
-        "--include-private",  "--show-skipped",   "--show-version",      "--version",
-        "--interval",         "--refresh-rate",   "--cpu-poll",          "--mem-poll",
-        "--thread-poll",      "--log-dir",        "--log-file",          "--concurrency",
-        "--check-only",       "--no-hash-check",  "--log-level",         "--verbose",
-        "--max-threads",      "--cpu-percent",    "--cpu-cores",         "--mem-limit",
-        "--no-cpu-tracker",   "--no-mem-tracker", "--no-thread-tracker", "--help",
-        "--threads",          "--single-thread",  "--net-tracker",       "--download-limit",
-        "--upload-limit",     "--disk-limit",     "--max-depth",         "--cli",
-        "--single-run",       "--silent",         "--recursive",         "--config-yaml",
-        "--config-json",      "--ignore",         "--force-pull",        "--discard-dirty",
-        "--debug-memory",     "--dump-state",     "--dump-large",        "--install-daemon",
-        "--uninstall-daemon", "--daemon-config",  "--install-service",   "--uninstall-service",
-        "--service-config",   "--attach",         "--background",        "--reattach",
-        "--remove-lock",      "--show-runtime",   "--max-runtime",       "--persist",
-        "--respawn-limit",    "--kill-all"};
+    const std::set<std::string> known{"--include-private",
+                                      "--show-skipped",
+                                      "--show-version",
+                                      "--version",
+                                      "--root",
+                                      "--interval",
+                                      "--refresh-rate",
+                                      "--cpu-poll",
+                                      "--mem-poll",
+                                      "--thread-poll",
+                                      "--log-dir",
+                                      "--log-file",
+                                      "--concurrency",
+                                      "--check-only",
+                                      "--no-hash-check",
+                                      "--log-level",
+                                      "--verbose",
+                                      "--max-threads",
+                                      "--cpu-percent",
+                                      "--cpu-cores",
+                                      "--mem-limit",
+                                      "--no-cpu-tracker",
+                                      "--no-mem-tracker",
+                                      "--no-thread-tracker",
+                                      "--help",
+                                      "--threads",
+                                      "--single-thread",
+                                      "--net-tracker",
+                                      "--download-limit",
+                                      "--upload-limit",
+                                      "--disk-limit",
+                                      "--max-depth",
+                                      "--cli",
+                                      "--single-run",
+                                      "--single-repo",
+                                      "--silent",
+                                      "--recursive",
+                                      "--config-yaml",
+                                      "--config-json",
+                                      "--ignore",
+                                      "--force-pull",
+                                      "--discard-dirty",
+                                      "--debug-memory",
+                                      "--dump-state",
+                                      "--dump-large",
+                                      "--install-daemon",
+                                      "--uninstall-daemon",
+                                      "--daemon-config",
+                                      "--install-service",
+                                      "--uninstall-service",
+                                      "--service-config",
+                                      "--attach",
+                                      "--background",
+                                      "--reattach",
+                                      "--remove-lock",
+                                      "--show-runtime",
+                                      "--max-runtime",
+                                      "--persist",
+                                      "--respawn-limit",
+                                      "--kill-all",
+                                      "--show-commit-date",
+                                      "--show-commit-author",
+                                      "--vmem",
+                                      "--no-colors",
+                                      "--color",
+                                      "--row-order",
+                                      "--syslog",
+                                      "--syslog-facility"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -82,6 +134,7 @@ Options parse_options(int argc, char* argv[]) {
     Options opts;
     opts.cli = parser.has_flag("--cli") || cfg_flag("--cli");
     opts.single_run = parser.has_flag("--single-run") || cfg_flag("--single-run");
+    opts.single_repo = parser.has_flag("--single-repo") || cfg_flag("--single-repo");
     if (opts.single_run)
         opts.cli = true;
     opts.install_daemon = parser.has_flag("--install-daemon") || cfg_flag("--install-daemon");
@@ -165,9 +218,6 @@ Options parse_options(int argc, char* argv[]) {
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");
     opts.print_version = parser.has_flag("--version");
-    if (parser.positional().size() != 1 && !opts.show_help && !opts.print_version &&
-        ((opts.attach_name.empty() && !opts.reattach) || opts.run_background))
-        throw std::runtime_error("Root path required");
     if (!parser.unknown_flags().empty()) {
         throw std::runtime_error("Unknown option: " + parser.unknown_flags().front());
     }
@@ -404,7 +454,53 @@ Options parse_options(int argc, char* argv[]) {
             val = cfg_opt("--log-file");
         opts.log_file = val;
     }
-    opts.root = parser.positional().empty() ? fs::path() : fs::path(parser.positional().front());
+    opts.show_commit_date = parser.has_flag("--show-commit-date") || cfg_flag("--show-commit-date");
+    opts.show_commit_author =
+        parser.has_flag("--show-commit-author") || cfg_flag("--show-commit-author");
+    opts.show_vmem = parser.has_flag("--vmem") || cfg_flag("--vmem");
+    opts.no_colors = parser.has_flag("--no-colors") || cfg_flag("--no-colors");
+    if (parser.has_flag("--color") || cfg_opts.count("--color")) {
+        std::string val = parser.get_option("--color");
+        if (val.empty())
+            val = cfg_opt("--color");
+        opts.custom_color = val;
+    }
+    if (parser.has_flag("--row-order") || cfg_opts.count("--row-order")) {
+        std::string val = parser.get_option("--row-order");
+        if (val.empty())
+            val = cfg_opt("--row-order");
+        if (val == "alpha")
+            opts.sort_mode = Options::ALPHA;
+        else if (val == "reverse")
+            opts.sort_mode = Options::REVERSE;
+        else
+            throw std::runtime_error("Invalid value for --row-order");
+    }
+    opts.use_syslog = parser.has_flag("--syslog") || cfg_flag("--syslog");
+    if (parser.has_flag("--syslog-facility") || cfg_opts.count("--syslog-facility")) {
+        std::string val = parser.get_option("--syslog-facility");
+        if (val.empty())
+            val = cfg_opt("--syslog-facility");
+        bool ok2 = false;
+        int fac = parse_int(val, 0, INT_MAX, ok2);
+        if (!ok2)
+            throw std::runtime_error("Invalid value for --syslog-facility");
+        opts.syslog_facility = fac;
+    }
+    if (parser.has_flag("--root") || cfg_opts.count("--root")) {
+        std::string val = parser.get_option("--root");
+        if (val.empty())
+            val = cfg_opt("--root");
+        if (val.empty())
+            throw std::runtime_error("--root requires a path");
+        opts.root = val;
+    } else {
+        opts.root =
+            parser.positional().empty() ? fs::path() : fs::path(parser.positional().front());
+    }
+    if (opts.root.empty() && !opts.show_help && !opts.print_version &&
+        ((opts.attach_name.empty() && !opts.reattach) || opts.run_background))
+        throw std::runtime_error("Root path required");
     for (const auto& val : parser.get_all_options("--ignore"))
         opts.ignore_dirs.push_back(val);
     return opts;

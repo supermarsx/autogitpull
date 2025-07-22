@@ -1,9 +1,8 @@
-@echo off
-rem *********************************************************************
-rem  AutoGitPull - release build script (Windows / MinGW‑w64)
-rem *********************************************************************
-rem  Builds a fully static release binary, compiling third‑party libs on demand.
-rem  Invoke from anywhere; the script locates the project root automatically.
+@echo off rem *********************************************************************rem AutoGitPull -
+    release build script(Windows / MinGW‑w64)
+        rem *********************************************************************rem Builds a fully
+    static release binary,
+    compiling third‑party libs on demand.rem Invoke from anywhere; the script locates the project root automatically.
 rem *********************************************************************
 
 setlocal EnableDelayedExpansion
@@ -117,6 +116,7 @@ for %%F in (
     "%ROOT_DIR%\src\parse_utils.cpp"
     "%ROOT_DIR%\src\lock_utils.cpp"
     "%ROOT_DIR%\src\process_monitor.cpp"
+    "%ROOT_DIR%\src\help_text.cpp"
     "%ROOT_DIR%\src\windows_service.cpp"
 ) do set "SRCS=!SRCS! %%~F"
 

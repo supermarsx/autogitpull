@@ -18,15 +18,27 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
         for (auto it = root.begin(); it != root.end(); ++it) {
             if (!it->first.IsScalar())
                 continue;
-            std::string key = "--" + it->first.as<std::string>();
-            if (it->second.IsScalar()) {
-                opts[key] = it->second.as<std::string>();
-            } else if (it->second.IsNull()) {
-                opts[key] = "";
-            } else if (it->second.IsSequence() || it->second.IsMap()) {
-                // Ignore complex types
-            } else if (it->second.IsDefined()) {
-                opts[key] = it->second.as<std::string>();
+            const std::string base = "--" + it->first.as<std::string>();
+            const YAML::Node& node = it->second;
+            if (node.IsMap()) {
+                for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
+                    if (!it2->first.IsScalar())
+                        continue;
+                    std::string key = "--" + it2->first.as<std::string>();
+                    const YAML::Node& val = it2->second;
+                    if (val.IsScalar())
+                        opts[key] = val.as<std::string>();
+                    else if (val.IsNull())
+                        opts[key] = "";
+                    else if (val.IsDefined() && !val.IsSequence() && !val.IsMap())
+                        opts[key] = val.as<std::string>();
+                }
+            } else if (node.IsScalar()) {
+                opts[base] = node.as<std::string>();
+            } else if (node.IsNull()) {
+                opts[base] = "";
+            } else if (node.IsDefined() && !node.IsSequence() && !node.IsMap()) {
+                opts[base] = node.as<std::string>();
             }
         }
         return true;
@@ -57,20 +69,40 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
             return false;
         }
         for (auto it = root.begin(); it != root.end(); ++it) {
-            std::string key = "--" + it.key();
             const auto& val = it.value();
-            if (val.is_string()) {
-                opts[key] = val.get<std::string>();
-            } else if (val.is_boolean()) {
-                opts[key] = val.get<bool>() ? "true" : "false";
-            } else if (val.is_number_integer()) {
-                opts[key] = std::to_string(val.get<long long>());
-            } else if (val.is_number_unsigned()) {
-                opts[key] = std::to_string(val.get<unsigned long long>());
-            } else if (val.is_number_float()) {
-                opts[key] = std::to_string(val.get<double>());
-            } else if (val.is_null()) {
-                opts[key] = "";
+            if (val.is_object()) {
+                for (auto sub = val.begin(); sub != val.end(); ++sub) {
+                    std::string key = "--" + sub.key();
+                    const auto& v = sub.value();
+                    if (v.is_string()) {
+                        opts[key] = v.get<std::string>();
+                    } else if (v.is_boolean()) {
+                        opts[key] = v.get<bool>() ? "true" : "false";
+                    } else if (v.is_number_integer()) {
+                        opts[key] = std::to_string(v.get<long long>());
+                    } else if (v.is_number_unsigned()) {
+                        opts[key] = std::to_string(v.get<unsigned long long>());
+                    } else if (v.is_number_float()) {
+                        opts[key] = std::to_string(v.get<double>());
+                    } else if (v.is_null()) {
+                        opts[key] = "";
+                    }
+                }
+            } else {
+                std::string key = "--" + it.key();
+                if (val.is_string()) {
+                    opts[key] = val.get<std::string>();
+                } else if (val.is_boolean()) {
+                    opts[key] = val.get<bool>() ? "true" : "false";
+                } else if (val.is_number_integer()) {
+                    opts[key] = std::to_string(val.get<long long>());
+                } else if (val.is_number_unsigned()) {
+                    opts[key] = std::to_string(val.get<unsigned long long>());
+                } else if (val.is_number_float()) {
+                    opts[key] = std::to_string(val.get<double>());
+                } else if (val.is_null()) {
+                    opts[key] = "";
+                }
             }
         }
         return true;

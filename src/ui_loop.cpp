@@ -34,6 +34,7 @@
 #include "debug_utils.hpp"
 #include "parse_utils.hpp"
 #include "options.hpp"
+#include "help_text.hpp"
 #include "lock_utils.hpp"
 #ifndef _WIN32
 #include <sys/socket.h>
@@ -59,14 +60,6 @@ std::atomic<bool>* g_running_ptr = nullptr;
 bool debugMemory = false;
 bool dumpState = false;
 size_t dumpThreshold = 0;
-
-struct OptionInfo {
-    const char* long_flag;
-    const char* short_flag;
-    const char* arg;
-    const char* desc;
-    const char* category;
-};
 
 void handle_signal(int) {
     if (g_running_ptr)
@@ -100,108 +93,6 @@ std::string status_label(RepoStatus status) {
     }
     return "";
 }
-/** Print the command line help text. */
-void print_help(const char* prog) {
-    static const std::vector<OptionInfo> opts = {
-        {"--include-private", "-p", "", "Include private repositories", "General"},
-        {"--show-skipped", "-k", "", "Show skipped repositories", "General"},
-        {"--show-version", "-v", "", "Display program version in TUI", "General"},
-        {"--version", "-V", "", "Print program version and exit", "General"},
-        {"--interval", "-i", "<sec>", "Delay between scans", "General"},
-        {"--refresh-rate", "-r", "<ms>", "TUI refresh rate", "General"},
-        {"--recursive", "", "", "Scan subdirectories recursively", "General"},
-        {"--max-depth", "-D", "<n>", "Limit recursive scan depth", "General"},
-        {"--ignore", "", "<dir>", "Directory to ignore (repeatable)", "General"},
-        {"--config-yaml", "-y", "<file>", "Load options from YAML file", "General"},
-        {"--config-json", "-j", "<file>", "Load options from JSON file", "General"},
-        {"--cli", "-c", "", "Use console output", "General"},
-        {"--single-run", "", "", "Run a single scan cycle and exit", "General"},
-        {"--silent", "-s", "", "Disable console output", "General"},
-        {"--attach", "-A", "<name>", "Attach to daemon and show status", "General"},
-        {"--background", "-b", "<name>", "Run in background with attach name", "General"},
-        {"--reattach", "-B", "<name>", "Reattach to background process", "General"},
-        {"--show-runtime", "", "", "Display elapsed runtime", "General"},
-        {"--max-runtime", "", "<sec>", "Exit after given runtime", "General"},
-        {"--persist", "", "", "Keep running after exit", "General"},
-        {"--respawn-limit", "", "<n[,min]>", "Respawn limit within minutes", "General"},
-        {"--check-only", "", "", "Only check for updates", "Actions"},
-        {"--no-hash-check", "", "", "Always pull without hash check", "Actions"},
-        {"--force-pull", "", "", "Discard local changes when pulling", "Actions"},
-        {"--discard-dirty", "", "", "Alias for --force-pull", "Actions"},
-        {"--install-daemon", "", "", "Install background daemon", "Actions"},
-        {"--uninstall-daemon", "", "", "Uninstall background daemon", "Actions"},
-        {"--daemon-config", "", "<file>", "Config file for daemon install", "Actions"},
-        {"--install-service", "", "", "Install system service", "Actions"},
-        {"--uninstall-service", "", "", "Uninstall system service", "Actions"},
-        {"--service-config", "", "<file>", "Config file for service install", "Actions"},
-        {"--remove-lock", "-R", "", "Remove directory lock file and exit", "Actions"},
-        {"--kill-all", "", "", "Terminate running instance and exit", "Actions"},
-        {"--log-dir", "-d", "<path>", "Directory for pull logs", "Logging"},
-        {"--log-file", "-l", "<path>", "File for general logs", "Logging"},
-        {"--log-level", "", "<level>", "Set log verbosity", "Logging"},
-        {"--verbose", "", "", "Shorthand for --log-level DEBUG", "Logging"},
-        {"--debug-memory", "", "", "Log memory usage each scan", "Logging"},
-        {"--dump-state", "", "", "Dump container state when large", "Logging"},
-        {"--dump-large", "", "<n>", "Dump threshold for --dump-state", "Logging"},
-        {"--concurrency", "", "<n>", "Number of worker threads", "Concurrency"},
-        {"--threads", "", "<n>", "Alias for --concurrency", "Concurrency"},
-        {"--single-thread", "", "", "Run using a single worker thread", "Concurrency"},
-        {"--max-threads", "", "<n>", "Cap the scanning worker threads", "Concurrency"},
-        {"--cpu-poll", "", "<s>", "CPU usage polling interval", "Tracking"},
-        {"--mem-poll", "", "<s>", "Memory usage polling interval", "Tracking"},
-        {"--thread-poll", "", "<s>", "Thread count polling interval", "Tracking"},
-        {"--no-cpu-tracker", "", "", "Disable CPU usage tracker", "Tracking"},
-        {"--no-mem-tracker", "", "", "Disable memory usage tracker", "Tracking"},
-        {"--no-thread-tracker", "", "", "Disable thread tracker", "Tracking"},
-        {"--net-tracker", "", "", "Track network usage", "Tracking"},
-        {"--cpu-percent", "", "<n>", "Approximate CPU usage limit", "Resource limits"},
-        {"--cpu-cores", "", "<mask>", "Set CPU affinity mask", "Resource limits"},
-        {"--mem-limit", "", "<MB>", "Abort if memory exceeds this amount", "Resource limits"},
-        {"--download-limit", "", "<KB/s>", "Limit total download rate", "Resource limits"},
-        {"--upload-limit", "", "<KB/s>", "Limit total upload rate", "Resource limits"},
-        {"--disk-limit", "", "<KB/s>", "Limit disk throughput", "Resource limits"},
-        {"--help", "-h", "", "Show this message", "General"}};
-
-    std::map<std::string, std::vector<const OptionInfo*>> groups;
-    size_t width = 0;
-    for (const auto& o : opts) {
-        groups[o.category].push_back(&o);
-        std::string flag = "  ";
-        if (std::strlen(o.short_flag))
-            flag += std::string(o.short_flag) + ", ";
-        else
-            flag += "    ";
-        flag += o.long_flag;
-        if (std::strlen(o.arg))
-            flag += " " + std::string(o.arg);
-        width = std::max(width, flag.size());
-    }
-
-    std::cout << "autogitpull - Automatic Git Puller & Monitor\n";
-    std::cout << "Scans a directory of Git repositories and pulls updates.\n";
-    std::cout << "Configuration can be read from YAML or JSON files.\n\n";
-    std::cout << "Usage: " << prog << " <root-folder> [options]\n\n";
-    const std::vector<std::string> order{"General",         "Logging",  "Concurrency",
-                                         "Resource limits", "Tracking", "Actions"};
-    for (const auto& cat : order) {
-        if (!groups.count(cat))
-            continue;
-        std::cout << cat << ":\n";
-        for (const auto* o : groups[cat]) {
-            std::string flag = "  ";
-            if (std::strlen(o->short_flag))
-                flag += std::string(o->short_flag) + ", ";
-            else
-                flag += "    ";
-            flag += o->long_flag;
-            if (std::strlen(o->arg))
-                flag += " " + std::string(o->arg);
-            std::cout << std::left << std::setw(static_cast<int>(width) + 2) << flag << o->desc
-                      << "\n";
-        }
-        std::cout << "\n";
-    }
-}
 void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
               const std::string& action, bool show_skipped, int runtime_sec) {
@@ -220,7 +111,7 @@ void draw_cli(const std::vector<fs::path>& all_repos,
         if (it != repo_infos.end())
             ri = it->second;
         else
-            ri = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
+            ri = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
         if (ri.status == RS_SKIPPED && !show_skipped)
             continue;
         std::cout << " [" << status_label(ri.status) << "] " << p.filename().string();
@@ -229,6 +120,20 @@ void draw_cli(const std::vector<fs::path>& all_repos,
             if (!ri.commit.empty())
                 std::cout << "@" << ri.commit;
             std::cout << ")";
+        }
+        if (!ri.commit_author.empty() || !ri.commit_date.empty()) {
+            std::cout << " {";
+            bool first = true;
+            if (!ri.commit_author.empty()) {
+                std::cout << ri.commit_author;
+                first = false;
+            }
+            if (!ri.commit_date.empty()) {
+                if (!first)
+                    std::cout << ' ';
+                std::cout << ri.commit_date;
+            }
+            std::cout << "}";
         }
         if (!ri.message.empty())
             std::cout << " - " << ri.message;
@@ -259,14 +164,25 @@ static void setup_logging(const Options& opts) {
         if (logger_initialized())
             log_info("Program started");
     }
+    if (opts.use_syslog)
+        init_syslog(opts.syslog_facility);
 }
 
 // Build repository list and populate info table
 static void prepare_repos(const Options& opts, std::vector<fs::path>& all_repos,
                           std::map<fs::path, RepoInfo>& repo_infos) {
-    all_repos = build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+    if (opts.single_repo) {
+        all_repos = {opts.root};
+    } else {
+        all_repos =
+            build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+        if (opts.sort_mode == Options::ALPHA)
+            std::sort(all_repos.begin(), all_repos.end());
+        else if (opts.sort_mode == Options::REVERSE)
+            std::sort(all_repos.rbegin(), all_repos.rend());
+    }
     for (const auto& p : all_repos)
-        repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", 0, false};
+        repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
 }
 
 // Render either the TUI or CLI output
@@ -277,7 +193,8 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
     if (!opts.silent && !opts.cli) {
         draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act, opts.show_skipped,
                  opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
-                 opts.net_tracker, opts.cpu_core_mask != 0, runtime_sec);
+                 opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem, opts.show_commit_date,
+                 opts.show_commit_author, opts.no_colors, opts.custom_color, runtime_sec);
     } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
         draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped, runtime_sec);
         cli_countdown_ms = opts.refresh_ms;

@@ -24,6 +24,7 @@ add_library(autogitpull_lib STATIC
     src/time_utils.cpp
     src/config_utils.cpp
     src/debug_utils.cpp
+    src/help_text.cpp
     src/scanner.cpp
     src/ui_loop.cpp
     src/options.cpp
@@ -83,6 +84,7 @@ add_executable(memory_leak_test
     src/time_utils.cpp
     src/config_utils.cpp
     src/debug_utils.cpp
+    src/help_text.cpp
     src/parse_utils.cpp
     src/lock_utils.cpp
     src/tui.cpp)

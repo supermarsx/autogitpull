@@ -416,6 +416,37 @@ TEST_CASE("parse_options kill-all option") {
     REQUIRE(opts.kill_all);
 }
 
+TEST_CASE("parse_options commit options") {
+    const char* argv[] = {"prog",
+                          "path",
+                          "--show-commit-date",
+                          "--show-commit-author",
+                          "--vmem",
+                          "--no-colors",
+                          "--color",
+                          "\033[31m",
+                          "--row-order",
+                          "alpha",
+                          "--syslog",
+                          "--syslog-facility",
+                          "5"};
+    Options opts = parse_options(13, const_cast<char**>(argv));
+    REQUIRE(opts.show_commit_date);
+    REQUIRE(opts.show_commit_author);
+    REQUIRE(opts.show_vmem);
+    REQUIRE(opts.no_colors);
+    REQUIRE(opts.custom_color == "\033[31m");
+    REQUIRE(opts.sort_mode == Options::ALPHA);
+    REQUIRE(opts.use_syslog);
+    REQUIRE(opts.syslog_facility == 5);
+}
+
+TEST_CASE("parse_options single repo") {
+    const char* argv[] = {"prog", "path", "--single-repo"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.single_repo);
+}
+
 TEST_CASE("YAML config loading") {
     fs::path cfg = fs::temp_directory_path() / "cfg.yaml";
     {
@@ -431,6 +462,37 @@ TEST_CASE("YAML config loading") {
     fs::remove(cfg);
 }
 
+TEST_CASE("YAML config categories") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_cat.yaml";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "General:\n  interval: 10\n  cli: true\nLogging:\n  log-level: DEBUG\n";
+    }
+    std::map<std::string, std::string> opts;
+    std::string err;
+    REQUIRE(load_yaml_config(cfg.string(), opts, err));
+    REQUIRE(opts["--interval"] == "10");
+    REQUIRE(opts["--cli"] == "true");
+    REQUIRE(opts["--log-level"] == "DEBUG");
+    fs::remove(cfg);
+}
+
+TEST_CASE("JSON config categories") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_cat.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"General\": {\n    \"interval\": 10,\n    \"cli\": true\n  },\n  "
+               "\"Logging\": {\n    \"log-level\": \"DEBUG\"\n  }\n}";
+    }
+    std::map<std::string, std::string> opts;
+    std::string err;
+    REQUIRE(load_json_config(cfg.string(), opts, err));
+    REQUIRE(opts["--interval"] == "10");
+    REQUIRE(opts["--cli"] == "true");
+    REQUIRE(opts["--log-level"] == "DEBUG");
+    fs::remove(cfg);
+}
+
 TEST_CASE("JSON config loading") {
     fs::path cfg = fs::temp_directory_path() / "cfg.json";
     {
@@ -442,6 +504,32 @@ TEST_CASE("JSON config loading") {
     REQUIRE(load_json_config(cfg.string(), opts, err));
     REQUIRE(opts["--interval"] == "42");
     REQUIRE(opts["--cli"] == "true");
+    fs::remove(cfg);
+}
+
+TEST_CASE("YAML config root option") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_root.yaml";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "root: /tmp/repos\n";
+    }
+    std::map<std::string, std::string> opts;
+    std::string err;
+    REQUIRE(load_yaml_config(cfg.string(), opts, err));
+    REQUIRE(opts["--root"] == "/tmp/repos");
+    fs::remove(cfg);
+}
+
+TEST_CASE("JSON config root option") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_root.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"root\": \"/tmp/repos\"\n}";
+    }
+    std::map<std::string, std::string> opts;
+    std::string err;
+    REQUIRE(load_json_config(cfg.string(), opts, err));
+    REQUIRE(opts["--root"] == "/tmp/repos");
     fs::remove(cfg);
 }
 

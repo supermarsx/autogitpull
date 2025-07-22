@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "options.hpp"
+#include "help_text.hpp"
 #include "ui_loop.hpp"
 #include "process_monitor.hpp"
 #include "git_utils.hpp"

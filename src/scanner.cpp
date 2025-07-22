@@ -228,6 +228,8 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
 
     if (!log_file_path.empty())
         ri.message += " - " + log_file_path.string();
+    ri.commit_author = git::get_last_commit_author(p);
+    ri.commit_date = git::get_last_commit_date(p);
 }
 
 // Process a single repository
@@ -266,6 +268,8 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
             repo_infos[p] = ri;
             return;
         }
+        ri.commit_author = git::get_last_commit_author(p);
+        ri.commit_date = git::get_last_commit_date(p);
 
         bool do_pull =
             determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos);

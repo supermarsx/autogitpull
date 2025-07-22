@@ -3,6 +3,7 @@
 #include <chrono>
 #include <functional>
 #include <thread>
+#include <ctime>
 #include "resource_utils.hpp"
 
 using namespace std;
@@ -269,6 +270,49 @@ int try_pull(const fs::path& repo, string& out_pull_log,
     out_pull_log = "Fast-forwarded";
     finalize();
     return 0;
+}
+
+string get_last_commit_date(const fs::path& repo) {
+    git_repository* raw = nullptr;
+    if (git_repository_open(&raw, repo.string().c_str()) != 0)
+        return "";
+    repo_ptr r(raw);
+    git_oid oid;
+    if (git_reference_name_to_id(&oid, r.get(), "HEAD") != 0)
+        return "";
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, r.get(), &oid) != 0)
+        return "";
+    object_ptr cmt(reinterpret_cast<git_object*>(commit));
+    git_time_t t = git_commit_time(commit);
+    std::time_t tt = static_cast<std::time_t>(t);
+    std::tm tm{};
+#ifdef _WIN32
+    localtime_s(&tm, &tt);
+#else
+    localtime_r(&tt, &tm);
+#endif
+    char buf[32];
+    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
+    return string(buf);
+}
+
+string get_last_commit_author(const fs::path& repo) {
+    git_repository* raw = nullptr;
+    if (git_repository_open(&raw, repo.string().c_str()) != 0)
+        return "";
+    repo_ptr r(raw);
+    git_oid oid;
+    if (git_reference_name_to_id(&oid, r.get(), "HEAD") != 0)
+        return "";
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, r.get(), &oid) != 0)
+        return "";
+    object_ptr cmt(reinterpret_cast<git_object*>(commit));
+    const git_signature* sig = git_commit_author(commit);
+    if (!sig || !sig->name)
+        return "";
+    return string(sig->name);
 }
 
 } // namespace git
