@@ -50,7 +50,7 @@ static std::string unit_path(const std::string& name) {
 }
 
 bool create_service_unit(const std::string& name, const std::string& exec_path,
-                         const std::string& config_file, const std::string& user) {
+                         const std::string& config_file, const std::string& user, bool persist) {
     std::ofstream out(unit_path(name));
     if (!out.is_open())
         return false;
@@ -58,7 +58,8 @@ bool create_service_unit(const std::string& name, const std::string& exec_path,
     out << "[Service]\nType=simple\nUser=" << user << "\nExecStart=" << exec_path;
     if (!config_file.empty())
         out << " --daemon-config " << config_file;
-    out << " --persist";
+    if (persist)
+        out << " --persist";
     out << "\nRestart=on-failure\n\n";
     out << "[Install]\nWantedBy=multi-user.target\n";
     out.close();
@@ -114,7 +115,7 @@ void remove_status_socket(const std::string& name, int fd) {
 bool daemonize() { return false; }
 
 bool create_service_unit(const std::string&, const std::string&, const std::string&,
-                         const std::string&) {
+                         const std::string&, bool) {
     return false;
 }
 

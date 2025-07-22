@@ -14,7 +14,7 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 void WINAPI ServiceCtrlHandler(DWORD ctrl);
 
 bool install_service(const std::string& name, const std::string& exec_path,
-                     const std::string& config_file);
+                     const std::string& config_file, bool persist = true);
 bool uninstall_service(const std::string& name);
 int create_status_socket(const std::string& name);
 int connect_status_socket(const std::string& name);
@@ -23,7 +23,7 @@ void remove_status_socket(const std::string& name, int fd);
 inline int create_status_socket(const std::string&) { return -1; }
 inline int connect_status_socket(const std::string&) { return -1; }
 inline void remove_status_socket(const std::string&, int) {}
-inline bool install_service(const std::string&, const std::string&, const std::string&) {
+inline bool install_service(const std::string&, const std::string&, const std::string&, bool) {
     return false;
 }
 inline bool uninstall_service(const std::string&) { return false; }
