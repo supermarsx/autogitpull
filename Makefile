@@ -61,9 +61,14 @@ clean:
 	rm -f $(OBJ)
 	rm -rf dist
 
+ifeq ($(HAS_B),yes)
+lint:
+	b lint
+else
 lint:
 	clang-format --dry-run --Werror $(FORMAT_FILES)
 	cpplint --linelength=100 $(FORMAT_FILES)
+endif
 
 deps:
 	./scripts/install_deps.sh

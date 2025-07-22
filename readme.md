@@ -94,7 +94,7 @@ statically but falls back to dynamic linking when static libraries are
 unavailable. If you prefer to install the library yourself, follow the
 instructions below.
 
-Running the unit tests (`make test`) additionally requires the development
+Running the unit tests (`b test`) additionally requires the development
 headers and libraries for `yaml-cpp` and
 [nlohmann/json](https://github.com/nlohmann/json). The same installer scripts
 (`scripts/install_deps.sh` or `scripts/install_deps.bat`) will install these packages along with
@@ -218,13 +218,13 @@ The resulting executable will appear in the `dist/` directory.
 
 Unit tests use [Catch2](https://github.com/catchorg/Catch2). If the library is
 not installed, CMake will automatically download it using `FetchContent`.
-`make test` requires the development packages for `libgit2`, `yaml-cpp` and
+`b test` requires the development packages for `libgit2`, `yaml-cpp` and
 `nlohmann-json`. Use `scripts/install_deps.sh` (Linux/macOS) or `scripts/install_deps.bat`
 (Windows) to install them before configuring and building the tests.
 Once the dependencies are in place, run `ctest`:
 
 ```bash
-make test
+b test
 ```
 
 This command generates a `build` directory (if missing), compiles the tests and
@@ -233,7 +233,7 @@ executes them through CMake's `ctest` driver.
 ### Leak test
 
 To run the memory leak regression test you need both the `valgrind` tool and the
-`libgit2-dev` package installed. After building the tests with `make test`, run:
+`libgit2-dev` package installed. After building the tests with `b test`, run:
 
 ```bash
 valgrind ./build/memory_leak_test
@@ -251,11 +251,11 @@ generated `icon.ico` and macOS uses `icon.icns`.
 ## Linting
 
 The project uses `clang-format` and `cpplint` (configured via `CPPLINT.cfg`) to
-enforce a consistent code style. Run `make lint` before committing to ensure
+enforce a consistent code style. Run `b lint` before committing to ensure
 formatting and style rules pass:
 
 ```bash
-make lint
+b lint
 ```
 
 The CI workflow also executes this command and will fail on formatting or lint errors.

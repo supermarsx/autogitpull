@@ -49,7 +49,7 @@ jobs:
 
       - name: Lint
         if: steps.check_releases.outputs.skip_build != 'true'
-        run: make lint
+        run: b lint
 
       - name: Build
         if: steps.check_releases.outputs.skip_build != 'true'

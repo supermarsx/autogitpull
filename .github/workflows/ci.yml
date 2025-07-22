@@ -20,7 +20,7 @@ jobs:
         run: ./scripts/install_deps.sh
 
       - name: Lint
-        run: make lint
+        run: b lint
 
       - name: Test
-        run: make test
+        run: b test

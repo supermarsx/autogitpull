@@ -45,11 +45,11 @@ jobs:
 
 
       - name: Lint
-        run: make lint
+        run: b lint
 
 
       - name: Test
-        run: make test
+        run: b test
 
       - name: Build
         shell: bash

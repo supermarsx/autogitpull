@@ -2,14 +2,14 @@
 
 To maintain code quality, all commits must pass the following checks **before** they are committed:
 
-1. `make lint` – runs `clang-format` and `cpplint` using the project's `.clang-format` configuration.
-2. The full test suite via `make test`.
+1. `b lint` – runs `clang-format` and `cpplint` using the project's `.clang-format` configuration.
+2. The full test suite via `b test`.
 
 Run these commands locally from the repository root:
 
 ```bash
-make lint
-make test
+b lint
+b test
 ```
 
 `clang-format` (configured by `.clang-format`) and `cpplint` are mandatory tools. You can auto-format sources with:
