@@ -55,6 +55,10 @@ struct Options {
     std::string attach_name;
     bool show_runtime = false;
     std::chrono::seconds runtime_limit{0};
+    bool persist = false;
+    int respawn_max = 0;
+    std::chrono::minutes respawn_window{10};
+    bool kill_all = false;
     bool show_help = false;
     bool print_version = false;
 };

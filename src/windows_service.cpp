@@ -49,6 +49,7 @@ bool install_service(const std::string& name, const std::string& exec_path,
     std::string cmd = '"' + exec_path + '"';
     if (!config_file.empty())
         cmd += " --service-config \"" + config_file + "\"";
+    cmd += " --persist";
     SC_HANDLE svc =
         CreateServiceA(scm, name.c_str(), name.c_str(), SERVICE_ALL_ACCESS,
                        SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, SERVICE_ERROR_NORMAL,

@@ -28,7 +28,8 @@ add_library(autogitpull_lib STATIC
     src/ui_loop.cpp
     src/options.cpp
     src/parse_utils.cpp
-    src/lock_utils.cpp)
+    src/lock_utils.cpp
+    src/process_monitor.cpp)
 if(NOT WIN32)
     target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp)
 else()

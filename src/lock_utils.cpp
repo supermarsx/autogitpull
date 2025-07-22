@@ -67,6 +67,19 @@ bool process_running(unsigned long pid) {
 #endif
 }
 
+bool terminate_process(unsigned long pid) {
+#ifdef _WIN32
+    HANDLE h = OpenProcess(PROCESS_TERMINATE, FALSE, static_cast<DWORD>(pid));
+    if (!h)
+        return false;
+    bool ok = TerminateProcess(h, 0);
+    CloseHandle(h);
+    return ok;
+#else
+    return kill(static_cast<pid_t>(pid), SIGTERM) == 0;
+#endif
+}
+
 LockFileGuard::LockFileGuard(const std::filesystem::path& p) : path(p) {
     locked = acquire_lock_file(path);
 }

@@ -114,9 +114,10 @@ for %%F in (
     "%ROOT_DIR%\src\config_utils.cpp" 
     "%ROOT_DIR%\src\debug_utils.cpp" 
     "%ROOT_DIR%\src\options.cpp" 
-    "%ROOT_DIR%\src\parse_utils.cpp" 
-    "%ROOT_DIR%\src\lock_utils.cpp" 
-    "%ROOT_DIR%\src\windows_service.cpp" 
+    "%ROOT_DIR%\src\parse_utils.cpp"
+    "%ROOT_DIR%\src\lock_utils.cpp"
+    "%ROOT_DIR%\src\process_monitor.cpp"
+    "%ROOT_DIR%\src\windows_service.cpp"
 ) do set "SRCS=!SRCS! %%~F"
 
 rem --------------------------------------------------------------------

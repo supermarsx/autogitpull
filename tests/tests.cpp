@@ -11,6 +11,7 @@
 #include "options.hpp"
 #include "scanner.hpp"
 #include "ui_loop.hpp"
+#include "process_monitor.hpp"
 #include <filesystem>
 #include <fstream>
 #include <cstdlib>
@@ -409,6 +410,12 @@ TEST_CASE("parse_options runtime options") {
     REQUIRE(opts.runtime_limit == std::chrono::seconds(5));
 }
 
+TEST_CASE("parse_options kill-all option") {
+    const char* argv[] = {"prog", "path", "--kill-all"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.kill_all);
+}
+
 TEST_CASE("YAML config loading") {
     fs::path cfg = fs::temp_directory_path() / "cfg.yaml";
     {
@@ -606,4 +613,34 @@ TEST_CASE("run_event_loop runtime limit") {
     REQUIRE(ret == 0);
     REQUIRE(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() >= 2);
     REQUIRE(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() < 5);
+}
+
+TEST_CASE("process monitor single run when disabled") {
+    int count = 0;
+    auto worker = [&](const Options&) {
+        ++count;
+        return 0;
+    };
+    set_monitor_worker(worker);
+    Options opts;
+    opts.persist = false;
+    run_with_monitor(opts);
+    REQUIRE(count == 1);
+    set_monitor_worker(nullptr);
+}
+
+TEST_CASE("process monitor respawns up to limit") {
+    int count = 0;
+    auto worker = [&](const Options&) {
+        ++count;
+        return 0;
+    };
+    set_monitor_worker(worker);
+    Options opts;
+    opts.persist = true;
+    opts.respawn_max = 2;
+    opts.respawn_window = std::chrono::minutes(1);
+    run_with_monitor(opts);
+    REQUIRE(count == 3);
+    set_monitor_worker(nullptr);
 }

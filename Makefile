@@ -28,6 +28,7 @@ SRC = \
     src/options.cpp \
     src/parse_utils.cpp \
     src/lock_utils.cpp \
+    src/process_monitor.cpp \
     src/linux_daemon.cpp \
     src/windows_service.cpp
 OBJ = $(SRC:.cpp=.o)

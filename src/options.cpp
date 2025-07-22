@@ -52,7 +52,8 @@ Options parse_options(int argc, char* argv[]) {
         "--debug-memory",     "--dump-state",     "--dump-large",        "--install-daemon",
         "--uninstall-daemon", "--daemon-config",  "--install-service",   "--uninstall-service",
         "--service-config",   "--attach",         "--background",        "--reattach",
-        "--remove-lock",      "--show-runtime",   "--max-runtime"};
+        "--remove-lock",      "--show-runtime",   "--max-runtime",       "--persist",
+        "--respawn-limit",    "--kill-all"};
     const std::map<char, std::string> short_opts{
         {'p', "--include-private"}, {'k', "--show-skipped"}, {'v', "--show-version"},
         {'V', "--version"},         {'i', "--interval"},     {'r', "--refresh-rate"},
@@ -137,6 +138,29 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Invalid value for --max-runtime");
         opts.runtime_limit = std::chrono::seconds(sec);
     }
+    opts.persist = parser.has_flag("--persist") || cfg_flag("--persist");
+    if (parser.has_flag("--respawn-limit") || cfg_opts.count("--respawn-limit")) {
+        std::string val = parser.get_option("--respawn-limit");
+        if (val.empty())
+            val = cfg_opt("--respawn-limit");
+        size_t comma = val.find(',');
+        bool ok = false;
+        if (comma == std::string::npos) {
+            opts.respawn_max = parse_int(val, 1, INT_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid value for --respawn-limit");
+        } else {
+            opts.respawn_max = parse_int(val.substr(0, comma), 1, INT_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid value for --respawn-limit");
+            bool ok2 = false;
+            int mins = parse_int(val.substr(comma + 1), 1, INT_MAX, ok2);
+            if (!ok2)
+                throw std::runtime_error("Invalid value for --respawn-limit");
+            opts.respawn_window = std::chrono::minutes(mins);
+        }
+    }
+    opts.kill_all = parser.has_flag("--kill-all") || cfg_flag("--kill-all");
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");
