@@ -49,7 +49,7 @@ if not exist dist mkdir dist
 
 %CXX% %CXXFLAGS% ^
     -I"%LIBGIT2_INC%" -I"%YAMLCPP_INC%" -I"%JSON_INC%" -Iinclude ^
-    src\autogitpull.cpp src\scanner.cpp src\ui_loop.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\debug_utils.cpp src\parse_utils.cpp src\lock_utils.cpp src\linux_daemon.cpp ^
+    src\autogitpull.cpp src\scanner.cpp src\ui_loop.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\debug_utils.cpp src\parse_utils.cpp src\lock_utils.cpp src\process_monitor.cpp src\linux_daemon.cpp ^
     src\config_utils.cpp src\options.cpp ^
     "%LIBGIT2_LIB%\libgit2.a" ^
     "%YAMLCPP_LIB%\libyaml-cpp.a" ^

@@ -58,6 +58,7 @@ bool create_service_unit(const std::string& name, const std::string& exec_path,
     out << "[Service]\nType=simple\nUser=" << user << "\nExecStart=" << exec_path;
     if (!config_file.empty())
         out << " --daemon-config " << config_file;
+    out << " --persist";
     out << "\nRestart=on-failure\n\n";
     out << "[Install]\nWantedBy=multi-user.target\n";
     out.close();
