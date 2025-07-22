@@ -377,21 +377,24 @@ TEST_CASE("ArgParser recursive flag") {
 }
 
 TEST_CASE("ArgParser daemon flags") {
-    const char* argv[] = {"prog", "--install-daemon", "--daemon-config", "cfg"};
-    ArgParser parser(4, const_cast<char**>(argv),
-                     {"--install-daemon", "--uninstall-daemon", "--daemon-config"});
+    const char* argv[] = {"prog", "--install-daemon", "--daemon-config", "cfg", "--persist"};
+    ArgParser parser(5, const_cast<char**>(argv),
+                     {"--install-daemon", "--uninstall-daemon", "--daemon-config", "--persist"});
     REQUIRE(parser.has_flag("--install-daemon"));
     REQUIRE(parser.get_option("--daemon-config") == std::string("cfg"));
+    REQUIRE(parser.has_flag("--persist"));
     const char* argv2[] = {"prog", "--uninstall-daemon"};
     ArgParser parser2(2, const_cast<char**>(argv2), {"--install-daemon", "--uninstall-daemon"});
     REQUIRE(parser2.has_flag("--uninstall-daemon"));
 }
 
 TEST_CASE("parse_options service flags") {
-    const char* argv[] = {"prog", "path", "--install-service", "--service-config", "cfg"};
-    Options opts = parse_options(5, const_cast<char**>(argv));
+    const char* argv[] = {"prog", "path",     "--install-service", "--service-config",
+                          "cfg",  "--persist"};
+    Options opts = parse_options(6, const_cast<char**>(argv));
     REQUIRE(opts.install_service);
     REQUIRE(opts.service_config == std::string("cfg"));
+    REQUIRE(opts.persist);
     const char* argv2[] = {"prog", "path", "--uninstall-service"};
     Options opts2 = parse_options(3, const_cast<char**>(argv2));
     REQUIRE(opts2.uninstall_service);
@@ -621,7 +624,7 @@ TEST_CASE("scan_repos respects concurrency limit") {
 
     std::map<fs::path, RepoInfo> infos;
     for (const auto& p : repos)
-        infos[p] = RepoInfo{p, RS_PENDING, "", "", "", "", 0, false};
+        infos[p] = RepoInfo{p, RS_PENDING, "", "", "", "", "", "", 0, false};
     std::set<fs::path> skip;
     std::mutex mtx;
     std::atomic<bool> scanning(true);
