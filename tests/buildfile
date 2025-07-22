@@ -1,0 +1,5 @@
+import libs = ../src/lib{autogitpull} catch2
+
+exe{autogitpull_tests}: cxx{tests.cpp} ../src/lib{autogitpull}
+
+test{autogitpull_tests}: exe{autogitpull_tests}

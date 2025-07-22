@@ -1,0 +1,10 @@
+import libs = libgit2 yaml-cpp nlohmann-json
+
+# Object files used for the main library
+libsources = git_utils logger resource_utils system_utils time_utils \
+             config_utils debug_utils options parse_utils lock_utils
+
+lib{autogitpull}: cxx{$libsources}
+lib{autogitpull}: cxx{linux_daemon}@!windows cxx{windows_service}@windows
+
+exe{autogitpull}: cxx{autogitpull tui} lib{autogitpull}
