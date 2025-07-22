@@ -9,6 +9,8 @@
 #include "parse_utils.hpp"
 #include "lock_utils.hpp"
 #include "options.hpp"
+#include "scanner.hpp"
+#include "ui_loop.hpp"
 #include <filesystem>
 #include <fstream>
 #include <cstdlib>
@@ -45,16 +47,6 @@ static std::size_t read_thread_count() {
     return procutil::get_thread_count();
 #endif
 }
-
-void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoInfo>& repo_infos,
-                std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
-                std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
-                bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
-                size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, size_t disk_limit, bool silent, bool force_pull);
-
-std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
-                                      const std::vector<fs::path>& ignore, size_t max_depth);
 
 TEST_CASE("ArgParser basic parsing") {
     const char* argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};

@@ -23,6 +23,8 @@ SRC = \
     src/time_utils.cpp \
     src/config_utils.cpp \
     src/debug_utils.cpp \
+    src/scanner.cpp \
+    src/ui_loop.cpp \
     src/options.cpp \
     src/parse_utils.cpp \
     src/lock_utils.cpp \

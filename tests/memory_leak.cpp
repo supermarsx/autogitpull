@@ -2,6 +2,7 @@
 #include "git_utils.hpp"
 #include "repo.hpp"
 #include "resource_utils.hpp"
+#include "scanner.hpp"
 #include <filesystem>
 #include <map>
 #include <set>
@@ -11,13 +12,6 @@
 #include <cstdlib>
 
 namespace fs = std::filesystem;
-
-void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoInfo>& repo_infos,
-                std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
-                std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
-                bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
-                size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, size_t disk_limit, bool silent, bool force_pull);
 
 TEST_CASE("scan_repos memory stability") {
     git::GitInitGuard guard;
