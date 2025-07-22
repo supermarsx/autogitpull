@@ -21,6 +21,9 @@ jobs:
       - name: Set up C++ build environment
         uses: aminya/setup-cpp@v1
 
+      - name: Set up build2
+        uses: build2/setup-build2-github-action@v2
+
       - name: Install dependencies
         shell: bash
         run: |
@@ -45,26 +48,22 @@ jobs:
 
 
       - name: Lint
-        run: make lint
+        run: b --for-each=test lint
 
 
       - name: Test
-        run: make test
+        run: b test
 
       - name: Build
         shell: bash
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            cmd.exe /c scripts\compile.bat
-          else
-            ./scripts/compile.sh
-          fi
+          b install config.install.root=dist
 
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
           name: autogitpull-${{ matrix.os }}
           path: |
-            autogitpull
-            autogitpull.exe
+            dist/bin/autogitpull
+            dist/bin/autogitpull.exe
 
