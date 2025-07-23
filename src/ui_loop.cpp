@@ -285,6 +285,8 @@ int run_event_loop(const Options& opts) {
     th_compat::jthread scan_thread;
     std::chrono::milliseconds countdown_ms(0);
     std::chrono::milliseconds cli_countdown_ms(0);
+    std::chrono::milliseconds rescan_countdown_ms(opts.rescan_new ? opts.rescan_interval
+                                                                  : std::chrono::milliseconds(0));
     std::unique_ptr<AltScreenGuard> guard;
     if (!opts.cli && !opts.silent)
         guard = std::make_unique<AltScreenGuard>();
@@ -325,6 +327,32 @@ int run_event_loop(const Options& opts) {
             git_libgit2_init();
             if (opts.single_run)
                 running = false;
+        }
+        if (opts.rescan_new && rescan_countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
+            auto new_repos =
+                build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+            if (opts.sort_mode == Options::ALPHA)
+                std::sort(new_repos.begin(), new_repos.end());
+            else if (opts.sort_mode == Options::REVERSE)
+                std::sort(new_repos.rbegin(), new_repos.rend());
+            {
+                std::lock_guard<std::mutex> lk(mtx);
+                for (const auto& p : new_repos) {
+                    if (!repo_infos.count(p))
+                        repo_infos[p] =
+                            RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
+                }
+                for (auto it = repo_infos.begin(); it != repo_infos.end();) {
+                    if (std::find(new_repos.begin(), new_repos.end(), it->first) ==
+                        new_repos.end()) {
+                        it = repo_infos.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
+            }
+            all_repos = new_repos;
+            rescan_countdown_ms = opts.rescan_interval;
         }
         if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
             {
@@ -385,6 +413,8 @@ int run_event_loop(const Options& opts) {
         std::this_thread::sleep_for(opts.refresh_ms);
         countdown_ms -= opts.refresh_ms;
         cli_countdown_ms -= opts.refresh_ms;
+        if (opts.rescan_new)
+            rescan_countdown_ms -= opts.refresh_ms;
     }
     running = false;
     if (scan_thread.joinable()) {

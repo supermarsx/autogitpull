@@ -433,6 +433,20 @@ TEST_CASE("parse_options kill-all option") {
     REQUIRE(opts.kill_all);
 }
 
+TEST_CASE("parse_options rescan-new option default") {
+    const char* argv[] = {"prog", "path", "--rescan-new"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.rescan_new);
+    REQUIRE(opts.rescan_interval == std::chrono::minutes(5));
+}
+
+TEST_CASE("parse_options rescan-new custom interval") {
+    const char* argv[] = {"prog", "path", "--rescan-new", "10"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.rescan_new);
+    REQUIRE(opts.rescan_interval == std::chrono::minutes(10));
+}
+
 TEST_CASE("parse_options commit options") {
     const char* argv[] = {"prog",
                           "path",

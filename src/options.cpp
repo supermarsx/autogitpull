@@ -98,6 +98,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--persist",
                                       "--respawn-limit",
                                       "--kill-all",
+                                      "--rescan-new",
                                       "--show-commit-date",
                                       "--show-commit-author",
                                       "--hide-date-time",
@@ -216,6 +217,19 @@ Options parse_options(int argc, char* argv[]) {
         }
     }
     opts.kill_all = parser.has_flag("--kill-all") || cfg_flag("--kill-all");
+    opts.rescan_new = parser.has_flag("--rescan-new") || cfg_flag("--rescan-new");
+    if (opts.rescan_new) {
+        std::string val = parser.get_option("--rescan-new");
+        if (val.empty() && cfg_opts.count("--rescan-new"))
+            val = cfg_opt("--rescan-new");
+        if (!val.empty()) {
+            bool ok = false;
+            int mins = parse_int(val, 1, INT_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid value for --rescan-new");
+            opts.rescan_interval = std::chrono::minutes(mins);
+        }
+    }
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");

@@ -67,6 +67,8 @@ struct Options {
     int respawn_max = 0;
     std::chrono::minutes respawn_window{10};
     bool kill_all = false;
+    bool rescan_new = false;
+    std::chrono::minutes rescan_interval{5};
     bool use_syslog = false;
     int syslog_facility = 0;
     bool show_help = false;
