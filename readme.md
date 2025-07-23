@@ -31,15 +31,15 @@ Available options:
 - `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
 - `--log-dir <path>` – directory where pull logs will be written.
 - `--log-file <path>` – file for general messages.
-- `--ignore <dir>` – skip the given directory when collecting repositories. This option may be repeated.
-- `--recursive` – search subdirectories recursively for repositories.
+- `--ignore <dir>` (`-I`) – skip the given directory when collecting repositories. This option may be repeated.
+- `--recursive` (`-e`) – search subdirectories recursively for repositories.
 - `--max-depth <n>` – limit recursion depth; implies `--recursive`.
-- `--log-level <level>` – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
-- `--verbose` – shorthand for `--log-level DEBUG`.
-- `--concurrency <n>` – number of repositories processed in parallel (default: hardware concurrency).
-- `--threads <n>` – alias for `--concurrency`.
+- `--log-level <level>` (`-L`) – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+- `--verbose` (`-g`) – shorthand for `--log-level DEBUG`.
+- `--concurrency <n>` (`-n`) – number of repositories processed in parallel (default: hardware concurrency).
+- `--threads <n>` (`-t`) – alias for `--concurrency`.
 - `--single-thread` – run using a single worker thread.
-- `--max-threads <n>` – cap the scanning worker threads.
+- `--max-threads <n>` (`-M`) – cap the scanning worker threads.
 - `--cpu-percent <n>` – approximate CPU usage limit (1–100).
 - `--cpu-cores <mask>` – set CPU affinity mask (e.g. `0x3` binds to cores 0 and 1).
 - `--cpu-poll <s>` – how often to sample CPU usage in seconds (default 5).
@@ -47,16 +47,16 @@ Available options:
 - `--thread-poll <s>` – how often to sample thread count in seconds (default 5).
 - `--mem-limit <MB>` – abort if memory usage exceeds this amount.
 - `--check-only` – only check for updates without pulling.
-- `--no-hash-check` – always pull without comparing commit hashes first.
+- `--no-hash-check` (`-N`) – always pull without comparing commit hashes first.
 - `--no-cpu-tracker` – disable CPU usage display in the TUI.
 - `--no-mem-tracker` – disable memory usage display in the TUI.
 - `--no-thread-tracker` – disable thread count display in the TUI.
 - `--net-tracker` – show total network usage since startup.
 - `--disk-limit <KB/s>` – throttle disk reads and writes.
 - `--cli` – disable the TUI and only print log messages.
-- `--single-run` – perform one scan cycle and exit.
+- `--single-run` (`-u`) – perform one scan cycle and exit.
 - `--silent` – disable all console output; only logs are written.
-- `--force-pull` – discard local changes when pulling updates (alias: `--discard-dirty`).
+- `--force-pull` (`-f`) – discard local changes when pulling updates (alias: `--discard-dirty`).
 - `--remove-lock` – delete the `.autogitpull.lock` file in the root and exit.
 - `--debug-memory` – log container sizes and memory usage after each scan.
 - `--dump-state` – dump repository state when container size exceeds a limit.
@@ -64,7 +64,7 @@ Available options:
 - `--attach <name>` – connect to a running daemon started with the same name and print status updates.
 - `--background <name>` – run the tool in the background and allow reattachment.
 - `--reattach <name>` – connect to a background instance started with the same name.
-- `--persist` – automatically restart the process if it exits.
+- `--persist` (`-P`) – automatically restart the process if it exits.
 - `--help` – show the usage information and exit.
 
 Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` (alias: `--discard-dirty`) to reset such repositories to the remote state.
