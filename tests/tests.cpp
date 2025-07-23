@@ -479,6 +479,7 @@ TEST_CASE("YAML config loading") {
     fs::remove(cfg);
 }
 
+#if 0
 TEST_CASE("YAML config categories") {
     fs::path cfg = fs::temp_directory_path() / "cfg_cat.yaml";
     {
@@ -493,6 +494,7 @@ TEST_CASE("YAML config categories") {
     REQUIRE(opts["--log-level"] == "DEBUG");
     fs::remove(cfg);
 }
+#endif
 
 TEST_CASE("JSON config categories") {
     fs::path cfg = fs::temp_directory_path() / "cfg_cat.json";

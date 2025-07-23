@@ -10,7 +10,12 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
                       std::string& error) {
 #ifdef HAVE_YAMLCPP
     try {
-        YAML::Node root = YAML::LoadFile(path);
+        std::ifstream ifs(path);
+        if (!ifs) {
+            error = "Failed to open file";
+            return false;
+        }
+        YAML::Node root = YAML::Load(ifs);
         if (!root.IsMap()) {
             error = "Root YAML node is not a map";
             return false;
