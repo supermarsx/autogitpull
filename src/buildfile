@@ -1,4 +1,4 @@
-import libs = libgit2 yaml-cpp nlohmann-json
+import libs = libgit2%lib{git2} yaml-cpp%lib{yaml-cpp} nlohmann-json%lib{nlohmann_json}
 using rc
 
 
