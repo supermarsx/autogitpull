@@ -46,9 +46,9 @@ Available options:
 - `--mem-poll <s>` – how often to sample memory usage in seconds (default 5).
 - `--thread-poll <s>` – how often to sample thread count in seconds (default 5).
 - `--mem-limit <MB>` – abort if memory usage exceeds this amount.
-- `--check-only` – only check for updates without pulling.
+- `--check-only` (`-x`) – only check for updates without pulling.
 - `--no-hash-check` (`-N`) – always pull without comparing commit hashes first.
-- `--no-cpu-tracker` – disable CPU usage display in the TUI.
+- `--no-cpu-tracker` (`-X`) – disable CPU usage display in the TUI.
 - `--no-mem-tracker` – disable memory usage display in the TUI.
 - `--no-thread-tracker` – disable thread count display in the TUI.
 - `--net-tracker` – show total network usage since startup.
@@ -58,7 +58,7 @@ Available options:
 - `--silent` – disable all console output; only logs are written.
 - `--force-pull` (`-f`) – discard local changes when pulling updates (alias: `--discard-dirty`).
 - `--remove-lock` – delete the `.autogitpull.lock` file in the root and exit.
-- `--debug-memory` – log container sizes and memory usage after each scan.
+- `--debug-memory` (`-m`) – log container sizes and memory usage after each scan.
 - `--dump-state` – dump repository state when container size exceeds a limit.
 - `--dump-large <n>` – threshold for dumping containers with `--dump-state`.
 - `--attach <name>` – connect to a running daemon started with the same name and print status updates.
