@@ -23,7 +23,7 @@ jobs:
         run: ./scripts/install_deps.sh
 
       - name: Lint
-        run: b --for-each=test lint
+        run: make lint
 
       - name: Test
         run: b test
