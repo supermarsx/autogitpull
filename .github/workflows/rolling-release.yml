@@ -53,7 +53,7 @@ jobs:
 
       - name: Lint
         if: steps.check_releases.outputs.skip_build != 'true'
-        run: b --for-each=test lint
+        run: make lint
 
       - name: Build
         if: steps.check_releases.outputs.skip_build != 'true'

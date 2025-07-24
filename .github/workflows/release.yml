@@ -48,7 +48,7 @@ jobs:
 
 
       - name: Lint
-        run: b --for-each=test lint
+        run: make lint
 
 
       - name: Test
