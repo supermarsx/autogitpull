@@ -1,8 +1,5 @@
 import libs = libgit2%lib{git2} yaml-cpp%lib{yaml-cpp} nlohmann-json%lib{nlohmann_json}
-
-if ($cxx.target.class == 'windows')
-  using rc
-endif
+using rc
 
 
 lib_sources = git_utils logger resource_utils system_utils time_utils \
@@ -12,10 +9,7 @@ lib_sources = git_utils logger resource_utils system_utils time_utils \
 
 lib{autogitpull}: cxx{$lib_sources} $libs
 
-if ($cxx.target.class == 'windows')
-  rc{icon}: ../graphics/icon.rc
-  rc{version}: version.rc
-  exe{autogitpull}: cxx{autogitpull} lib{autogitpull} rc{icon} rc{version}
-else
-  exe{autogitpull}: cxx{autogitpull} lib{autogitpull}
-endif
+rc{icon}: ../graphics/icon.rc
+rc{version}: version.rc
+
+exe{autogitpull}: cxx{autogitpull} lib{autogitpull} rc{icon} rc{version}
