@@ -1,15 +1,15 @@
+#include <cstdlib>
+#include <atomic>
+#include <filesystem>
+#include <fstream>
+#include <map>
+#include <mutex>
+#include <set>
 #include <catch2/catch_test_macros.hpp>
 #include "git_utils.hpp"
 #include "repo.hpp"
 #include "resource_utils.hpp"
 #include "scanner.hpp"
-#include <filesystem>
-#include <map>
-#include <set>
-#include <mutex>
-#include <atomic>
-#include <fstream>
-#include <cstdlib>
 
 namespace fs = std::filesystem;
 
