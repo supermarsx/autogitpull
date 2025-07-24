@@ -89,3 +89,13 @@ TEST_CASE("parse_options single repo") {
     Options opts = parse_options(3, const_cast<char**>(argv));
     REQUIRE(opts.single_repo);
 }
+
+TEST_CASE("parse_options short flags") {
+    const char* argv[] = {"prog", "path", "-x", "-m", "-w", "-X"};
+    Options opts = parse_options(6, const_cast<char**>(argv));
+    REQUIRE(opts.check_only);
+    REQUIRE(opts.debug_memory);
+    REQUIRE(opts.rescan_new);
+    REQUIRE_FALSE(opts.cpu_tracker);
+    REQUIRE(opts.rescan_interval == std::chrono::minutes(5));
+}

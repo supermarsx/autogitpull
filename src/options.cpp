@@ -143,7 +143,11 @@ Options parse_options(int argc, char* argv[]) {
                                                  {'e', "--recursive"},
                                                  {'H', "--hide-header"},
                                                  {'T', "--show-commit-date"},
-                                                 {'U', "--show-commit-author"}};
+                                                 {'U', "--show-commit-author"},
+                                                 {'x', "--check-only"},
+                                                 {'m', "--debug-memory"},
+                                                 {'w', "--rescan-new"},
+                                                 {'X', "--no-cpu-tracker"}};
     ArgParser parser(argc, argv, known, short_opts);
 
     auto cfg_flag = [&](const std::string& k) {

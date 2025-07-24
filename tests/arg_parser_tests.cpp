@@ -129,6 +129,20 @@ TEST_CASE("ArgParser daemon flags") {
     REQUIRE(parser2.has_flag("--uninstall-daemon"));
 }
 
+TEST_CASE("ArgParser new short flags") {
+    const char* argv[] = {"prog", "-x", "-m", "-w", "-X"};
+    ArgParser parser(5, const_cast<char**>(argv),
+                     {"--check-only", "--debug-memory", "--rescan-new", "--no-cpu-tracker"},
+                     {{'x', "--check-only"},
+                      {'m', "--debug-memory"},
+                      {'w', "--rescan-new"},
+                      {'X', "--no-cpu-tracker"}});
+    REQUIRE(parser.has_flag("--check-only"));
+    REQUIRE(parser.has_flag("--debug-memory"));
+    REQUIRE(parser.has_flag("--rescan-new"));
+    REQUIRE(parser.has_flag("--no-cpu-tracker"));
+}
+
 TEST_CASE("parse_int helper valid") {
     const char* argv[] = {"prog", "--num", "5"};
     ArgParser parser(3, const_cast<char**>(argv), {"--num"});
