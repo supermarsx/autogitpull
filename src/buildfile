@@ -1,6 +1,4 @@
 import libs = libgit2%lib{git2} yaml-cpp%lib{yaml-cpp} nlohmann-json%lib{nlohmann_json}
-using rc
-
 
 lib_sources = git_utils logger resource_utils system_utils time_utils \
               config_utils debug_utils scanner ui_loop options parse_utils \
@@ -9,7 +7,18 @@ lib_sources = git_utils logger resource_utils system_utils time_utils \
 
 lib{autogitpull}: cxx{$lib_sources} $libs
 
-rc{icon}: ../graphics/icon.rc
-rc{version}: version.rc
+# Windows resource files are only compiled on Windows targets. The rc
+# build2 module is unavailable on other platforms such as macOS.
+if ($cxx.target.class == 'windows')
+{
+  using rc
 
-exe{autogitpull}: cxx{autogitpull} lib{autogitpull} rc{icon} rc{version}
+  rc{icon}: ../graphics/icon.rc
+  rc{version}: version.rc
+
+  exe{autogitpull}: cxx{autogitpull} lib{autogitpull} rc{icon} rc{version}
+}
+else
+{
+  exe{autogitpull}: cxx{autogitpull} lib{autogitpull}
+}
