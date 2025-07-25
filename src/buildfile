@@ -1,4 +1,4 @@
-import libs = libgit2%lib{git2} yaml-cpp%lib{yaml-cpp} nlohmann-json%lib{nlohmann_json}
+import libs = libgit2%lib{git2} yaml-cpp%lib{yaml-cpp} nlohmann-json%lib{nlohmann_json} libz%lib{z}
 
 lib_sources = git_utils logger resource_utils system_utils time_utils \
               config_utils debug_utils scanner ui_loop options parse_utils \

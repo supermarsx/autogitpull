@@ -232,9 +232,10 @@ The resulting executable will appear in the `dist/` directory.
 
 Unit tests use [Catch2](https://github.com/catchorg/Catch2). If the library is
 not installed, CMake will automatically download it using `FetchContent`.
-`make test` requires the development packages for `libgit2`, `yaml-cpp` and
-`nlohmann-json`. Use `scripts/install_deps.sh` (Linux/macOS) or `scripts/install_deps.bat`
-(Windows) to install them before configuring and building the tests.
+`make test` requires the development packages for `libgit2`, `yaml-cpp`,
+`nlohmann-json` and `zlib`. Use `scripts/install_deps.sh` (Linux/macOS) or
+`scripts/install_deps.bat` (Windows) to install them before configuring and
+building the tests.
 Once the dependencies are in place, run `ctest`:
 
 ```bash
@@ -294,5 +295,5 @@ to **Checking** and later reflects the pull result.
 
 autogitpull is licensed under the MIT license (see `LICENSE`). The project
 bundles the license texts for its third-party dependencies under
-the `licenses/` directory, including `libgit2.txt`, `yaml-cpp.txt` and
-`nlohmann-json.txt`.
+the `licenses/` directory, including `libgit2.txt`, `yaml-cpp.txt`,
+`nlohmann-json.txt` and `zlib.txt`.

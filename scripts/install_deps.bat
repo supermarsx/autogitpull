@@ -9,6 +9,7 @@ rem Check if each dependency is installed under vcpkg
 set "LIBGIT2_INSTALLED=false"
 set "YAMLCPP_INSTALLED=false"
 set "JSON_INSTALLED=false"
+set "ZLIB_INSTALLED=false"
 
 if exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\git2.lib" (
     set "LIBGIT2_INSTALLED=true"
@@ -19,9 +20,12 @@ if exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\yaml-cpp.lib" (
 if exist "%VCPKG_ROOT%\installed\x64-windows-static\include\nlohmann\json.hpp" (
     set "JSON_INSTALLED=true"
 )
+if exist "%VCPKG_ROOT%\installed\x64-windows-static\lib\zlib.lib" (
+    set "ZLIB_INSTALLED=true"
+)
 
-if "%LIBGIT2_INSTALLED%"=="true" if "%YAMLCPP_INSTALLED%"=="true" if "%JSON_INSTALLED%"=="true" (
-    echo libgit2, yaml-cpp and nlohmann-json already installed.
+if "%LIBGIT2_INSTALLED%"=="true" if "%YAMLCPP_INSTALLED%"=="true" if "%JSON_INSTALLED%"=="true" if "%ZLIB_INSTALLED%"=="true" (
+    echo libgit2, yaml-cpp, nlohmann-json and zlib already installed.
     goto :eof
 )
 
@@ -29,6 +33,7 @@ set "PKGS="
 if "%LIBGIT2_INSTALLED%"=="false" set "PKGS=%PKGS% libgit2:x64-windows-static"
 if "%YAMLCPP_INSTALLED%"=="false" set "PKGS=%PKGS% yaml-cpp:x64-windows-static"
 if "%JSON_INSTALLED%"=="false" set "PKGS=%PKGS% nlohmann-json"
+if "%ZLIB_INSTALLED%"=="false" set "PKGS=%PKGS% zlib"
 
 if exist vcpkg (
     echo Installing%PKGS% via vcpkg...
