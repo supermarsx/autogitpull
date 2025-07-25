@@ -6,3 +6,4 @@ depends: libgit2
 depends: yaml-cpp
 depends: nlohmann-json
 depends: catch2
+depends: zlib
