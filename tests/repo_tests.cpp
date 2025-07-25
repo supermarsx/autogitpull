@@ -123,7 +123,7 @@ TEST_CASE("scan_repos respects concurrency limit") {
 
     std::thread t([&]() {
         scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false, fs::path(),
-                   true, true, concurrency, 0, 0, 0, 0, 0, true, false);
+                   true, true, concurrency, 0, 0, 0, 0, 0, true, false, true);
     });
     while (scanning) {
         max_seen = std::max(max_seen, read_thread_count());

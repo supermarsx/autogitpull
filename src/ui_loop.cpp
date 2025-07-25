@@ -373,7 +373,7 @@ int run_event_loop(const Options& opts) {
                 std::ref(action_mtx), opts.include_private, std::cref(opts.log_dir),
                 opts.check_only, opts.hash_check, concurrency, opts.cpu_percent_limit,
                 opts.mem_limit, opts.download_limit, opts.upload_limit, opts.disk_limit,
-                opts.silent, opts.force_pull);
+                opts.silent, opts.force_pull, opts.skip_timeout);
             countdown_ms = std::chrono::seconds(opts.interval);
         }
 #ifndef _WIN32

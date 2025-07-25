@@ -164,7 +164,8 @@ static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_on
 static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, RepoInfo>& repo_infos,
                          std::set<fs::path>& skip_repos, std::mutex& mtx, std::string& action,
                          std::mutex& action_mtx, const fs::path& log_dir, bool include_private,
-                         size_t down_limit, size_t up_limit, size_t disk_limit, bool force_pull) {
+                         size_t down_limit, size_t up_limit, size_t disk_limit, bool force_pull,
+                         bool skip_timeout) {
     {
         std::lock_guard<std::mutex> lk(action_mtx);
         action = "Pulling " + p.filename().string();
@@ -218,6 +219,13 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
     } else if (code == 3) {
         ri.status = RS_DIRTY;
         ri.message = "Local changes present";
+    } else if (code == git::TRY_PULL_TIMEOUT) {
+        ri.status = RS_ERROR;
+        ri.message = "Pull timed out";
+        if (skip_timeout)
+            skip_repos.insert(p);
+        if (logger_initialized())
+            log_error(p.string() + " pull timed out");
     } else {
         ri.status = RS_ERROR;
         ri.message = "Pull failed (see log)";
@@ -237,7 +245,8 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
-                  size_t up_limit, size_t disk_limit, bool silent, bool force_pull) {
+                  size_t up_limit, size_t disk_limit, bool silent, bool force_pull,
+                  bool skip_timeout) {
     if (!running)
         return;
     if (logger_initialized())
@@ -275,7 +284,8 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
             determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos);
         if (do_pull) {
             execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
-                         include_private, down_limit, up_limit, disk_limit, force_pull);
+                         include_private, down_limit, up_limit, disk_limit, force_pull,
+                         skip_timeout);
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
@@ -298,7 +308,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, size_t disk_limit, bool silent, bool force_pull) {
+                size_t up_limit, size_t disk_limit, bool silent, bool force_pull,
+                bool skip_timeout) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
@@ -326,7 +337,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                          include_private, log_dir, check_only, hash_check, down_limit, up_limit,
-                         disk_limit, silent, force_pull);
+                         disk_limit, silent, force_pull, skip_timeout);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;

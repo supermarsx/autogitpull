@@ -33,6 +33,7 @@ void print_help(const char* prog) {
         {"--single-repo", "-S", "", "Only monitor the specified root repo", "General"},
         {"--rescan-new", "-w", "<min>", "Rescan for new repos every N minutes (default 5)",
          "General"},
+        {"--dont-skip-timeouts", "", "", "Retry repositories that timeout", "General"},
         {"--silent", "-s", "", "Disable console output", "General"},
         {"--attach", "-A", "<name>", "Attach to daemon and show status", "General"},
         {"--background", "-b", "<name>", "Run in background with attach name", "General"},
