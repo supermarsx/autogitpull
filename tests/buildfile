@@ -1,5 +1,5 @@
-import libs =../ src / lib{autogitpull } catch2
+import libs = ../src/lib{autogitpull} catch2
 
-    testexe{autogitpull - tests } :cxx{arg_parser_tests.cpp options_tests.cpp config_tests.cpp repo_tests.cpp process_tests.cpp utils_tests.cpp memory_leak.cpp }../ src / lib{autogitpull }
+testexe{autogitpull-tests}: cxx{arg_parser_tests.cpp options_tests.cpp config_tests.cpp repo_tests.cpp process_tests.cpp utils_tests.cpp memory_leak.cpp} ../src/lib{autogitpull}
 
-                                       test{autogitpull - tests } :testexe{autogitpull - tests }
+test{autogitpull-tests}: testexe{autogitpull-tests}
