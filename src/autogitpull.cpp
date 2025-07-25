@@ -16,6 +16,8 @@ int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
         Options opts = parse_options(argc, argv);
+        if (opts.pull_timeout.count() > 0)
+            git::set_libgit_timeout(static_cast<unsigned int>(opts.pull_timeout.count()));
         if (opts.show_help) {
             print_help(argv[0]);
             return 0;

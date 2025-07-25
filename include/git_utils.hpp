@@ -21,6 +21,8 @@ struct GitInitGuard {
     ~GitInitGuard(); ///< Calls `git_libgit2_shutdown()`
 };
 
+void set_libgit_timeout(unsigned int seconds);
+
 // RAII wrappers for libgit2 resources
 template <typename T, void (*Free)(T*)> struct GitHandle {
     T* h;

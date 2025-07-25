@@ -10,6 +10,14 @@ using namespace std;
 
 namespace git {
 
+static unsigned int g_libgit_timeout = 0;
+
+void set_libgit_timeout(unsigned int seconds) {
+    g_libgit_timeout = seconds;
+    if (g_libgit_timeout > 0)
+        git_libgit2_opts(GIT_OPT_SET_TIMEOUT, g_libgit_timeout);
+}
+
 struct ProgressData {
     const std::function<void(int)>* cb;
     std::chrono::steady_clock::time_point start;
@@ -29,7 +37,11 @@ static int credential_cb(git_credential** out, const char* url, const char* user
     return git_credential_default_new(out);
 }
 
-GitInitGuard::GitInitGuard() { git_libgit2_init(); }
+GitInitGuard::GitInitGuard() {
+    git_libgit2_init();
+    if (g_libgit_timeout > 0)
+        git_libgit2_opts(GIT_OPT_SET_TIMEOUT, g_libgit_timeout);
+}
 
 GitInitGuard::~GitInitGuard() { git_libgit2_shutdown(); }
 

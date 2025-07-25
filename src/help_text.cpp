@@ -88,6 +88,7 @@ void print_help(const char* prog) {
         {"--vmem", "", "", "Show virtual memory usage", "Tracking"},
         {"--syslog", "", "", "Log to syslog", "Logging"},
         {"--syslog-facility", "", "<n>", "Syslog facility", "Logging"},
+        {"--pull-timeout", "-O", "<sec>", "Network operation timeout", "General"},
         {"--help", "-h", "", "Show this message", "General"}};
 
     std::map<std::string, std::vector<const OptionInfo*>> groups;
