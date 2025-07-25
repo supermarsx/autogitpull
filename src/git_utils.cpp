@@ -228,8 +228,13 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         if (auth_failed && e && e->message &&
             std::string(e->message).find("auth") != std::string::npos)
             *auth_failed = true;
-        out_pull_log = "Fetch failed";
+        std::string msg = "Fetch failed";
+        if (e && e->message)
+            msg = e->message;
+        out_pull_log = msg;
         finalize();
+        if (msg.find("timed out") != std::string::npos || msg.find("timeout") != std::string::npos)
+            return TRY_PULL_TIMEOUT;
         return 2;
     }
     git_oid remote_oid;

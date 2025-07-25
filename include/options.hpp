@@ -71,6 +71,7 @@ struct Options {
     std::chrono::minutes rescan_interval{5};
     bool use_syslog = false;
     int syslog_facility = 0;
+    bool skip_timeout = true;
     bool show_help = false;
     bool print_version = false;
     enum SortMode { DEFAULT, ALPHA, REVERSE } sort_mode = DEFAULT;

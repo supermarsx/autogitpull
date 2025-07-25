@@ -99,3 +99,9 @@ TEST_CASE("parse_options short flags") {
     REQUIRE_FALSE(opts.cpu_tracker);
     REQUIRE(opts.rescan_interval == std::chrono::minutes(5));
 }
+
+TEST_CASE("parse_options dont skip timeouts") {
+    const char* argv[] = {"prog", "path", "--dont-skip-timeouts"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE_FALSE(opts.skip_timeout);
+}

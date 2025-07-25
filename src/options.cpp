@@ -108,7 +108,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--color",
                                       "--row-order",
                                       "--syslog",
-                                      "--syslog-facility"};
+                                      "--syslog-facility",
+                                      "--dont-skip-timeouts"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
                                                  {'v', "--show-version"},
@@ -538,6 +539,8 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Invalid value for --syslog-facility");
         opts.syslog_facility = fac;
     }
+    opts.skip_timeout =
+        !(parser.has_flag("--dont-skip-timeouts") || cfg_flag("--dont-skip-timeouts"));
     if (parser.has_flag("--root") || cfg_opts.count("--root")) {
         std::string val = parser.get_option("--root");
         if (val.empty())

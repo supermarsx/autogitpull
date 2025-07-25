@@ -22,7 +22,7 @@ void process_repo(const std::filesystem::path& p,
                   std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                   bool include_private, const std::filesystem::path& log_dir, bool check_only,
                   bool hash_check, size_t down_limit, size_t up_limit, size_t disk_limit,
-                  bool silent, bool force_pull);
+                  bool silent, bool force_pull, bool skip_timeout);
 
 void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 std::map<std::filesystem::path, RepoInfo>& repo_infos,
@@ -31,6 +31,6 @@ void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 std::mutex& action_mtx, bool include_private, const std::filesystem::path& log_dir,
                 bool check_only, bool hash_check, size_t concurrency, int cpu_percent_limit,
                 size_t mem_limit, size_t down_limit, size_t up_limit, size_t disk_limit,
-                bool silent, bool force_pull);
+                bool silent, bool force_pull, bool skip_timeout);
 
 #endif // SCANNER_HPP
