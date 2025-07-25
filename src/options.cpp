@@ -109,6 +109,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--row-order",
                                       "--syslog",
                                       "--syslog-facility",
+                                      "--pull-timeout",
                                       "--dont-skip-timeouts"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
@@ -148,7 +149,8 @@ Options parse_options(int argc, char* argv[]) {
                                                  {'x', "--check-only"},
                                                  {'m', "--debug-memory"},
                                                  {'w', "--rescan-new"},
-                                                 {'X', "--no-cpu-tracker"}};
+                                                 {'X', "--no-cpu-tracker"},
+                                                 {'O', "--pull-timeout"}};
     ArgParser parser(argc, argv, known, short_opts);
 
     auto cfg_flag = [&](const std::string& k) {
@@ -538,6 +540,16 @@ Options parse_options(int argc, char* argv[]) {
         if (!ok2)
             throw std::runtime_error("Invalid value for --syslog-facility");
         opts.syslog_facility = fac;
+    }
+    if (parser.has_flag("--pull-timeout") || cfg_opts.count("--pull-timeout")) {
+        std::string val = parser.get_option("--pull-timeout");
+        if (val.empty())
+            val = cfg_opt("--pull-timeout");
+        bool ok2 = false;
+        int sec = parse_int(val, 1, INT_MAX, ok2);
+        if (!ok2)
+            throw std::runtime_error("Invalid value for --pull-timeout");
+        opts.pull_timeout = std::chrono::seconds(sec);
     }
     opts.skip_timeout =
         !(parser.has_flag("--dont-skip-timeouts") || cfg_flag("--dont-skip-timeouts"));
