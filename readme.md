@@ -4,6 +4,8 @@
 
 Automatic Git Puller & Monitor
 
+Tested and working on MacOS, Ubuntu and Windows
+
 `autogitpull` scans a directory of Git repositories, pulls updates on a schedule
 and shows progress either in an interactive TUI or with plain console output.
 
