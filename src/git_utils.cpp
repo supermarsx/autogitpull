@@ -14,8 +14,11 @@ static unsigned int g_libgit_timeout = 0;
 
 void set_libgit_timeout(unsigned int seconds) {
     g_libgit_timeout = seconds;
-    if (g_libgit_timeout > 0)
+    if (g_libgit_timeout > 0) {
+#ifdef GIT_OPT_SET_TIMEOUT
         git_libgit2_opts(GIT_OPT_SET_TIMEOUT, g_libgit_timeout);
+#endif
+    }
 }
 
 struct ProgressData {
@@ -39,8 +42,11 @@ static int credential_cb(git_credential** out, const char* url, const char* user
 
 GitInitGuard::GitInitGuard() {
     git_libgit2_init();
-    if (g_libgit_timeout > 0)
+    if (g_libgit_timeout > 0) {
+#ifdef GIT_OPT_SET_TIMEOUT
         git_libgit2_opts(GIT_OPT_SET_TIMEOUT, g_libgit_timeout);
+#endif
+    }
 }
 
 GitInitGuard::~GitInitGuard() { git_libgit2_shutdown(); }

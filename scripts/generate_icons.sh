@@ -6,8 +6,13 @@ echo "Generating platform icons..."
 SRC="$(dirname "$0")/../graphics/icon.png"
 DST_DIR="$(dirname "$0")/../graphics"
 
-# Ensure ImageMagick's magick is available
-if ! command -v magick >/dev/null; then
+# Determine which ImageMagick CLI is available
+MAGICK_CMD=""
+if command -v magick >/dev/null; then
+    MAGICK_CMD="magick"
+elif command -v convert >/dev/null; then
+    MAGICK_CMD="convert"
+else
     echo "ImageMagick not found. Attempting package installation..."
     if command -v apt-get >/dev/null; then
         sudo apt-get update && sudo apt-get install -y imagemagick
@@ -19,6 +24,15 @@ if ! command -v magick >/dev/null; then
         echo "No supported package manager found; please install ImageMagick manually." >&2
         exit 1
     fi
+
+    if command -v magick >/dev/null; then
+        MAGICK_CMD="magick"
+    elif command -v convert >/dev/null; then
+        MAGICK_CMD="convert"
+    else
+        echo "ImageMagick installation failed or not in PATH." >&2
+        exit 1
+    fi
 fi
 
 mkdir -p "$DST_DIR"
@@ -26,27 +40,27 @@ cd "$DST_DIR"
 
 # Windows ICO
 if [ ! -f icon.ico ]; then
-    magick "$SRC" -resize 16x16 icon_16.png
-    magick "$SRC" -resize 32x32 icon_32.png
-    magick "$SRC" -resize 48x48 icon_48.png
-    magick "$SRC" -resize 256x256 icon_256.png
-    magick icon_16.png icon_32.png icon_48.png icon_256.png icon.ico
+    "$MAGICK_CMD" "$SRC" -resize 16x16 icon_16.png
+    "$MAGICK_CMD" "$SRC" -resize 32x32 icon_32.png
+    "$MAGICK_CMD" "$SRC" -resize 48x48 icon_48.png
+    "$MAGICK_CMD" "$SRC" -resize 256x256 icon_256.png
+    "$MAGICK_CMD" icon_16.png icon_32.png icon_48.png icon_256.png icon.ico
 fi
 
 # macOS ICNS
 if [ ! -f icon.icns ]; then
     ICONSET=icon.iconset
     mkdir -p "$ICONSET"
-    magick "$SRC" -resize 16x16 "$ICONSET/icon_16x16.png"
-    magick "$SRC" -resize 32x32 "$ICONSET/icon_16x16@2x.png"
-    magick "$SRC" -resize 32x32 "$ICONSET/icon_32x32.png"
-    magick "$SRC" -resize 64x64 "$ICONSET/icon_32x32@2x.png"
-    magick "$SRC" -resize 128x128 "$ICONSET/icon_128x128.png"
-    magick "$SRC" -resize 256x256 "$ICONSET/icon_128x128@2x.png"
-    magick "$SRC" -resize 256x256 "$ICONSET/icon_256x256.png"
-    magick "$SRC" -resize 512x512 "$ICONSET/icon_256x256@2x.png"
-    magick "$SRC" -resize 512x512 "$ICONSET/icon_512x512.png"
-    magick "$SRC" -resize 1024x1024 "$ICONSET/icon_512x512@2x.png"
+    "$MAGICK_CMD" "$SRC" -resize 16x16 "$ICONSET/icon_16x16.png"
+    "$MAGICK_CMD" "$SRC" -resize 32x32 "$ICONSET/icon_16x16@2x.png"
+    "$MAGICK_CMD" "$SRC" -resize 32x32 "$ICONSET/icon_32x32.png"
+    "$MAGICK_CMD" "$SRC" -resize 64x64 "$ICONSET/icon_32x32@2x.png"
+    "$MAGICK_CMD" "$SRC" -resize 128x128 "$ICONSET/icon_128x128.png"
+    "$MAGICK_CMD" "$SRC" -resize 256x256 "$ICONSET/icon_128x128@2x.png"
+    "$MAGICK_CMD" "$SRC" -resize 256x256 "$ICONSET/icon_256x256.png"
+    "$MAGICK_CMD" "$SRC" -resize 512x512 "$ICONSET/icon_256x256@2x.png"
+    "$MAGICK_CMD" "$SRC" -resize 512x512 "$ICONSET/icon_512x512.png"
+    "$MAGICK_CMD" "$SRC" -resize 1024x1024 "$ICONSET/icon_512x512@2x.png"
     if command -v iconutil >/dev/null; then
         iconutil -c icns "$ICONSET" -o icon.icns
     elif command -v png2icns >/dev/null; then
@@ -61,7 +75,7 @@ fi
 # Linux PNGs
 for sz in 16 32 48 128 256; do
     if [ ! -f "icon_${sz}.png" ]; then
-        magick "$SRC" -resize ${sz}x${sz} "icon_${sz}.png"
+        "$MAGICK_CMD" "$SRC" -resize ${sz}x${sz} "icon_${sz}.png"
     fi
 done
 
