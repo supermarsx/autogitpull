@@ -36,12 +36,12 @@
 #include "options.hpp"
 #include "help_text.hpp"
 #include "lock_utils.hpp"
+#include "linux_daemon.hpp"
 #ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "linux_daemon.hpp"
 #else
 #include "windows_service.hpp"
 #endif
