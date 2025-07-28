@@ -1,69 +1,43 @@
-name: Release
+name : Release
 
-on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: '0 0 * * *'
+           on : push : branches : -main schedule : -cron : '0 0 * * *'
 
-permissions:
-  contents: write
+                                                           permissions : contents : write
 
-jobs:
-  build:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+                                                                                        jobs : build
+    : matrix : os : [ ubuntu - latest, windows - latest, macos - latest ] steps : -name
+    : Checkout repository uses : actions /
+                                 checkout @v4
 
-      - name: Set up C++ build environment
-        uses: aminya/setup-cpp@v1
+        - name : Set up C++ build environment uses : aminya / setup - cpp @v1
 
-      - name: Set up build2
-        uses: build2/setup-build2-github-action@v2
+        - name : Install dependencies shell : bash run : |
+                                                         if["$RUNNER_OS" = "Windows"];
+then scripts\install_deps.bat else./ scripts / install_deps.sh fi -
+        name : Install lint tools run
+    : pip install cpplint
 
-      - name: Install dependencies
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            scripts\install_deps.bat
-          else
-            ./scripts/install_deps.sh
-          fi
-      - name: Install lint tools
-        run: pip install cpplint
+      -
+      name : Install clang - format shell : bash run : |
+                                                       if["$RUNNER_OS" = "Linux"];
+then sudo apt - get update&& sudo apt - get install - y clang - format elif["$RUNNER_OS" = "macOS"];
+then brew install clang - format elif["$RUNNER_OS" = "Windows"];
+then choco install - y llvm fi
 
-      - name: Install clang-format
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            sudo apt-get update && sudo apt-get install -y clang-format
-          elif [ "$RUNNER_OS" = "macOS" ]; then
-            brew install clang-format
-          elif [ "$RUNNER_OS" = "Windows" ]; then
-            choco install -y llvm
-          fi
+        - name : Lint run : make lint
 
+                            -
+                            name : Test run : make test
 
-      - name: Lint
-        run: make lint
+                                              -
+                                              name : Build shell : bash run
+    : |
+      make
 
-
-      - name: Test
-        run: b test
-
-      - name: Build
-        shell: bash
-        run: |
-          b install config.install.root=dist
-
-      - name: Upload executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: autogitpull-${{ matrix.os }}
-          path: |
-            dist/bin/autogitpull
-            dist/bin/autogitpull.exe
-
+          - name : Upload executable uses : actions / upload -
+          artifact @v4 with : name : autogitpull - $ {
+    {
+        matrix.os
+    }
+}
+path : | dist / autogitpull dist / autogitpull.exe

@@ -111,3 +111,9 @@ TEST_CASE("parse_options pull timeout") {
     Options opts = parse_options(4, const_cast<char**>(argv));
     REQUIRE(opts.pull_timeout == std::chrono::seconds(60));
 }
+
+TEST_CASE("parse_options show repo count") {
+    const char* argv[] = {"prog", "path", "--show-repo-count"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.show_repo_count);
+}

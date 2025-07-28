@@ -95,13 +95,15 @@ std::string status_label(RepoStatus status) {
 }
 void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
-              const std::string& action, bool show_skipped, int runtime_sec) {
+              const std::string& action, bool show_skipped, bool show_repo_count, int runtime_sec) {
     std::cout << "Status: ";
     if (scanning)
         std::cout << action;
     else
         std::cout << "Idle";
     std::cout << " - Next scan in " << seconds_left << "s";
+    if (show_repo_count)
+        std::cout << " - Repos " << all_repos.size();
     if (runtime_sec >= 0)
         std::cout << " - Runtime " << runtime_sec << "s";
     std::cout << "\n";
@@ -195,9 +197,10 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
                  opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
                  opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem, opts.show_commit_date,
                  opts.show_commit_author, opts.no_colors, opts.custom_color, runtime_sec,
-                 opts.show_datetime_line, opts.show_header);
+                 opts.show_datetime_line, opts.show_header, opts.show_repo_count);
     } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
-        draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped, runtime_sec);
+        draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped,
+                 opts.show_repo_count, runtime_sec);
         cli_countdown_ms = opts.refresh_ms;
     }
 }
@@ -271,6 +274,12 @@ int run_event_loop(const Options& opts) {
     std::vector<fs::path> all_repos;
     std::map<fs::path, RepoInfo> repo_infos;
     prepare_repos(opts, all_repos, repo_infos);
+    if (all_repos.empty()) {
+        std::cerr << "No valid repositories found" << std::endl;
+        if (logger_initialized())
+            log_error("No valid repositories found");
+        return 1;
+    }
     std::set<fs::path> skip_repos;
     std::mutex mtx;
     std::atomic<bool> scanning(false);

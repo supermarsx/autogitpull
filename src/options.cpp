@@ -110,7 +110,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--syslog",
                                       "--syslog-facility",
                                       "--pull-timeout",
-                                      "--dont-skip-timeouts"};
+                                      "--dont-skip-timeouts",
+                                      "--show-repo-count"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
                                                  {'v', "--show-version"},
@@ -150,7 +151,8 @@ Options parse_options(int argc, char* argv[]) {
                                                  {'m', "--debug-memory"},
                                                  {'w', "--rescan-new"},
                                                  {'X', "--no-cpu-tracker"},
-                                                 {'O', "--pull-timeout"}};
+                                                 {'O', "--pull-timeout"},
+                                                 {'q', "--show-repo-count"}};
     ArgParser parser(argc, argv, known, short_opts);
 
     auto cfg_flag = [&](const std::string& k) {
@@ -511,6 +513,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.show_datetime_line =
         !(parser.has_flag("--hide-date-time") || cfg_flag("--hide-date-time"));
     opts.show_header = !(parser.has_flag("--hide-header") || cfg_flag("--hide-header"));
+    opts.show_repo_count = parser.has_flag("--show-repo-count") || cfg_flag("--show-repo-count");
     opts.show_vmem = parser.has_flag("--vmem") || cfg_flag("--vmem");
     opts.no_colors = parser.has_flag("--no-colors") || cfg_flag("--no-colors");
     if (parser.has_flag("--color") || cfg_opts.count("--color")) {

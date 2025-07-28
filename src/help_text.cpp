@@ -41,6 +41,7 @@ void print_help(const char* prog) {
         {"--show-runtime", "", "", "Display elapsed runtime", "General"},
         {"--max-runtime", "", "<sec>", "Exit after given runtime", "General"},
         {"--persist", "-P", "", "Keep running after exit", "General"},
+        {"--show-repo-count", "-q", "", "Show number of repos", "General"},
         {"--respawn-limit", "", "<n[,min]>", "Respawn limit within minutes", "General"},
         {"--check-only", "-x", "", "Only check for updates", "Actions"},
         {"--no-hash-check", "-N", "", "Always pull without hash check", "Actions"},

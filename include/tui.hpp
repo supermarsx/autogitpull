@@ -31,6 +31,6 @@ void draw_tui(const std::vector<std::filesystem::path>& all_repos,
               bool show_version, bool track_cpu, bool track_mem, bool track_threads, bool track_net,
               bool show_affinity, bool track_vmem, bool show_commit_date, bool show_commit_author,
               bool no_colors, const std::string& custom_color, int runtime_sec,
-              bool show_datetime_line, bool show_header);
+              bool show_datetime_line, bool show_header, bool show_repo_count);
 
 #endif // TUI_HPP
