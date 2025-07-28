@@ -111,7 +111,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--syslog",
                                       "--syslog-facility",
                                       "--pull-timeout",
-                                      "--dont-skip-timeouts"};
+                                      "--dont-skip-timeouts",
+                                      "--wait-empty"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
                                                  {'v', "--show-version"},
@@ -152,6 +153,10 @@ Options parse_options(int argc, char* argv[]) {
                                                  {'w', "--rescan-new"},
                                                  {'X', "--no-cpu-tracker"},
                                                  {'O', "--pull-timeout"},
+                                                 {'q', "--single-thread"},
+                                                 {'E', "--cpu-percent"},
+                                                 {'Y', "--mem-limit"},
+                                                 {'W', "--wait-empty"},
                                                  {'Z', "--show-repo-count"}};
     ArgParser parser(argc, argv, known, short_opts);
 
@@ -268,6 +273,7 @@ Options parse_options(int argc, char* argv[]) {
             opts.rescan_interval = std::chrono::minutes(mins);
         }
     }
+    opts.wait_empty = parser.has_flag("--wait-empty") || cfg_flag("--wait-empty");
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");

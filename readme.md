@@ -35,49 +35,81 @@ Most options have single-letter shorthands. Run `autogitpull --help` to see a co
 
 Available options:
 
-- `--include-private` – include private or non-GitHub repositories in the scan.
-- `--show-skipped` – display repositories that were skipped because they are non-GitHub or require authentication.
-- `--show-version` – display the program version in the TUI header.
-- `--version` – print the program version and exit.
-- `--interval <seconds>` – delay between automatic scans (default 30).
-- `--refresh-rate <ms>` – how often the TUI refreshes in milliseconds (default 250).
-- `--log-dir <path>` – directory where pull logs will be written.
-- `--log-file <path>` – file for general messages.
-- `--ignore <dir>` (`-I`) – skip the given directory when collecting repositories. This option may be repeated.
-- `--recursive` (`-e`) – search subdirectories recursively for repositories.
-- `--max-depth <n>` – limit recursion depth; implies `--recursive`.
-- `--log-level <level>` (`-L`) – minimum message level written to the log (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
-- `--verbose` (`-g`) – shorthand for `--log-level DEBUG`.
-- `--concurrency <n>` (`-n`) – number of repositories processed in parallel (default: hardware concurrency).
-- `--threads <n>` (`-t`) – alias for `--concurrency`.
-- `--single-thread` – run using a single worker thread.
-- `--max-threads <n>` (`-M`) – cap the scanning worker threads.
-- `--cpu-percent <n>` – approximate CPU usage limit (1–100).
-- `--cpu-cores <mask>` – set CPU affinity mask (e.g. `0x3` binds to cores 0 and 1).
-- `--cpu-poll <s>` – how often to sample CPU usage in seconds (default 5).
-- `--mem-poll <s>` – how often to sample memory usage in seconds (default 5).
-- `--thread-poll <s>` – how often to sample thread count in seconds (default 5).
-- `--mem-limit <MB>` – abort if memory usage exceeds this amount.
-- `--check-only` (`-x`) – only check for updates without pulling.
-- `--no-hash-check` (`-N`) – always pull without comparing commit hashes first.
-- `--no-cpu-tracker` (`-X`) – disable CPU usage display in the TUI.
-- `--no-mem-tracker` – disable memory usage display in the TUI.
-- `--no-thread-tracker` – disable thread count display in the TUI.
-- `--net-tracker` – show total network usage since startup.
-- `--disk-limit <KB/s>` – throttle disk reads and writes.
-- `--cli` – disable the TUI and only print log messages.
-- `--single-run` (`-u`) – perform one scan cycle and exit.
-- `--silent` – disable all console output; only logs are written.
-- `--force-pull` (`-f`) – discard local changes when pulling updates (alias: `--discard-dirty`).
-- `--remove-lock` – delete the `.autogitpull.lock` file in the root and exit.
-- `--debug-memory` (`-m`) – log container sizes and memory usage after each scan.
-- `--dump-state` – dump repository state when container size exceeds a limit.
-- `--dump-large <n>` – threshold for dumping containers with `--dump-state`.
-- `--attach <name>` – connect to a running daemon started with the same name and print status updates.
-- `--background <name>` – run the tool in the background and allow reattachment.
-- `--reattach <name>` – connect to a background instance started with the same name.
-- `--persist` (`-P`) – automatically restart the process if it exits.
-- `--help` – show the usage information and exit.
+- `--include-private` (`-p`) – Include private repositories.
+- `--show-skipped` (`-k`) – Show skipped repositories.
+- `--show-version` (`-v`) – Display program version in TUI.
+- `--version` (`-V`) – Print program version and exit.
+- `--interval` (`-i`) <sec> – Delay between scans.
+- `--refresh-rate` (`-r`) <ms> – TUI refresh rate.
+- `--recursive` (`-e`) – Scan subdirectories recursively.
+- `--max-depth` (`-D`) <n> – Limit recursive scan depth.
+- `--ignore` (`-I`) <dir> – Directory to ignore (repeatable).
+- `--config-yaml` (`-y`) <file> – Load options from YAML file.
+- `--config-json` (`-j`) <file> – Load options from JSON file.
+- `--root` (`-o`) <path> – Root folder of repositories.
+- `--cli` (`-c`) – Use console output.
+- `--single-run` (`-u`) – Run a single scan cycle and exit.
+- `--single-repo` (`-S`) – Only monitor the specified root repo.
+- `--rescan-new` (`-w`) <min> – Rescan for new repos every N minutes (default 5).
+- `--wait-empty` (`-W`) – Keep retrying when no repos are found.
+- `--dont-skip-timeouts` – Retry repositories that timeout.
+- `--silent` (`-s`) – Disable console output.
+- `--attach` (`-A`) <name> – Attach to daemon and show status.
+- `--background` (`-b`) <name> – Run in background with attach name.
+- `--reattach` (`-B`) <name> – Reattach to background process.
+- `--show-runtime` – Display elapsed runtime.
+- `--show-repo-count` (`-Z`) – Display number of repositories.
+- `--max-runtime` <sec> – Exit after given runtime.
+- `--persist` (`-P`) – Keep running after exit.
+- `--respawn-limit` <n[,min]> – Respawn limit within minutes.
+- `--check-only` (`-x`) – Only check for updates.
+- `--no-hash-check` (`-N`) – Always pull without hash check.
+- `--force-pull` (`-f`) – Discard local changes when pulling.
+- `--discard-dirty` – Alias for --force-pull.
+- `--install-daemon` – Install background daemon.
+- `--uninstall-daemon` – Uninstall background daemon.
+- `--daemon-config` <file> – Config file for daemon install.
+- `--install-service` – Install system service.
+- `--uninstall-service` – Uninstall system service.
+- `--service-config` <file> – Config file for service install.
+- `--remove-lock` (`-R`) – Remove directory lock file and exit.
+- `--kill-all` – Terminate running instance and exit.
+- `--log-dir` (`-d`) <path> – Directory for pull logs.
+- `--log-file` (`-l`) <path> – File for general logs.
+- `--log-level` (`-L`) <level> – Set log verbosity.
+- `--verbose` (`-g`) – Shorthand for --log-level DEBUG.
+- `--debug-memory` (`-m`) – Log memory usage each scan.
+- `--dump-state` – Dump container state when large.
+- `--dump-large` <n> – Dump threshold for --dump-state.
+- `--concurrency` (`-n`) <n> – Number of worker threads.
+- `--threads` (`-t`) <n> – Alias for --concurrency.
+- `--single-thread` (`-q`) – Run using a single worker thread.
+- `--max-threads` (`-M`) <n> – Cap the scanning worker threads.
+- `--cpu-poll` <s> – CPU usage polling interval.
+- `--mem-poll` <s> – Memory usage polling interval.
+- `--thread-poll` <s> – Thread count polling interval.
+- `--no-cpu-tracker` (`-X`) – Disable CPU usage tracker.
+- `--no-mem-tracker` – Disable memory usage tracker.
+- `--no-thread-tracker` – Disable thread tracker.
+- `--net-tracker` – Track network usage.
+- `--cpu-percent` (`-E`) <n> – Approximate CPU usage limit.
+- `--cpu-cores` <mask> – Set CPU affinity mask.
+- `--mem-limit` (`-Y`) <MB> – Abort if memory exceeds this amount.
+- `--download-limit` <KB/s> – Limit total download rate.
+- `--upload-limit` <KB/s> – Limit total upload rate.
+- `--show-commit-date` (`-T`) – Display last commit time.
+- `--disk-limit` <KB/s> – Limit disk throughput.
+- `--show-commit-author` (`-U`) – Display last commit author.
+- `--hide-date-time` – Hide date/time line in TUI.
+- `--hide-header` (`-H`) – Hide status header.
+- `--row-order` <mode> – Row ordering (alpha/reverse).
+- `--color` <ansi> – Override status color.
+- `--no-colors` (`-C`) – Disable ANSI colors.
+- `--vmem` – Show virtual memory usage.
+- `--syslog` – Log to syslog.
+- `--syslog-facility` <n> – Syslog facility.
+- `--pull-timeout` (`-O`) <sec> – Network operation timeout.
+- `--help` (`-h`) – Show this message.
 
 Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` (alias: `--discard-dirty`) to reset such repositories to the remote state.
 
