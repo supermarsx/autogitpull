@@ -409,11 +409,15 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
     if (debugMemory || dumpState) {
         size_t mem_after = procutil::get_memory_usage_mb();
         size_t virt_after = procutil::get_virtual_memory_kb();
+        long long mem_delta =
+            static_cast<long long>(mem_after) - static_cast<long long>(mem_before);
+        long long vmem_delta =
+            static_cast<long long>(virt_after) - static_cast<long long>(virt_before);
         log_debug("Memory before=" + std::to_string(mem_before) + "MB after=" +
-                  std::to_string(mem_after) + "MB delta=" + std::to_string(mem_after - mem_before) +
+                  std::to_string(mem_after) + "MB delta=" + std::to_string(mem_delta) +
                   "MB vmem_before=" + std::to_string(virt_before / 1024) +
                   "MB vmem_after=" + std::to_string(virt_after / 1024) +
-                  "MB vmem_delta=" + std::to_string((virt_after - virt_before) / 1024) + "MB");
+                  "MB vmem_delta=" + std::to_string(vmem_delta / 1024) + "MB");
         debug_utils::log_memory_delta_mb(mem_after, last_mem);
         debug_utils::log_container_size("repo_infos", repo_infos);
         debug_utils::log_container_size("skip_repos", skip_repos);
