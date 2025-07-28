@@ -61,7 +61,7 @@ Available options:
 - `--show-repo-count` (`-Z`) – Display number of repositories.
 - `--max-runtime` <sec> – Exit after given runtime.
 - `--persist` (`-P`) – Keep running after exit.
-- `--respawn-limit` <n[,min]> – Respawn limit within minutes.
+- `--respawn-limit` `<n[,min]>` – Respawn limit within minutes.
 - `--check-only` (`-x`) – Only check for updates.
 - `--no-hash-check` (`-N`) – Always pull without hash check.
 - `--force-pull` (`-f`) – Discard local changes when pulling.
@@ -85,9 +85,9 @@ Available options:
 - `--threads` (`-t`) <n> – Alias for --concurrency.
 - `--single-thread` (`-q`) – Run using a single worker thread.
 - `--max-threads` (`-M`) <n> – Cap the scanning worker threads.
-- `--cpu-poll` <s> – CPU usage polling interval.
-- `--mem-poll` <s> – Memory usage polling interval.
-- `--thread-poll` <s> – Thread count polling interval.
+- `--cpu-poll` `<s>` – CPU usage polling interval.
+- `--mem-poll` `<s>` – Memory usage polling interval.
+- `--thread-poll` `<s>` – Thread count polling interval.
 - `--no-cpu-tracker` (`-X`) – Disable CPU usage tracker.
 - `--no-mem-tracker` – Disable memory usage tracker.
 - `--no-thread-tracker` – Disable thread tracker.
