@@ -32,6 +32,7 @@ and shows progress either in an interactive TUI or with plain console output.
 - To only show dates from repos that have been synced during the current session use `--session-dates-only`.
 
 Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` (alias: `--discard-dirty`) to reset such repositories to the remote state.
+
 ### Usage options
 
 Most options have single-letter shorthands. Run `autogitpull --help` for a complete list.
