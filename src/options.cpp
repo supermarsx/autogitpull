@@ -120,7 +120,9 @@ Options parse_options(int argc, char* argv[]) {
                                       "--rerun-last",
                                       "--save-args",
                                       "--enable-history",
-                                      "--session-dates-only"};
+                                      "--session-dates-only",
+                                      "--print-skipped",
+                                      "--show-pull-author"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
                                                  {'v', "--show-version"},
@@ -298,6 +300,8 @@ Options parse_options(int argc, char* argv[]) {
     opts.enable_history = parser.has_flag("--enable-history") || cfg_flag("--enable-history");
     opts.session_dates_only =
         parser.has_flag("--session-dates-only") || cfg_flag("--session-dates-only");
+    opts.cli_print_skipped = parser.has_flag("--print-skipped") || cfg_flag("--print-skipped");
+    opts.show_pull_author = parser.has_flag("--show-pull-author") || cfg_flag("--show-pull-author");
     opts.wait_empty = parser.has_flag("--wait-empty") || cfg_flag("--wait-empty");
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
