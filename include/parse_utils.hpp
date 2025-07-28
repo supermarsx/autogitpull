@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <string>
+#include <chrono>
 #include "arg_parser.hpp"
 
 int parse_int(const ArgParser& parser, const std::string& flag, int min, int max, bool& ok);
@@ -17,5 +18,11 @@ unsigned long long parse_ull(const ArgParser& parser, const std::string& flag,
                              unsigned long long min, unsigned long long max, bool& ok);
 unsigned long long parse_ull(const std::string& value, unsigned long long min,
                              unsigned long long max, bool& ok);
+
+// Parse a duration string like "30m" or "2h".
+// Supported units: s (seconds), m (minutes), h (hours),
+// d (days), w (weeks), M (months ~30 days).
+std::chrono::seconds parse_duration(const ArgParser& parser, const std::string& flag, bool& ok);
+std::chrono::seconds parse_duration(const std::string& value, bool& ok);
 
 #endif // PARSE_UTILS_HPP

@@ -320,6 +320,22 @@ string get_last_commit_date(const fs::path& repo) {
     return string(buf);
 }
 
+std::time_t get_last_commit_time(const fs::path& repo) {
+    git_repository* raw = nullptr;
+    if (git_repository_open(&raw, repo.string().c_str()) != 0)
+        return 0;
+    repo_ptr r(raw);
+    git_oid oid;
+    if (git_reference_name_to_id(&oid, r.get(), "HEAD") != 0)
+        return 0;
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, r.get(), &oid) != 0)
+        return 0;
+    object_ptr cmt(reinterpret_cast<git_object*>(commit));
+    git_time_t t = git_commit_time(commit);
+    return static_cast<std::time_t>(t);
+}
+
 string get_last_commit_author(const fs::path& repo) {
     git_repository* raw = nullptr;
     if (git_repository_open(&raw, repo.string().c_str()) != 0)

@@ -112,7 +112,14 @@ Options parse_options(int argc, char* argv[]) {
                                       "--syslog-facility",
                                       "--pull-timeout",
                                       "--dont-skip-timeouts",
-                                      "--wait-empty"};
+                                      "--wait-empty",
+                                      "--updated-since",
+                                      "--auto-config",
+                                      "--auto-reload-config",
+                                      "--rerun-last",
+                                      "--save-args",
+                                      "--enable-history",
+                                      "--session-dates-only"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
                                                  {'v', "--show-version"},
@@ -273,6 +280,23 @@ Options parse_options(int argc, char* argv[]) {
             opts.rescan_interval = std::chrono::minutes(mins);
         }
     }
+    if (parser.has_flag("--updated-since") || cfg_opts.count("--updated-since")) {
+        std::string val = parser.get_option("--updated-since");
+        if (val.empty())
+            val = cfg_opt("--updated-since");
+        bool ok = false;
+        opts.updated_since = parse_duration(val, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --updated-since");
+    }
+    opts.auto_config = parser.has_flag("--auto-config") || cfg_flag("--auto-config");
+    opts.auto_reload_config =
+        parser.has_flag("--auto-reload-config") || cfg_flag("--auto-reload-config");
+    opts.rerun_last = parser.has_flag("--rerun-last") || cfg_flag("--rerun-last");
+    opts.save_args = parser.has_flag("--save-args") || cfg_flag("--save-args");
+    opts.enable_history = parser.has_flag("--enable-history") || cfg_flag("--enable-history");
+    opts.session_dates_only =
+        parser.has_flag("--session-dates-only") || cfg_flag("--session-dates-only");
     opts.wait_empty = parser.has_flag("--wait-empty") || cfg_flag("--wait-empty");
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");

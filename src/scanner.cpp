@@ -6,6 +6,7 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <ctime>
 
 #include "git_utils.hpp"
 #include "logger.hpp"
@@ -206,6 +207,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
         ri.commit = git::get_local_hash(p);
         if (ri.commit.size() > 7)
             ri.commit = ri.commit.substr(0, 7);
+        ri.pulled = true;
         if (logger_initialized())
             log_info(p.string() + " pulled successfully");
     } else if (code == 1) {
@@ -214,6 +216,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
         ri.commit = git::get_local_hash(p);
         if (ri.commit.size() > 7)
             ri.commit = ri.commit.substr(0, 7);
+        ri.pulled = true;
         if (logger_initialized())
             log_info(p.string() + " package-lock reset and pulled");
     } else if (code == 3) {
@@ -246,7 +249,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
                   size_t up_limit, size_t disk_limit, bool silent, bool force_pull,
-                  bool skip_timeout) {
+                  bool skip_timeout, std::chrono::seconds updated_since) {
     if (!running)
         return;
     if (logger_initialized())
@@ -279,6 +282,17 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         }
         ri.commit_author = git::get_last_commit_author(p);
         ri.commit_date = git::get_last_commit_date(p);
+        if (updated_since.count() > 0) {
+            std::time_t ct = git::get_last_commit_time(p);
+            std::time_t now = std::time(nullptr);
+            if (ct == 0 || now - ct > updated_since.count()) {
+                ri.status = RS_SKIPPED;
+                ri.message = "Older than limit";
+                std::lock_guard<std::mutex> lk(mtx);
+                repo_infos[p] = ri;
+                return;
+            }
+        }
 
         bool do_pull =
             determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos);
@@ -308,8 +322,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, size_t disk_limit, bool silent, bool force_pull,
-                bool skip_timeout) {
+                size_t up_limit, size_t disk_limit, bool silent, bool force_pull, bool skip_timeout,
+                std::chrono::seconds updated_since) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
@@ -337,7 +351,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                          include_private, log_dir, check_only, hash_check, down_limit, up_limit,
-                         disk_limit, silent, force_pull, skip_timeout);
+                         disk_limit, silent, force_pull, skip_timeout, updated_since);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;
