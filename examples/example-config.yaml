@@ -18,6 +18,13 @@ General:
   show-commit-date: false
   show-commit-author: false
   vmem: false
+  updated-since: ""
+  auto-config: false
+  auto-reload-config: false
+  rerun-last: false
+  save-args: false
+  enable-history: false
+  session-dates-only: false
 Logging:
   log-dir: logs
   log-file: autogitpull.log

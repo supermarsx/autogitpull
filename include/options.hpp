@@ -43,11 +43,17 @@ struct Options {
     bool show_commit_date = false;
     bool show_commit_author = false;
     bool show_repo_count = false;
+    bool session_dates_only = false;
     bool show_datetime_line = true;
     bool show_header = true;
     bool no_colors = false;
     std::string custom_color;
     std::vector<std::filesystem::path> ignore_dirs;
+    bool enable_history = false;
+    bool auto_config = false;
+    bool auto_reload_config = false;
+    bool rerun_last = false;
+    bool save_args = false;
     bool debug_memory = false;
     bool dump_state = false;
     size_t dump_threshold = 0;
@@ -70,6 +76,7 @@ struct Options {
     bool kill_all = false;
     bool rescan_new = false;
     std::chrono::minutes rescan_interval{5};
+    std::chrono::seconds updated_since{0};
     bool wait_empty = false;
     bool use_syslog = false;
     int syslog_facility = 0;

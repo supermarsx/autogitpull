@@ -34,6 +34,7 @@ struct RepoInfo {
     std::string last_pull_log;      ///< Result of last pull attempt
     int progress = 0;               ///< Fetch progress percentage
     bool auth_failed = false;       ///< Authentication error flag
+    bool pulled = false;            ///< Pulled during this session
 };
 
 #endif // REPO_HPP

@@ -95,7 +95,8 @@ std::string status_label(RepoStatus status) {
 }
 void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
-              const std::string& action, bool show_skipped, int runtime_sec, bool show_repo_count) {
+              const std::string& action, bool show_skipped, int runtime_sec, bool show_repo_count,
+              bool session_dates_only) {
     if (show_repo_count)
         std::cout << "Repos: " << all_repos.size() << "\n";
     std::cout << "Status: ";
@@ -123,7 +124,8 @@ void draw_cli(const std::vector<fs::path>& all_repos,
                 std::cout << "@" << ri.commit;
             std::cout << ")";
         }
-        if (!ri.commit_author.empty() || !ri.commit_date.empty()) {
+        if ((!session_dates_only || ri.pulled) &&
+            (!ri.commit_author.empty() || !ri.commit_date.empty())) {
             std::cout << " {";
             bool first = true;
             if (!ri.commit_author.empty()) {
@@ -196,11 +198,12 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
         draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act, opts.show_skipped,
                  opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
                  opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem, opts.show_commit_date,
-                 opts.show_commit_author, opts.no_colors, opts.custom_color, runtime_sec,
-                 opts.show_datetime_line, opts.show_header, opts.show_repo_count);
+                 opts.show_commit_author, opts.session_dates_only, opts.no_colors,
+                 opts.custom_color, runtime_sec, opts.show_datetime_line, opts.show_header,
+                 opts.show_repo_count);
     } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
         draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped, runtime_sec,
-                 opts.show_repo_count);
+                 opts.show_repo_count, opts.session_dates_only);
         cli_countdown_ms = opts.refresh_ms;
     }
 }
@@ -397,7 +400,7 @@ int run_event_loop(const Options& opts) {
                 std::ref(action_mtx), opts.include_private, std::cref(opts.log_dir),
                 opts.check_only, opts.hash_check, concurrency, opts.cpu_percent_limit,
                 opts.mem_limit, opts.download_limit, opts.upload_limit, opts.disk_limit,
-                opts.silent, opts.force_pull, opts.skip_timeout);
+                opts.silent, opts.force_pull, opts.skip_timeout, opts.updated_since);
             countdown_ms = std::chrono::seconds(opts.interval);
         }
 #ifndef _WIN32

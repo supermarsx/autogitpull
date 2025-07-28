@@ -1,5 +1,7 @@
 #include "parse_utils.hpp"
 #include <limits>
+#include <chrono>
+#include <cctype>
 
 int parse_int(const std::string& value, int min, int max, bool& ok) {
     ok = false;
@@ -87,4 +89,50 @@ unsigned long long parse_ull(const ArgParser& parser, const std::string& flag,
         return 0;
     }
     return parse_ull(parser.get_option(flag), min, max, ok);
+}
+
+std::chrono::seconds parse_duration(const std::string& value, bool& ok) {
+    ok = false;
+    if (value.empty())
+        return std::chrono::seconds(0);
+    char unit = value.back();
+    std::string num = value;
+    if (unit == 's' || unit == 'm' || unit == 'h' || unit == 'd' || unit == 'w' || unit == 'M') {
+        num.pop_back();
+    } else if (std::isdigit(static_cast<unsigned char>(unit))) {
+        unit = 's';
+    } else {
+        return std::chrono::seconds(0);
+    }
+    long long n = 0;
+    try {
+        n = std::stoll(num);
+    } catch (...) {
+        return std::chrono::seconds(0);
+    }
+    if (n < 0)
+        return std::chrono::seconds(0);
+    ok = true;
+    switch (unit) {
+    case 'm':
+        return std::chrono::minutes(n);
+    case 'h':
+        return std::chrono::hours(n);
+    case 'd':
+        return std::chrono::hours(24 * n);
+    case 'w':
+        return std::chrono::hours(24 * 7 * n);
+    case 'M':
+        return std::chrono::hours(24 * 30 * n);
+    default:
+        return std::chrono::seconds(n);
+    }
+}
+
+std::chrono::seconds parse_duration(const ArgParser& parser, const std::string& flag, bool& ok) {
+    if (!parser.has_flag(flag)) {
+        ok = false;
+        return std::chrono::seconds(0);
+    }
+    return parse_duration(parser.get_option(flag), ok);
 }
