@@ -12,6 +12,7 @@ struct Options {
     bool show_skipped = false;
     bool show_version = false;
     bool remove_lock = false;
+    bool ignore_lock = false;
     bool cli = false;
     bool silent = false;
     bool recursive_scan = false;

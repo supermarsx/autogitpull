@@ -201,10 +201,6 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
                  opts.show_commit_author, opts.session_dates_only, opts.no_colors,
                  opts.custom_color, runtime_sec, opts.show_datetime_line, opts.show_header,
                  opts.show_repo_count);
-    } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
-        draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped, runtime_sec,
-                 opts.show_repo_count, opts.session_dates_only);
-        cli_countdown_ms = opts.refresh_ms;
     }
 }
 int run_event_loop(const Options& opts) {
@@ -253,24 +249,30 @@ int run_event_loop(const Options& opts) {
         return 0;
     if (!fs::exists(opts.root) || !fs::is_directory(opts.root))
         throw std::runtime_error("Root path does not exist or is not a directory.");
+    std::unique_ptr<procutil::LockFileGuard> lock;
     fs::path lock_path = opts.root / ".autogitpull.lock";
-    procutil::LockFileGuard lock(lock_path);
-    if (!lock.locked) {
-        unsigned long pid = 0;
-        if (procutil::read_lock_pid(lock_path, pid) && procutil::process_running(pid)) {
-            std::cerr << "Another instance is already running for this directory (PID " << pid
-                      << ")\n";
-            return 1;
-        }
-        std::cerr << "Stale lock file found. Removing and continuing...\n";
-        procutil::release_lock_file(lock_path);
-        lock.locked = procutil::acquire_lock_file(lock_path);
-        if (!lock.locked) {
-            std::cerr << "Failed to acquire lock." << std::endl;
-            return 1;
+    if (!opts.ignore_lock) {
+        lock = std::make_unique<procutil::LockFileGuard>(lock_path);
+        if (!lock->locked) {
+            unsigned long pid = 0;
+            if (procutil::read_lock_pid(lock_path, pid) && procutil::process_running(pid)) {
+                std::cerr << "Another instance is already running for this directory (PID " << pid
+                          << ")\n";
+                return 1;
+            }
+            std::cerr << "Stale lock file found. Removing and continuing...\n";
+            procutil::release_lock_file(lock_path);
+            lock->locked = procutil::acquire_lock_file(lock_path);
+            if (!lock->locked) {
+                std::cerr << "Failed to acquire lock." << std::endl;
+                return 1;
+            }
         }
     }
     setup_environment(opts);
+    procutil::get_cpu_percent();
+    procutil::get_memory_usage_mb();
+    procutil::get_thread_count();
     setup_logging(opts);
     if (!opts.log_dir.empty())
         fs::create_directories(opts.log_dir);
@@ -400,7 +402,7 @@ int run_event_loop(const Options& opts) {
                 std::ref(action_mtx), opts.include_private, std::cref(opts.log_dir),
                 opts.check_only, opts.hash_check, concurrency, opts.cpu_percent_limit,
                 opts.mem_limit, opts.download_limit, opts.upload_limit, opts.disk_limit,
-                opts.silent, opts.force_pull, opts.skip_timeout, opts.updated_since);
+                opts.silent, opts.cli, opts.force_pull, opts.skip_timeout, opts.updated_since);
             countdown_ms = std::chrono::seconds(opts.interval);
         }
 #ifndef _WIN32

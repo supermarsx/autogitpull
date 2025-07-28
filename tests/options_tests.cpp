@@ -113,7 +113,13 @@ TEST_CASE("parse_options pull timeout") {
 }
 
 TEST_CASE("parse_options show repo count") {
-    const char* argv[] = {"prog", "--show-repo-count"};
-    Options opts = parse_options(2, const_cast<char**>(argv));
+    const char* argv[] = {"prog", "path", "--show-repo-count"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
     REQUIRE(opts.show_repo_count);
+}
+
+TEST_CASE("parse_options ignore lock") {
+    const char* argv[] = {"prog", "path", "--ignore-lock"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.ignore_lock);
 }
