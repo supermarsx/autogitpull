@@ -95,7 +95,9 @@ std::string status_label(RepoStatus status) {
 }
 void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
-              const std::string& action, bool show_skipped, int runtime_sec) {
+              const std::string& action, bool show_skipped, int runtime_sec, bool show_repo_count) {
+    if (show_repo_count)
+        std::cout << "Repos: " << all_repos.size() << "\n";
     std::cout << "Status: ";
     if (scanning)
         std::cout << action;
@@ -195,9 +197,10 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
                  opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
                  opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem, opts.show_commit_date,
                  opts.show_commit_author, opts.no_colors, opts.custom_color, runtime_sec,
-                 opts.show_datetime_line, opts.show_header);
+                 opts.show_datetime_line, opts.show_header, opts.show_repo_count);
     } else if (!opts.silent && opts.cli && cli_countdown_ms <= std::chrono::milliseconds(0)) {
-        draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped, runtime_sec);
+        draw_cli(all_repos, repo_infos, sec_left, scanning, act, opts.show_skipped, runtime_sec,
+                 opts.show_repo_count);
         cli_countdown_ms = opts.refresh_ms;
     }
 }
@@ -271,6 +274,15 @@ int run_event_loop(const Options& opts) {
     std::vector<fs::path> all_repos;
     std::map<fs::path, RepoInfo> repo_infos;
     prepare_repos(opts, all_repos, repo_infos);
+    size_t valid_count = 0;
+    for (const auto& p : all_repos) {
+        if (fs::is_directory(p) && git::is_git_repo(p))
+            ++valid_count;
+    }
+    if (valid_count == 0) {
+        std::cout << "No valid repositories found. Exiting." << std::endl;
+        return 0;
+    }
     std::set<fs::path> skip_repos;
     std::mutex mtx;
     std::atomic<bool> scanning(false);
