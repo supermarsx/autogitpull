@@ -1,4 +1,4 @@
-<img width="625" height="646" alt="image" src="https://github.com/user-attachments/assets/678db386-a9b8-4e39-9ae5-ef1ea762ae7d" />
+<img width="128" height="128" alt="icon_128" style="text-align:center" src="https://github.com/user-attachments/assets/6ed0496b-665d-403f-a50c-9c3fe725facd" />
 
 # autogitpull
 
@@ -8,6 +8,8 @@ Tested and working on MacOS, Ubuntu and Windows
 
 `autogitpull` scans a directory of Git repositories, pulls updates on a schedule
 and shows progress either in an interactive TUI or with plain console output.
+
+<img width="625" height="646" alt="image" src="https://github.com/user-attachments/assets/678db386-a9b8-4e39-9ae5-ef1ea762ae7d" />
 
 ## Features
 
