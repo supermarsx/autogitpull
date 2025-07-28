@@ -248,7 +248,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
-                  size_t up_limit, size_t disk_limit, bool silent, bool force_pull,
+                  size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
                   bool skip_timeout, std::chrono::seconds updated_since) {
     if (!running)
         return;
@@ -312,6 +312,21 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         std::lock_guard<std::mutex> lk(mtx);
         repo_infos[p] = ri;
     }
+    if (cli_mode && !silent && ri.pulled) {
+        std::time_t now = std::time(nullptr);
+        char buf[32];
+        std::strftime(buf, sizeof(buf), "%F %T", std::localtime(&now));
+        std::cout << "Updated " << p.filename().string();
+        if (!ri.commit_date.empty())
+            std::cout << " at " << ri.commit_date;
+        else
+            std::cout << " at " << buf;
+        if (!ri.commit_author.empty())
+            std::cout << " by " << ri.commit_author;
+        if (!ri.commit.empty())
+            std::cout << ", commit " << ri.commit;
+        std::cout << std::endl;
+    }
     if (logger_initialized())
         log_debug(p.string() + " -> " + ri.message);
 }
@@ -322,8 +337,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, size_t disk_limit, bool silent, bool force_pull, bool skip_timeout,
-                std::chrono::seconds updated_since) {
+                size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
+                bool skip_timeout, std::chrono::seconds updated_since) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
@@ -351,7 +366,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                          include_private, log_dir, check_only, hash_check, down_limit, up_limit,
-                         disk_limit, silent, force_pull, skip_timeout, updated_since);
+                         disk_limit, silent, cli_mode, force_pull, skip_timeout, updated_since);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;

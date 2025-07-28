@@ -93,6 +93,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--background",
                                       "--reattach",
                                       "--remove-lock",
+                                      "--ignore-lock",
                                       "--show-runtime",
                                       "--show-repo-count",
                                       "--max-runtime",
@@ -309,6 +310,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.show_skipped = parser.has_flag("--show-skipped") || cfg_flag("--show-skipped");
     opts.show_version = parser.has_flag("--show-version") || cfg_flag("--show-version");
     opts.remove_lock = parser.has_flag("--remove-lock") || cfg_flag("--remove-lock");
+    opts.ignore_lock = parser.has_flag("--ignore-lock") || cfg_flag("--ignore-lock");
     opts.check_only = parser.has_flag("--check-only") || cfg_flag("--check-only");
     opts.hash_check = !(parser.has_flag("--no-hash-check") || cfg_flag("--no-hash-check"));
     opts.force_pull = parser.has_flag("--force-pull") || parser.has_flag("--discard-dirty") ||
