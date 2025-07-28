@@ -13,6 +13,7 @@ and shows progress either in an interactive TUI or with plain console output.
 
 - Periodic scanning and automatic `git pull`
  - Optional CLI mode that prints logs without the TUI
+- Very lightweight, low resource usage
 - YAML or JSON configuration files
 - Detailed logging with resource tracking
 - Throttling and CPU/memory limits
@@ -20,6 +21,13 @@ and shows progress either in an interactive TUI or with plain console output.
 ## Usage
 
 `autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist] [--help]`
+
+### TLDR usage tips
+
+- For minimum memory footprint just use single thread mode, trade off on performance/speed
+- To override local changes every time just use force pull mode
+
+### Usage options
 
 Most options have single-letter shorthands. Run `autogitpull --help` to see a concise list.
 
