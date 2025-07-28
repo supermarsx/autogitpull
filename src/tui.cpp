@@ -78,7 +78,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         out << green << "Idle" << reset;
     out << " - Next scan in " << seconds_left << "s";
     if (runtime_sec >= 0)
-        out << " - Runtime " << runtime_sec << "s";
+        out << " - Runtime " << format_duration_short(std::chrono::seconds(runtime_sec));
     out << "\n";
     if (track_cpu || track_mem || track_threads || show_affinity || track_vmem) {
         out << "CPU: ";

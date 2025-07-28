@@ -106,7 +106,7 @@ void draw_cli(const std::vector<fs::path>& all_repos,
         std::cout << "Idle";
     std::cout << " - Next scan in " << seconds_left << "s";
     if (runtime_sec >= 0)
-        std::cout << " - Runtime " << runtime_sec << "s";
+        std::cout << " - Runtime " << format_duration_short(std::chrono::seconds(runtime_sec));
     std::cout << "\n";
     for (const auto& p : all_repos) {
         RepoInfo ri;
@@ -300,6 +300,18 @@ int run_event_loop(const Options& opts) {
         std::cout << "No valid repositories found. Exiting." << std::endl;
         return 0;
     }
+    if (opts.cli && !opts.silent) {
+        std::cout << "Interval: " << opts.interval << "s"
+                  << " Refresh: " << opts.refresh_ms.count() << "ms";
+        if (opts.pull_timeout.count() > 0)
+            std::cout << " Timeout: " << opts.pull_timeout.count() << "s";
+        std::cout << " SkipTimeouts: " << (opts.skip_timeout ? "yes" : "no");
+        if (opts.runtime_limit.count() > 0)
+            std::cout << " Runtime limit: " << format_duration_short(opts.runtime_limit);
+        if (opts.rescan_new)
+            std::cout << " Rescan: " << opts.rescan_interval.count() << "m";
+        std::cout << std::endl;
+    }
     std::set<fs::path> skip_repos;
     std::mutex mtx;
     std::atomic<bool> scanning(false);
@@ -316,6 +328,7 @@ int run_event_loop(const Options& opts) {
     std::chrono::milliseconds cli_countdown_ms(0);
     std::chrono::milliseconds rescan_countdown_ms(opts.rescan_new ? opts.rescan_interval
                                                                   : std::chrono::milliseconds(0));
+    bool first_cycle = true;
     std::unique_ptr<AltScreenGuard> guard;
     if (!opts.cli && !opts.silent)
         guard = std::make_unique<AltScreenGuard>();
@@ -354,6 +367,12 @@ int run_event_loop(const Options& opts) {
             scan_thread.join();
             git_libgit2_shutdown();
             git_libgit2_init();
+            if (first_cycle && opts.cli && !opts.silent && opts.cli_print_skipped &&
+                !opts.show_skipped) {
+                for (const auto& sp : skip_repos)
+                    std::cout << "Skipped " << sp.filename().string() << "\n";
+            }
+            first_cycle = false;
             if (opts.single_run)
                 running = false;
         }
@@ -402,7 +421,8 @@ int run_event_loop(const Options& opts) {
                 std::ref(action_mtx), opts.include_private, std::cref(opts.log_dir),
                 opts.check_only, opts.hash_check, concurrency, opts.cpu_percent_limit,
                 opts.mem_limit, opts.download_limit, opts.upload_limit, opts.disk_limit,
-                opts.silent, opts.cli, opts.force_pull, opts.skip_timeout, opts.updated_since);
+                opts.silent, opts.cli, opts.force_pull, opts.skip_timeout, opts.updated_since,
+                opts.show_pull_author);
             countdown_ms = std::chrono::seconds(opts.interval);
         }
 #ifndef _WIN32

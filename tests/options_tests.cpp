@@ -118,6 +118,13 @@ TEST_CASE("parse_options show repo count") {
     REQUIRE(opts.show_repo_count);
 }
 
+TEST_CASE("parse_options print skipped and pull author") {
+    const char* argv[] = {"prog", "path", "--print-skipped", "--show-pull-author"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.cli_print_skipped);
+    REQUIRE(opts.show_pull_author);
+}
+
 TEST_CASE("parse_options ignore lock") {
     const char* argv[] = {"prog", "path", "--ignore-lock"};
     Options opts = parse_options(3, const_cast<char**>(argv));

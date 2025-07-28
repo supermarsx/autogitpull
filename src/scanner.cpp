@@ -166,7 +166,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
                          std::set<fs::path>& skip_repos, std::mutex& mtx, std::string& action,
                          std::mutex& action_mtx, const fs::path& log_dir, bool include_private,
                          size_t down_limit, size_t up_limit, size_t disk_limit, bool force_pull,
-                         bool skip_timeout) {
+                         bool skip_timeout, bool cli_mode, bool silent) {
     {
         std::lock_guard<std::mutex> lk(action_mtx);
         action = "Pulling " + p.filename().string();
@@ -229,6 +229,8 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
             skip_repos.insert(p);
         if (logger_initialized())
             log_error(p.string() + " pull timed out");
+        if (cli_mode && !silent)
+            std::cout << "Timed out " << p.filename().string() << std::endl;
     } else {
         ri.status = RS_ERROR;
         ri.message = "Pull failed (see log)";
@@ -249,7 +251,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
                   size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
-                  bool skip_timeout, std::chrono::seconds updated_since) {
+                  bool skip_timeout, std::chrono::seconds updated_since, bool show_pull_author) {
     if (!running)
         return;
     if (logger_initialized())
@@ -270,6 +272,12 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
     RepoInfo ri;
     ri.path = p;
     ri.auth_failed = false;
+    {
+        std::lock_guard<std::mutex> lk(mtx);
+        auto it = repo_infos.find(p);
+        if (it != repo_infos.end())
+            ri.pulled = it->second.pulled;
+    }
     {
         std::lock_guard<std::mutex> lk(action_mtx);
         action = "Checking " + p.filename().string();
@@ -299,7 +307,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         if (do_pull) {
             execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
                          include_private, down_limit, up_limit, disk_limit, force_pull,
-                         skip_timeout);
+                         skip_timeout, cli_mode, silent);
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
@@ -321,7 +329,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
             std::cout << " at " << ri.commit_date;
         else
             std::cout << " at " << buf;
-        if (!ri.commit_author.empty())
+        if (show_pull_author && !ri.commit_author.empty())
             std::cout << " by " << ri.commit_author;
         if (!ri.commit.empty())
             std::cout << ", commit " << ri.commit;
@@ -338,7 +346,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
-                bool skip_timeout, std::chrono::seconds updated_since) {
+                bool skip_timeout, std::chrono::seconds updated_since, bool show_pull_author) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
@@ -366,7 +374,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
             const auto& p = all_repos[idx];
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                          include_private, log_dir, check_only, hash_check, down_limit, up_limit,
-                         disk_limit, silent, cli_mode, force_pull, skip_timeout, updated_since);
+                         disk_limit, silent, cli_mode, force_pull, skip_timeout, updated_since,
+                         show_pull_author);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;

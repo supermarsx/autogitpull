@@ -43,6 +43,7 @@ struct Options {
     bool show_vmem = false;
     bool show_commit_date = false;
     bool show_commit_author = false;
+    bool show_pull_author = false;
     bool show_repo_count = false;
     bool session_dates_only = false;
     bool show_datetime_line = true;
@@ -83,6 +84,7 @@ struct Options {
     int syslog_facility = 0;
     std::chrono::seconds pull_timeout{0};
     bool skip_timeout = true;
+    bool cli_print_skipped = false;
     bool show_help = false;
     bool print_version = false;
     enum SortMode { DEFAULT, ALPHA, REVERSE } sort_mode = DEFAULT;
