@@ -333,6 +333,7 @@ int run_event_loop(const Options& opts) {
     if (!opts.cli && !opts.silent)
         guard = std::make_unique<AltScreenGuard>();
     auto start_time = std::chrono::steady_clock::now();
+    auto last_loop = start_time;
     size_t concurrency = opts.concurrency;
     if (opts.max_threads > 0 && concurrency > opts.max_threads)
         concurrency = opts.max_threads;
@@ -348,7 +349,13 @@ int run_event_loop(const Options& opts) {
     }
 #endif
     while (running) {
-        auto elapsed = std::chrono::steady_clock::now() - start_time;
+        auto now = std::chrono::steady_clock::now();
+        if (now - last_loop > std::chrono::minutes(10)) {
+            log_info("Detected long pause; restarting");
+            break;
+        }
+        last_loop = now;
+        auto elapsed = now - start_time;
         int runtime_sec =
             static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
         if (opts.runtime_limit.count() > 0 && elapsed >= opts.runtime_limit)
