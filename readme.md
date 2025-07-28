@@ -26,9 +26,10 @@ and shows progress either in an interactive TUI or with plain console output.
 
 ### TLDR usage tips
 
-- For minimum memory footprint just use single thread mode, trade off on performance/speed
-- To override local changes every time just use force pull mode
-
+- For minimum memory footprint use `--single-thread`, trade off on performance/speed.
+- To override/discard local changes every time use `--force-pull`, it's basically to sync with remote.
+- To only sync the latest repos you're working on use `--updated-since` 6h, to only sync repos updated in the last 6 hours.
+- To only show dates from repos that have been synced during the current session use `--session-dates-only`.
 
 Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` (alias: `--discard-dirty`) to reset such repositories to the remote state.
 ### Usage options
