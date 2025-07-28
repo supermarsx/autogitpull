@@ -206,29 +206,6 @@ cl /std:c++20 /EHsc /MT /Ipath\to\libgit2\include autogitpull.cpp git_utils.cpp 
 
 These commands mirror what the scripts do internally.
 
-### Building with build2
-
-If [build2](https://build2.org/) is installed you can build and install the
-project directly using the `b` tool:
-
-```bash
-b configure                         # only needed the first time
-b install config.install.root=dist  # places files under ./dist
-```
-
-On macOS the Homebrew `zlib` package is *keg-only* and its `pkg-config` files
-are not on the default search path. The helper script `scripts/build2.sh`
-automatically prepends the required directory to `PKG_CONFIG_PATH`. If you run
-`b` manually ensure
-
-```bash
-export PKG_CONFIG_PATH="$(brew --prefix)/opt/zlib/lib/pkgconfig:$PKG_CONFIG_PATH"
-```
-before invoking the build.
-
-Run `b test` to execute the unit tests. The helper script `scripts/build2.sh`
-performs these steps automatically when build2 is available.
-
 ### Building with CMake
 
 Alternatively, configure the project with CMake:

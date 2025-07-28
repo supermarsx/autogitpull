@@ -21,9 +21,6 @@ jobs:
       - name: Set up C++ build environment
         uses: aminya/setup-cpp@v1
 
-      - name: Set up build2
-        uses: build2/setup-build2-github-action@v2
-
       - name: Install dependencies
         shell: bash
         run: |
@@ -52,12 +49,12 @@ jobs:
 
 
       - name: Test
-        run: b test
+        run: make test
 
       - name: Build
         shell: bash
         run: |
-          b install config.install.root=dist
+          make
 
       - name: Upload executable
         uses: actions/upload-artifact@v4

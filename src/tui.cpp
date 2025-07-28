@@ -46,7 +46,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
               bool track_cpu, bool track_mem, bool track_threads, bool track_net,
               bool show_affinity, bool track_vmem, bool show_commit_date, bool show_commit_author,
               bool no_colors, const std::string& custom_color, int runtime_sec,
-              bool show_datetime_line, bool show_header) {
+              bool show_datetime_line, bool show_header, bool show_repo_count) {
     std::ostringstream out;
     auto choose = [&](const char* def) {
         return no_colors ? "" : (custom_color.empty() ? def : custom_color.c_str());
@@ -68,6 +68,8 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         out << "Date: " << cyan << timestamp() << reset << "\n";
     out << "Monitoring: " << yellow
         << (all_repos.empty() ? "" : all_repos[0].parent_path().string()) << reset << "\n";
+    if (show_repo_count)
+        out << "Repos: " << all_repos.size() << "\n";
     out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
     out << "Status: ";
     if (scanning)

@@ -1,5 +1,4 @@
 CXX = g++
-HAS_B := $(shell command -v b >/dev/null 2>&1 && echo yes || echo no)
 CXXFLAGS = -std=c++20 -pthread -Iinclude $(shell pkg-config --cflags libgit2 2>/dev/null) $(shell pkg-config --cflags yaml-cpp 2>/dev/null)
 UNAME_S := $(shell uname -s)
 LIBGIT2_STATIC_AVAILABLE := $(shell pkg-config --static --libs libgit2 >/dev/null 2>&1 && echo yes)
@@ -32,16 +31,10 @@ SRC = \
     src/help_text.cpp \
     src/linux_daemon.cpp \
     src/windows_service.cpp
+
 OBJ = $(SRC:.cpp=.o)
 FORMAT_FILES = $(SRC) include/*.hpp
 
-ifeq ($(HAS_B),yes)
-all:
-	b install config.install.root=dist
-
-test:
-	b test
-else
 all: autogitpull
 
 autogitpull: $(OBJ)
@@ -52,7 +45,6 @@ test:
 	cmake -S . -B build
 	cmake --build build
 	cd build && ctest --output-on-failure
-endif
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

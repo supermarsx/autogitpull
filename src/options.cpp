@@ -94,6 +94,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--reattach",
                                       "--remove-lock",
                                       "--show-runtime",
+                                      "--show-repo-count",
                                       "--max-runtime",
                                       "--persist",
                                       "--respawn-limit",
@@ -150,7 +151,8 @@ Options parse_options(int argc, char* argv[]) {
                                                  {'m', "--debug-memory"},
                                                  {'w', "--rescan-new"},
                                                  {'X', "--no-cpu-tracker"},
-                                                 {'O', "--pull-timeout"}};
+                                                 {'O', "--pull-timeout"},
+                                                 {'Z', "--show-repo-count"}};
     ArgParser parser(argc, argv, known, short_opts);
 
     auto cfg_flag = [&](const std::string& k) {
@@ -219,6 +221,7 @@ Options parse_options(int argc, char* argv[]) {
         opts.reattach = true;
     }
     opts.show_runtime = parser.has_flag("--show-runtime") || cfg_flag("--show-runtime");
+    opts.show_repo_count = parser.has_flag("--show-repo-count") || cfg_flag("--show-repo-count");
     if (parser.has_flag("--max-runtime") || cfg_opts.count("--max-runtime")) {
         std::string val = parser.get_option("--max-runtime");
         if (val.empty())
