@@ -77,6 +77,7 @@ void print_help(const char* prog) {
         {"--show-service", "", "", "Show installed service name", "Actions"},
         {"--remove-lock", "-R", "", "Remove directory lock file and exit", "Actions"},
         {"--kill-all", "", "", "Terminate running instance and exit", "Actions"},
+        {"--list-instances", "", "", "List running instance names and PIDs", "Actions"},
         {"--ignore-lock", "", "", "Don't create or check lock file", "Actions"},
         {"--log-dir", "-d", "<path>", "Directory for pull logs", "Logging"},
         {"--log-file", "-l", "<path>", "File for general logs", "Logging"},

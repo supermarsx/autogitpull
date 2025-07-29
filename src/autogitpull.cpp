@@ -68,6 +68,12 @@ int main(int argc, char* argv[]) {
             }
             return 0;
         }
+        if (opts.list_instances) {
+            auto insts = procutil::find_running_instances();
+            for (const auto& [name, pid] : insts)
+                std::cout << name << " " << pid << "\n";
+            return 0;
+        }
         return run_with_monitor(opts);
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";

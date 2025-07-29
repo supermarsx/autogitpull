@@ -23,10 +23,18 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#if defined(__linux__) || defined(__APPLE__)
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 #ifdef __linux__
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <unistd.h>
+#include <sys/un.h>
 #include <vector>
 #endif
 
