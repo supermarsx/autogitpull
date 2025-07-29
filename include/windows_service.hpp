@@ -9,6 +9,11 @@
 
 namespace winservice {
 
+struct ServiceStatus {
+    bool exists = false;
+    bool running = false;
+};
+
 #ifdef _WIN32
 void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 void WINAPI ServiceCtrlHandler(DWORD ctrl);
@@ -17,6 +22,10 @@ bool install_service(const std::string& name, const std::string& exec_path,
                      const std::string& config_file, bool persist = true);
 bool uninstall_service(const std::string& name);
 bool service_exists(const std::string& name);
+bool start_service(const std::string& name);
+bool stop_service(const std::string& name, bool force = false);
+bool restart_service(const std::string& name, bool force = false);
+bool service_status(const std::string& name, ServiceStatus& out);
 int create_status_socket(const std::string& name);
 int connect_status_socket(const std::string& name);
 void remove_status_socket(const std::string& name, int fd);

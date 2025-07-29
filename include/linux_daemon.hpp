@@ -5,6 +5,11 @@
 
 namespace procutil {
 
+struct ServiceStatus {
+    bool exists = false;
+    bool running = false;
+};
+
 bool daemonize();
 
 bool create_service_unit(const std::string& name, const std::string& exec_path,
@@ -13,6 +18,11 @@ bool create_service_unit(const std::string& name, const std::string& exec_path,
 
 bool remove_service_unit(const std::string& name);
 bool service_unit_exists(const std::string& name);
+
+bool start_service_unit(const std::string& name);
+bool stop_service_unit(const std::string& name, bool force = false);
+bool restart_service_unit(const std::string& name, bool force = false);
+bool service_unit_status(const std::string& name, ServiceStatus& out);
 
 #ifndef _WIN32
 int create_status_socket(const std::string& name);

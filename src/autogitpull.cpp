@@ -41,6 +41,38 @@ int main(int argc, char* argv[]) {
 #endif
             return 0;
         }
+        if (opts.start_service) {
+#ifndef _WIN32
+            return procutil::start_service_unit(opts.daemon_name) ? 0 : 1;
+#else
+            return winservice::start_service(opts.service_name) ? 0 : 1;
+#endif
+        }
+        if (opts.stop_service) {
+#ifndef _WIN32
+            return procutil::stop_service_unit(opts.daemon_name, opts.force_stop_service) ? 0 : 1;
+#else
+            return winservice::stop_service(opts.service_name, opts.force_stop_service) ? 0 : 1;
+#endif
+        }
+        if (opts.restart_service) {
+#ifndef _WIN32
+            return procutil::restart_service_unit(opts.daemon_name, opts.force_restart_service) ? 0
+                                                                                                : 1;
+#else
+            return winservice::restart_service(opts.service_name, opts.force_restart_service) ? 0
+                                                                                              : 1;
+#endif
+        }
+#ifndef _WIN32
+        if (opts.start_daemon)
+            return procutil::start_service_unit(opts.daemon_name) ? 0 : 1;
+        if (opts.stop_daemon)
+            return procutil::stop_service_unit(opts.daemon_name, opts.force_stop_daemon) ? 0 : 1;
+        if (opts.restart_daemon)
+            return procutil::restart_service_unit(opts.daemon_name, opts.force_restart_daemon) ? 0
+                                                                                               : 1;
+#endif
         if (opts.remove_lock) {
             if (!opts.root.empty()) {
                 fs::path lock = opts.root / ".autogitpull.lock";
