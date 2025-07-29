@@ -9,6 +9,9 @@
 #include <cstring>
 #endif
 #include <fstream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 namespace procutil {
 
@@ -74,6 +77,8 @@ bool remove_service_unit(const std::string& name) {
     return true;
 }
 
+bool service_unit_exists(const std::string& name) { return fs::exists(unit_path(name)); }
+
 int create_status_socket(const std::string& name) {
     std::string path = "/tmp/" + name + ".sock";
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -120,6 +125,7 @@ bool create_service_unit(const std::string&, const std::string&, const std::stri
 }
 
 bool remove_service_unit(const std::string&) { return false; }
+bool service_unit_exists(const std::string&) { return false; }
 #endif
 
 } // namespace procutil

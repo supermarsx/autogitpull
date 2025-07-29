@@ -16,6 +16,7 @@ void WINAPI ServiceCtrlHandler(DWORD ctrl);
 bool install_service(const std::string& name, const std::string& exec_path,
                      const std::string& config_file, bool persist = true);
 bool uninstall_service(const std::string& name);
+bool service_exists(const std::string& name);
 int create_status_socket(const std::string& name);
 int connect_status_socket(const std::string& name);
 void remove_status_socket(const std::string& name, int fd);
@@ -27,6 +28,7 @@ inline bool install_service(const std::string&, const std::string&, const std::s
     return false;
 }
 inline bool uninstall_service(const std::string&) { return false; }
+inline bool service_exists(const std::string&) { return false; }
 #endif
 
 } // namespace winservice

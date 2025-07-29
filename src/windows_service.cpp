@@ -28,7 +28,7 @@ void WINAPI ServiceCtrlHandler(DWORD ctrl) {
 }
 
 void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
-    g_status_handle = RegisterServiceCtrlHandler(TEXT("autogitpull"), ServiceCtrlHandler);
+    g_status_handle = RegisterServiceCtrlHandler(argv[0], ServiceCtrlHandler);
     if (!g_status_handle)
         return;
     g_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
@@ -77,6 +77,20 @@ bool uninstall_service(const std::string& name) {
     CloseServiceHandle(svc);
     CloseServiceHandle(scm);
     return ok;
+}
+
+bool service_exists(const std::string& name) {
+    SC_HANDLE scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!scm)
+        return false;
+    SC_HANDLE svc = OpenServiceA(scm, name.c_str(), SERVICE_QUERY_STATUS);
+    if (!svc) {
+        CloseServiceHandle(scm);
+        return false;
+    }
+    CloseServiceHandle(svc);
+    CloseServiceHandle(scm);
+    return true;
 }
 
 int create_status_socket(const std::string& name) {

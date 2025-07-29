@@ -12,6 +12,24 @@ TEST_CASE("parse_options service flags") {
     REQUIRE(opts2.uninstall_service);
 }
 
+TEST_CASE("parse_options service name flags") {
+    const char* argv[] = {"prog", "path", "--service-name", "svc"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.service_name == std::string("svc"));
+}
+
+TEST_CASE("parse_options daemon name flag") {
+    const char* argv[] = {"prog", "path", "--daemon-name", "dname"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.daemon_name == std::string("dname"));
+}
+
+TEST_CASE("parse_options show service flag") {
+    const char* argv[] = {"prog", "path", "--show-service"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.show_service);
+}
+
 TEST_CASE("parse_options attach option") {
     const char* argv[] = {"prog", "--attach", "foo"};
     Options opts = parse_options(3, const_cast<char**>(argv));
