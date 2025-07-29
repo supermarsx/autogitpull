@@ -64,5 +64,9 @@
         "no-hash-check": false,
         "force-pull": false,
         "discard-dirty": false
+    },
+    "repos/example": {
+        "force-pull": true,
+        "pull-timeout": 30
     }
 }

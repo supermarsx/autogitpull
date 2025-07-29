@@ -11,6 +11,7 @@
 #include <chrono>
 
 #include "repo.hpp"
+#include "repo_options.hpp"
 
 std::vector<std::filesystem::path> build_repo_list(const std::filesystem::path& root,
                                                    bool recursive,
@@ -24,7 +25,8 @@ void process_repo(const std::filesystem::path& p,
                   bool include_private, const std::filesystem::path& log_dir, bool check_only,
                   bool hash_check, size_t down_limit, size_t up_limit, size_t disk_limit,
                   bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
-                  std::chrono::seconds updated_since, bool show_pull_author);
+                  std::chrono::seconds updated_since, bool show_pull_author,
+                  std::chrono::seconds pull_timeout);
 
 void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 std::map<std::filesystem::path, RepoInfo>& repo_infos,
@@ -34,6 +36,8 @@ void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 bool check_only, bool hash_check, size_t concurrency, int cpu_percent_limit,
                 size_t mem_limit, size_t down_limit, size_t up_limit, size_t disk_limit,
                 bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
-                std::chrono::seconds updated_since, bool show_pull_author);
+                std::chrono::seconds updated_since, bool show_pull_author,
+                std::chrono::seconds pull_timeout,
+                const std::map<std::filesystem::path, RepoOptions>& overrides);
 
 #endif // SCANNER_HPP

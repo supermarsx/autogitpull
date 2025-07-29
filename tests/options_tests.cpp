@@ -130,3 +130,20 @@ TEST_CASE("parse_options ignore lock") {
     Options opts = parse_options(3, const_cast<char**>(argv));
     REQUIRE(opts.ignore_lock);
 }
+
+TEST_CASE("parse_options repo overrides") {
+    fs::path cfg = fs::temp_directory_path() / "opts_repo.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"root\": \"/tmp\",\n  \"/tmp/repo\": {\n    \"force-pull\": true\n  }\n}";
+    }
+    std::string p = cfg.string();
+    char* path_c = strdup(p.c_str());
+    char* argv[] = {const_cast<char*>("prog"), const_cast<char*>("--config-json"), path_c};
+    Options opts = parse_options(3, argv);
+    free(path_c);
+    REQUIRE(opts.root == fs::path("/tmp"));
+    REQUIRE(opts.repo_overrides.count(fs::path("/tmp/repo")) == 1);
+    REQUIRE(opts.repo_overrides[fs::path("/tmp/repo")].force_pull.value_or(false));
+    fs::remove(cfg);
+}

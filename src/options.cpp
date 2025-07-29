@@ -21,12 +21,13 @@ Options parse_options(int argc, char* argv[]) {
     const std::map<char, std::string> pre_short{{'y', "--config-yaml"}, {'j', "--config-json"}};
     ArgParser pre_parser(argc, argv, pre_known, pre_short);
     std::map<std::string, std::string> cfg_opts;
+    std::map<std::string, std::map<std::string, std::string>> cfg_repo_opts;
     if (pre_parser.has_flag("--config-yaml")) {
         std::string cfg = pre_parser.get_option("--config-yaml");
         if (cfg.empty())
             throw std::runtime_error("--config-yaml requires a file");
         std::string err;
-        if (!load_yaml_config(cfg, cfg_opts, err))
+        if (!load_yaml_config(cfg, cfg_opts, cfg_repo_opts, err))
             throw std::runtime_error("Failed to load config: " + err);
     }
     if (pre_parser.has_flag("--config-json")) {
@@ -34,7 +35,7 @@ Options parse_options(int argc, char* argv[]) {
         if (cfg.empty())
             throw std::runtime_error("--config-json requires a file");
         std::string err;
-        if (!load_json_config(cfg, cfg_opts, err))
+        if (!load_json_config(cfg, cfg_opts, cfg_repo_opts, err))
             throw std::runtime_error("Failed to load config: " + err);
     }
 
@@ -608,5 +609,55 @@ Options parse_options(int argc, char* argv[]) {
         throw std::runtime_error("Root path required");
     for (const auto& val : parser.get_all_options("--ignore"))
         opts.ignore_dirs.push_back(val);
+
+    for (const auto& [repo, values] : cfg_repo_opts) {
+        RepoOptions ro;
+        auto rflag = [&](const std::string& k) {
+            auto it = values.find(k);
+            if (it == values.end())
+                return false;
+            std::string v = it->second;
+            std::transform(v.begin(), v.end(), v.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+            return v == "" || v == "1" || v == "true" || v == "yes";
+        };
+        auto ropt = [&](const std::string& k) {
+            auto it = values.find(k);
+            if (it != values.end())
+                return it->second;
+            return std::string();
+        };
+        bool ok = false;
+        if (rflag("--force-pull") || rflag("--discard-dirty"))
+            ro.force_pull = true;
+        if (values.count("--download-limit")) {
+            ro.download_limit = parse_size_t(ropt("--download-limit"), 0, SIZE_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid per-repo download-limit");
+        }
+        if (values.count("--upload-limit")) {
+            ro.upload_limit = parse_size_t(ropt("--upload-limit"), 0, SIZE_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid per-repo upload-limit");
+        }
+        if (values.count("--disk-limit")) {
+            ro.disk_limit = parse_size_t(ropt("--disk-limit"), 0, SIZE_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid per-repo disk-limit");
+        }
+        if (values.count("--max-runtime")) {
+            int sec = parse_int(ropt("--max-runtime"), 1, INT_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid per-repo max-runtime");
+            ro.max_runtime = std::chrono::seconds(sec);
+        }
+        if (values.count("--pull-timeout")) {
+            int sec = parse_int(ropt("--pull-timeout"), 1, INT_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid per-repo pull-timeout");
+            ro.pull_timeout = std::chrono::seconds(sec);
+        }
+        opts.repo_overrides[fs::path(repo)] = ro;
+    }
     return opts;
 }

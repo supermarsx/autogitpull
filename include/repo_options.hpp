@@ -1,0 +1,17 @@
+#ifndef REPO_OPTIONS_HPP
+#define REPO_OPTIONS_HPP
+
+#include <optional>
+#include <chrono>
+#include <cstddef>
+
+struct RepoOptions {
+    std::optional<bool> force_pull;
+    std::optional<size_t> download_limit;
+    std::optional<size_t> upload_limit;
+    std::optional<size_t> disk_limit;
+    std::optional<std::chrono::seconds> max_runtime;
+    std::optional<std::chrono::seconds> pull_timeout;
+};
+
+#endif // REPO_OPTIONS_HPP

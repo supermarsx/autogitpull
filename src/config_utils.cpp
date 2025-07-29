@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 bool load_yaml_config(const std::string& path, std::map<std::string, std::string>& opts,
+                      std::map<std::string, std::map<std::string, std::string>>& repo_opts,
                       std::string& error) {
 #ifdef HAVE_YAMLCPP
     try {
@@ -23,27 +24,44 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
         for (auto it = root.begin(); it != root.end(); ++it) {
             if (!it->first.IsScalar())
                 continue;
-            const std::string base = "--" + it->first.as<std::string>();
+            const std::string key_name = it->first.as<std::string>();
             const YAML::Node& node = it->second;
             if (node.IsMap()) {
-                for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
-                    if (!it2->first.IsScalar())
-                        continue;
-                    std::string key = "--" + it2->first.as<std::string>();
-                    const YAML::Node& val = it2->second;
-                    if (val.IsScalar())
-                        opts[key] = val.as<std::string>();
-                    else if (val.IsNull())
-                        opts[key] = "";
-                    else if (val.IsDefined() && !val.IsSequence() && !val.IsMap())
-                        opts[key] = val.as<std::string>();
+                if (key_name.find('/') != std::string::npos ||
+                    key_name.find('\\') != std::string::npos) {
+                    auto& m = repo_opts[key_name];
+                    for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
+                        if (!it2->first.IsScalar())
+                            continue;
+                        std::string subk = "--" + it2->first.as<std::string>();
+                        const YAML::Node& val = it2->second;
+                        if (val.IsScalar())
+                            m[subk] = val.as<std::string>();
+                        else if (val.IsNull())
+                            m[subk] = "";
+                        else if (val.IsDefined() && !val.IsSequence() && !val.IsMap())
+                            m[subk] = val.as<std::string>();
+                    }
+                } else {
+                    for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
+                        if (!it2->first.IsScalar())
+                            continue;
+                        std::string key = "--" + it2->first.as<std::string>();
+                        const YAML::Node& val = it2->second;
+                        if (val.IsScalar())
+                            opts[key] = val.as<std::string>();
+                        else if (val.IsNull())
+                            opts[key] = "";
+                        else if (val.IsDefined() && !val.IsSequence() && !val.IsMap())
+                            opts[key] = val.as<std::string>();
+                    }
                 }
             } else if (node.IsScalar()) {
-                opts[base] = node.as<std::string>();
+                opts["--" + key_name] = node.as<std::string>();
             } else if (node.IsNull()) {
-                opts[base] = "";
+                opts["--" + key_name] = "";
             } else if (node.IsDefined() && !node.IsSequence() && !node.IsMap()) {
-                opts[base] = node.as<std::string>();
+                opts["--" + key_name] = node.as<std::string>();
             }
         }
         return true;
@@ -60,6 +78,7 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
 }
 
 bool load_json_config(const std::string& path, std::map<std::string, std::string>& opts,
+                      std::map<std::string, std::map<std::string, std::string>>& repo_opts,
                       std::string& error) {
     try {
         std::ifstream ifs(path);
@@ -75,26 +94,49 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
         }
         for (auto it = root.begin(); it != root.end(); ++it) {
             const auto& val = it.value();
+            const std::string key_name = it.key();
             if (val.is_object()) {
-                for (auto sub = val.begin(); sub != val.end(); ++sub) {
-                    std::string key = "--" + sub.key();
-                    const auto& v = sub.value();
-                    if (v.is_string()) {
-                        opts[key] = v.get<std::string>();
-                    } else if (v.is_boolean()) {
-                        opts[key] = v.get<bool>() ? "true" : "false";
-                    } else if (v.is_number_integer()) {
-                        opts[key] = std::to_string(v.get<long long>());
-                    } else if (v.is_number_unsigned()) {
-                        opts[key] = std::to_string(v.get<unsigned long long>());
-                    } else if (v.is_number_float()) {
-                        opts[key] = std::to_string(v.get<double>());
-                    } else if (v.is_null()) {
-                        opts[key] = "";
+                if (key_name.find('/') != std::string::npos ||
+                    key_name.find('\\') != std::string::npos) {
+                    auto& m = repo_opts[key_name];
+                    for (auto sub = val.begin(); sub != val.end(); ++sub) {
+                        std::string key = "--" + sub.key();
+                        const auto& v = sub.value();
+                        if (v.is_string()) {
+                            m[key] = v.get<std::string>();
+                        } else if (v.is_boolean()) {
+                            m[key] = v.get<bool>() ? "true" : "false";
+                        } else if (v.is_number_integer()) {
+                            m[key] = std::to_string(v.get<long long>());
+                        } else if (v.is_number_unsigned()) {
+                            m[key] = std::to_string(v.get<unsigned long long>());
+                        } else if (v.is_number_float()) {
+                            m[key] = std::to_string(v.get<double>());
+                        } else if (v.is_null()) {
+                            m[key] = "";
+                        }
+                    }
+                } else {
+                    for (auto sub = val.begin(); sub != val.end(); ++sub) {
+                        std::string key = "--" + sub.key();
+                        const auto& v = sub.value();
+                        if (v.is_string()) {
+                            opts[key] = v.get<std::string>();
+                        } else if (v.is_boolean()) {
+                            opts[key] = v.get<bool>() ? "true" : "false";
+                        } else if (v.is_number_integer()) {
+                            opts[key] = std::to_string(v.get<long long>());
+                        } else if (v.is_number_unsigned()) {
+                            opts[key] = std::to_string(v.get<unsigned long long>());
+                        } else if (v.is_number_float()) {
+                            opts[key] = std::to_string(v.get<double>());
+                        } else if (v.is_null()) {
+                            opts[key] = "";
+                        }
                     }
                 }
             } else {
-                std::string key = "--" + it.key();
+                std::string key = "--" + key_name;
                 if (val.is_string()) {
                     opts[key] = val.get<std::string>();
                 } else if (val.is_boolean()) {

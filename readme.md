@@ -156,6 +156,16 @@ Arguments provided on the command line override values from the YAML file. See `
 Settings can also be provided in JSON format and loaded with `--config-json <file>`.
 The keys mirror the long command line options without the leading dashes. Values from the command line override those from the JSON file. See `examples/example-config.json` for a complete example.
 
+### Repository overrides
+
+Sections whose keys are repository paths provide per-repository overrides. Any option supported on the command line may be placed under a path key to override the global value for that repository.
+
+```yaml
+/home/user/repos/foo:
+  force-pull: true
+  download-limit: 100
+```
+
 ## Build requirements
 
 This tool relies on [libgit2](https://libgit2.org/). The helper scripts
