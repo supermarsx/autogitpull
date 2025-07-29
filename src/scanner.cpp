@@ -166,7 +166,8 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
                          std::set<fs::path>& skip_repos, std::mutex& mtx, std::string& action,
                          std::mutex& action_mtx, const fs::path& log_dir, bool include_private,
                          size_t down_limit, size_t up_limit, size_t disk_limit, bool force_pull,
-                         bool skip_timeout, bool cli_mode, bool silent) {
+                         bool skip_timeout, bool cli_mode, bool silent,
+                         std::chrono::seconds pull_timeout) {
     {
         std::lock_guard<std::mutex> lk(action_mtx);
         action = "Pulling " + p.filename().string();
@@ -182,6 +183,8 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
         repo_infos[p].progress = pct;
     };
     bool pull_auth_fail = false;
+    if (pull_timeout.count() > 0)
+        git::set_libgit_timeout(static_cast<unsigned int>(pull_timeout.count()));
     int code = git::try_pull(p, pull_log, &progress_cb, include_private, &pull_auth_fail,
                              down_limit, up_limit, disk_limit, force_pull);
     ri.auth_failed = pull_auth_fail;
@@ -251,7 +254,8 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
                   size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
-                  bool skip_timeout, std::chrono::seconds updated_since, bool show_pull_author) {
+                  bool skip_timeout, std::chrono::seconds updated_since, bool show_pull_author,
+                  std::chrono::seconds pull_timeout) {
     if (!running)
         return;
     if (logger_initialized())
@@ -310,7 +314,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         if (do_pull) {
             execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
                          include_private, down_limit, up_limit, disk_limit, force_pull,
-                         skip_timeout, cli_mode, silent);
+                         skip_timeout, cli_mode, silent, pull_timeout);
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
@@ -349,7 +353,9 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
                 size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
-                bool skip_timeout, std::chrono::seconds updated_since, bool show_pull_author) {
+                bool skip_timeout, std::chrono::seconds updated_since, bool show_pull_author,
+                std::chrono::seconds pull_timeout,
+                const std::map<std::filesystem::path, RepoOptions>& overrides) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
@@ -375,10 +381,18 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
             if (idx >= all_repos.size())
                 break;
             const auto& p = all_repos[idx];
+            RepoOptions ro;
+            auto it_ro = overrides.find(p);
+            if (it_ro != overrides.end())
+                ro = it_ro->second;
+            size_t dl = ro.download_limit.value_or(down_limit);
+            size_t ul = ro.upload_limit.value_or(up_limit);
+            size_t disk = ro.disk_limit.value_or(disk_limit);
+            bool fp = ro.force_pull.value_or(force_pull);
+            std::chrono::seconds pt = ro.pull_timeout.value_or(pull_timeout);
             process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
-                         include_private, log_dir, check_only, hash_check, down_limit, up_limit,
-                         disk_limit, silent, cli_mode, force_pull, skip_timeout, updated_since,
-                         show_pull_author);
+                         include_private, log_dir, check_only, hash_check, dl, ul, disk, silent,
+                         cli_mode, fp, skip_timeout, updated_since, show_pull_author, pt);
             if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                 log_error("Memory limit exceeded");
                 running = false;

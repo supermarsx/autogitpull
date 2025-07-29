@@ -4,7 +4,9 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <map>
 #include "logger.hpp"
+#include "repo_options.hpp"
 
 struct Options {
     std::filesystem::path root;
@@ -87,6 +89,7 @@ struct Options {
     bool cli_print_skipped = false;
     bool show_help = false;
     bool print_version = false;
+    std::map<std::filesystem::path, RepoOptions> repo_overrides;
     enum SortMode { DEFAULT, ALPHA, REVERSE } sort_mode = DEFAULT;
 };
 

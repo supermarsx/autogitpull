@@ -8,8 +8,9 @@ TEST_CASE("YAML config loading") {
         ofs << "cli: true\n";
     }
     std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
     std::string err;
-    REQUIRE(load_yaml_config(cfg.string(), opts, err));
+    REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--interval"] == "42");
     REQUIRE(opts["--cli"] == "true");
     fs::remove(cfg);
@@ -40,8 +41,9 @@ TEST_CASE("JSON config categories") {
                "\"Logging\": {\n    \"log-level\": \"DEBUG\"\n  }\n}";
     }
     std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
     std::string err;
-    REQUIRE(load_json_config(cfg.string(), opts, err));
+    REQUIRE(load_json_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--interval"] == "10");
     REQUIRE(opts["--cli"] == "true");
     REQUIRE(opts["--log-level"] == "DEBUG");
@@ -55,8 +57,9 @@ TEST_CASE("JSON config loading") {
         ofs << "{\n  \"interval\": 42, \n  \"cli\": true\n}";
     }
     std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
     std::string err;
-    REQUIRE(load_json_config(cfg.string(), opts, err));
+    REQUIRE(load_json_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--interval"] == "42");
     REQUIRE(opts["--cli"] == "true");
     fs::remove(cfg);
@@ -69,8 +72,9 @@ TEST_CASE("YAML config root option") {
         ofs << "root: /tmp/repos\n";
     }
     std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
     std::string err;
-    REQUIRE(load_yaml_config(cfg.string(), opts, err));
+    REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--root"] == "/tmp/repos");
     fs::remove(cfg);
 }
@@ -82,8 +86,25 @@ TEST_CASE("JSON config root option") {
         ofs << "{\n  \"root\": \"/tmp/repos\"\n}";
     }
     std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
     std::string err;
-    REQUIRE(load_json_config(cfg.string(), opts, err));
+    REQUIRE(load_json_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--root"] == "/tmp/repos");
+    fs::remove(cfg);
+}
+
+TEST_CASE("JSON repo overrides") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_repo.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"/tmp/repo\": {\n    \"force-pull\": true,\n    \"upload-limit\": 50\n  }\n}";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE(load_json_config(cfg.string(), opts, repo, err));
+    REQUIRE(repo.count("/tmp/repo") == 1);
+    REQUIRE(repo["/tmp/repo"]["--force-pull"] == "true");
+    REQUIRE(repo["/tmp/repo"]["--upload-limit"] == "50");
     fs::remove(cfg);
 }
