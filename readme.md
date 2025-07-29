@@ -37,50 +37,58 @@ Repositories with uncommitted changes are skipped by default to avoid losing wor
 
 Most options have single-letter shorthands. Run `autogitpull --help` for a complete list.
 
-#### General
+#### Basics
 - `--include-private` (`-p`) – Include private repositories.
-- `--show-skipped` (`-k`) – Show skipped repositories.
-- `--show-version` (`-v`) – Display program version in TUI.
-- `--version` (`-V`) – Print version and exit.
-- `--interval` (`-i`) – Delay between scans.
-- `--refresh-rate` (`-r`) – TUI refresh rate.
-- `--recursive` (`-e`) – Scan subdirectories.
-- `--max-depth` (`-D`) – Limit recursion depth.
-- `--ignore` (`-I`) `<dir>` – Directory to ignore (repeatable).
-- `--config-yaml` (`-y`) `<file>` – Load YAML config.
-- `--config-json` (`-j`) `<file>` – Load JSON config.
 - `--root` (`-o`) `<path>` – Root folder of repositories.
-- `--cli` (`-c`) – Use console output.
-- `--single-run` (`-u`) – Run a single scan cycle then exit.
-- `--single-repo` (`-S`) – Only monitor the specified repo.
+- `--interval` (`-i`) `<sec>` – Delay between scans.
+- `--refresh-rate` (`-r`) `<ms>` – TUI refresh rate.
+- `--recursive` (`-e`) – Scan subdirectories recursively.
+- `--max-depth` (`-D`) `<n>` – Limit recursive scan depth.
+- `--ignore` (`-I`) `<dir>` – Directory to ignore (repeatable).
+- `--single-run` (`-u`) – Run a single scan cycle and exit.
+- `--single-repo` (`-S`) – Only monitor the specified root repo.
 - `--rescan-new` (`-w`) `<min>` – Rescan for new repos periodically.
 - `--wait-empty` (`-W`) – Keep retrying when no repos are found.
 - `--dont-skip-timeouts` – Retry repositories that timeout.
-- `--silent` (`-s`) – Disable console output.
-- `--attach` (`-A`) `<name>` – Attach to daemon and show status.
-- `--background` (`-b`) `<name>` – Run in background with attach name.
-- `--reattach` (`-B`) `<name>` – Reattach to background process.
+- `--updated-since` `<N[m|h|d|w|M]>` – Only sync repos updated recently.
+- `--help` (`-h`) – Show this message.
+
+#### Display
+- `--show-skipped` (`-k`) – Show skipped repositories.
+- `--show-version` (`-v`) – Display program version in TUI.
+- `--version` (`-V`) – Print program version and exit.
 - `--show-runtime` – Display elapsed runtime.
 - `--show-repo-count` (`-Z`) – Display number of repositories.
-- `--max-runtime` `<sec>` – Exit after given runtime.
-- `--persist` (`-P`) – Keep running after exit.
-- `--respawn-limit` `<n[,min]>` – Respawn limit within minutes.
-- `--updated-since` `<N[m|h|d|w|M]>` – Only sync repos updated recently.
-- `--auto-config` – Auto detect YAML or JSON config.
-- `--auto-reload-config` – Reload config when the file changes.
-- `--rerun-last` – Reuse args from `.autogitpull.config`.
-- `--save-args` – Save args to config file.
-- `--enable-history` – Enable command history.
 - `--show-commit-date` (`-T`) – Display last commit time.
 - `--show-commit-author` (`-U`) – Display last commit author.
+- `--show-pull-author` – Show author when pull succeeds.
+- `--session-dates-only` – Only show dates for repos pulled this session.
 - `--hide-date-time` – Hide date/time line in TUI.
 - `--hide-header` (`-H`) – Hide status header.
 - `--row-order` `<mode>` – Row ordering (alpha/reverse).
 - `--color` `<ansi>` – Override status color.
 - `--no-colors` (`-C`) – Disable ANSI colors.
+
+#### Config
+- `--auto-config` – Auto detect YAML or JSON config.
+- `--auto-reload-config` – Reload config when the file changes.
+- `--rerun-last` – Reuse args from `.autogitpull.config`.
+- `--save-args` – Save args to config file.
+- `--enable-history` – Enable command history.
+- `--config-yaml` (`-y`) `<file>` – Load options from YAML file.
+- `--config-json` (`-j`) `<file>` – Load options from JSON file.
+
+#### Process
+- `--cli` (`-c`) – Use console output.
+- `--silent` (`-s`) – Disable console output.
+- `--attach` (`-A`) `<name>` – Attach to daemon and show status.
+- `--background` (`-b`) `<name>` – Run in background with attach name.
+- `--reattach` (`-B`) `<name>` – Reattach to background process.
+- `--persist` (`-P`) – Keep running after exit.
+- `--respawn-limit` `<n[,min]>` – Respawn limit within minutes.
+- `--max-runtime` `<sec>` – Exit after given runtime.
 - `--pull-timeout` (`-O`) `<sec>` – Network operation timeout.
-- `--session-dates-only` – Only show dates for repos pulled this session.
-- `--help` (`-h`) – Show this message.
+- `--print-skipped` – Print skipped repositories once.
 
 #### Logging
 - `--log-dir` (`-d`) `<path>` – Directory for pull logs.
@@ -99,6 +107,14 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--single-thread` (`-q`) – Run using a single worker thread.
 - `--max-threads` (`-M`) `<n>` – Cap the scanning worker threads.
 
+#### Resource limits
+- `--cpu-percent` (`-E`) `<n>` – Approximate CPU usage limit.
+- `--cpu-cores` `<mask>` – Set CPU affinity mask.
+- `--mem-limit` (`-Y`) `<MB>` – Abort if memory exceeds this amount.
+- `--download-limit` `<KB/s>` – Limit total download rate.
+- `--upload-limit` `<KB/s>` – Limit total upload rate.
+- `--disk-limit` `<KB/s>` – Limit disk throughput.
+
 #### Tracking
 - `--cpu-poll` `<s>` – CPU polling interval.
 - `--mem-poll` `<s>` – Memory polling interval.
@@ -108,14 +124,6 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--no-thread-tracker` – Disable thread tracker.
 - `--net-tracker` – Track network usage.
 - `--vmem` – Show virtual memory usage.
-
-#### Resource limits
-- `--cpu-percent` (`-E`) `<n>` – Approximate CPU usage limit.
-- `--cpu-cores` `<mask>` – Set CPU affinity mask.
-- `--mem-limit` (`-Y`) `<MB>` – Abort if memory exceeds this amount.
-- `--download-limit` `<KB/s>` – Limit total download rate.
-- `--upload-limit` `<KB/s>` – Limit total upload rate.
-- `--disk-limit` `<KB/s>` – Limit disk throughput.
 
 #### Actions
 - `--check-only` (`-x`) – Only check for updates.
@@ -130,6 +138,7 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--service-config` `<file>` – Config file for service install.
 - `--remove-lock` (`-R`) – Remove directory lock file and exit.
 - `--kill-all` – Terminate running instance and exit.
+- `--ignore-lock` – Don't create or check lock file.
 
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
