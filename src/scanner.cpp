@@ -272,11 +272,14 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
     RepoInfo ri;
     ri.path = p;
     ri.auth_failed = false;
+    bool prev_pulled = false;
     {
         std::lock_guard<std::mutex> lk(mtx);
         auto it = repo_infos.find(p);
-        if (it != repo_infos.end())
+        if (it != repo_infos.end()) {
+            prev_pulled = it->second.pulled;
             ri.pulled = it->second.pulled;
+        }
     }
     {
         std::lock_guard<std::mutex> lk(action_mtx);
@@ -320,7 +323,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         std::lock_guard<std::mutex> lk(mtx);
         repo_infos[p] = ri;
     }
-    if (cli_mode && !silent && ri.pulled) {
+    if (cli_mode && !silent && ri.pulled && !prev_pulled) {
         std::time_t now = std::time(nullptr);
         char buf[32];
         std::strftime(buf, sizeof(buf), "%F %T", std::localtime(&now));
