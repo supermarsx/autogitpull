@@ -12,6 +12,7 @@ bool create_service_unit(const std::string& name, const std::string& exec_path,
                          bool persist = true);
 
 bool remove_service_unit(const std::string& name);
+bool service_unit_exists(const std::string& name);
 
 #ifndef _WIN32
 int create_status_socket(const std::string& name);

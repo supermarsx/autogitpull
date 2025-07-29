@@ -69,6 +69,9 @@ struct Options {
     bool install_service = false;
     bool uninstall_service = false;
     std::string service_config;
+    std::string service_name = "autogitpull";
+    std::string daemon_name = "autogitpull";
+    bool show_service = false;
     bool run_background = false;
     bool reattach = false;
     std::string attach_name;

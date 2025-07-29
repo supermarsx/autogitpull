@@ -90,6 +90,9 @@ Options parse_options(int argc, char* argv[]) {
                                       "--install-service",
                                       "--uninstall-service",
                                       "--service-config",
+                                      "--service-name",
+                                      "--daemon-name",
+                                      "--show-service",
                                       "--attach",
                                       "--background",
                                       "--reattach",
@@ -210,6 +213,19 @@ Options parse_options(int argc, char* argv[]) {
             val = cfg_opt("--service-config");
         opts.service_config = val;
     }
+    if (parser.has_flag("--service-name") || cfg_opts.count("--service-name")) {
+        std::string val = parser.get_option("--service-name");
+        if (val.empty())
+            val = cfg_opt("--service-name");
+        opts.service_name = val;
+    }
+    if (parser.has_flag("--daemon-name") || cfg_opts.count("--daemon-name")) {
+        std::string val = parser.get_option("--daemon-name");
+        if (val.empty())
+            val = cfg_opt("--daemon-name");
+        opts.daemon_name = val;
+    }
+    opts.show_service = parser.has_flag("--show-service") || cfg_flag("--show-service");
     if (parser.has_flag("--attach") || cfg_opts.count("--attach")) {
         std::string val = parser.get_option("--attach");
         if (val.empty())
@@ -604,7 +620,7 @@ Options parse_options(int argc, char* argv[]) {
         opts.root =
             parser.positional().empty() ? fs::path() : fs::path(parser.positional().front());
     }
-    if (opts.root.empty() && !opts.show_help && !opts.print_version &&
+    if (opts.root.empty() && !opts.show_help && !opts.print_version && !opts.show_service &&
         ((opts.attach_name.empty() && !opts.reattach) || opts.run_background))
         throw std::runtime_error("Root path required");
     for (const auto& val : parser.get_all_options("--ignore"))

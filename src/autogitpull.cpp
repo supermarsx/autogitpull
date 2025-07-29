@@ -8,6 +8,11 @@
 #include "git_utils.hpp"
 #include "lock_utils.hpp"
 #include "version.hpp"
+#ifndef _WIN32
+#include "linux_daemon.hpp"
+#else
+#include "windows_service.hpp"
+#endif
 
 namespace fs = std::filesystem;
 
@@ -24,6 +29,16 @@ int main(int argc, char* argv[]) {
         }
         if (opts.print_version) {
             std::cout << AUTOGITPULL_VERSION << "\n";
+            return 0;
+        }
+        if (opts.show_service) {
+#ifndef _WIN32
+            if (procutil::service_unit_exists(opts.daemon_name))
+                std::cout << opts.daemon_name << "\n";
+#else
+            if (winservice::service_exists(opts.service_name))
+                std::cout << opts.service_name << "\n";
+#endif
             return 0;
         }
         if (opts.remove_lock) {
