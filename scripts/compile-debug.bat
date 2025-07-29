@@ -3,7 +3,7 @@ setlocal
 set "SCRIPT_DIR=%~dp0"
 set "ROOT_DIR=%SCRIPT_DIR%.."
 
-set "CXX=clang++"
+set "CXX=g++"
 where %CXX% >nul 2>nul || (
     echo Compiler %CXX% not found.
     exit /b 1
