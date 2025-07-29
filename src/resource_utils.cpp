@@ -215,10 +215,18 @@ double get_cpu_percent() {
     auto now = std::chrono::steady_clock::now();
     if (now - prev_time < cpu_poll_interval)
         return last_cpu_percent;
+    mach_msg_type_number_t count = 0;
+    task_flavor_t flavor = MACH_TASK_BASIC_INFO;
+#ifdef TASK_BASIC_INFO_64
+    task_basic_info_64_data_t info;
+    flavor = TASK_BASIC_INFO_64;
+    count = TASK_BASIC_INFO_64_COUNT;
+#else
     mach_task_basic_info_data_t info;
-    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
-    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info),
-                  &count) != KERN_SUCCESS)
+    count = MACH_TASK_BASIC_INFO_COUNT;
+#endif
+    if (task_info(mach_task_self(), flavor, reinterpret_cast<task_info_t>(&info), &count) !=
+        KERN_SUCCESS)
         return last_cpu_percent;
     static uint64_t prev_user = 0, prev_system = 0;
     uint64_t user_us =
@@ -258,11 +266,15 @@ std::size_t get_memory_usage_mb() {
     else
         last_mem_usage = 0;
 #elif defined(__APPLE__)
-    mach_task_basic_info_data_t info;
-    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    mach_msg_type_number_t count = 0;
     task_flavor_t flavor = MACH_TASK_BASIC_INFO;
 #ifdef TASK_BASIC_INFO_64
+    task_basic_info_64_data_t info;
     flavor = TASK_BASIC_INFO_64;
+    count = TASK_BASIC_INFO_64_COUNT;
+#else
+    mach_task_basic_info_data_t info;
+    count = MACH_TASK_BASIC_INFO_COUNT;
 #endif
     if (task_info(mach_task_self(), flavor, reinterpret_cast<task_info_t>(&info), &count) ==
         KERN_SUCCESS)
@@ -290,11 +302,15 @@ std::size_t get_virtual_memory_kb() {
         return static_cast<std::size_t>(pmc.PrivateUsage / 1024);
     return 0;
 #elif defined(__APPLE__)
-    mach_task_basic_info_data_t info;
-    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    mach_msg_type_number_t count = 0;
     task_flavor_t flavor = MACH_TASK_BASIC_INFO;
 #ifdef TASK_BASIC_INFO_64
+    task_basic_info_64_data_t info;
     flavor = TASK_BASIC_INFO_64;
+    count = TASK_BASIC_INFO_64_COUNT;
+#else
+    mach_task_basic_info_data_t info;
+    count = MACH_TASK_BASIC_INFO_COUNT;
 #endif
     if (task_info(mach_task_self(), flavor, reinterpret_cast<task_info_t>(&info), &count) ==
         KERN_SUCCESS)
