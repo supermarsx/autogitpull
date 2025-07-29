@@ -28,6 +28,101 @@ TEST_CASE("Lock file guards instances") {
     fs::remove_all(dir);
 }
 
+TEST_CASE("find_running_instances lists instances") {
+    namespace fs = std::filesystem;
+    fs::path dir = fs::temp_directory_path() / "instance_list_test";
+    fs::create_directories(dir);
+    fs::path lock = dir / ".autogitpull.lock";
+    fs::remove(lock);
+    procutil::LockFileGuard guard(lock);
+    REQUIRE(guard.locked);
+#ifdef __linux__
+    fs::path sock = fs::temp_directory_path() / "instance_list.sock";
+    int srv = socket(AF_UNIX, SOCK_STREAM, 0);
+    REQUIRE(srv >= 0);
+    sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    std::strncpy(addr.sun_path, sock.c_str(), sizeof(addr.sun_path) - 1);
+    unlink(sock.c_str());
+    REQUIRE(bind(srv, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0);
+    REQUIRE(listen(srv, 1) == 0);
+#endif
+
+    auto list = procutil::find_running_instances();
+
+#ifdef __linux__
+    close(srv);
+    unlink(sock.c_str());
+#endif
+    fs::remove_all(dir);
+
+    bool found_lock = false;
+    bool found_sock = false;
+    for (const auto& [name, pid] : list) {
+        if (name == dir.filename().string()) {
+            found_lock = true;
+            REQUIRE(pid == static_cast<unsigned long>(getpid()));
+        }
+#ifdef __linux__
+        if (name == sock.stem().string()) {
+            found_sock = true;
+            REQUIRE(pid == static_cast<unsigned long>(getpid()));
+        }
+#endif
+    }
+    REQUIRE(found_lock);
+#ifdef __linux__
+    REQUIRE(found_sock);
+#endif
+}
+
+TEST_CASE("find_running_instances detects process name") {
+#if defined(__linux__) || defined(__APPLE__)
+    pid_t pid = fork();
+    REQUIRE(pid >= 0);
+    if (pid == 0) {
+        execl("/bin/bash", "bash", "-c", "exec -a autogitpull sleep 5", nullptr);
+        _exit(1);
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    auto list = procutil::find_running_instances();
+    bool found = false;
+    for (const auto& [name, p] : list) {
+        if (p == static_cast<unsigned long>(pid))
+            found = true;
+    }
+    kill(pid, SIGTERM);
+    waitpid(pid, nullptr, 0);
+    REQUIRE(found);
+#elif defined(_WIN32)
+    wchar_t sysDir[MAX_PATH];
+    GetSystemDirectoryW(sysDir, MAX_PATH);
+    wcscat_s(sysDir, L"\\cmd.exe");
+    wchar_t tmpPath[MAX_PATH];
+    GetTempPathW(MAX_PATH, tmpPath);
+    wcscat_s(tmpPath, L"autogitpull.exe");
+    CopyFileW(sysDir, tmpPath, FALSE);
+    STARTUPINFOW si{};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi{};
+    REQUIRE(CreateProcessW(tmpPath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    auto list = procutil::find_running_instances();
+    bool found = false;
+    for (const auto& [name, p] : list) {
+        if (p == static_cast<unsigned long>(pi.dwProcessId))
+            found = true;
+    }
+    TerminateProcess(pi.hProcess, 0);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    DeleteFileW(tmpPath);
+    REQUIRE(found);
+#else
+    SUCCEED("process listing not supported");
+#endif
+}
+
 TEST_CASE("Thread count reflects running threads") {
     procutil::set_thread_poll_interval(1);
     std::size_t before = procutil::get_thread_count();

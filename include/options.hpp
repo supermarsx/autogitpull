@@ -81,6 +81,7 @@ struct Options {
     int respawn_max = 0;
     std::chrono::minutes respawn_window{10};
     bool kill_all = false;
+    bool list_instances = false;
     bool rescan_new = false;
     std::chrono::minutes rescan_interval{5};
     std::chrono::seconds updated_since{0};
