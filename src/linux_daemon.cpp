@@ -79,6 +79,40 @@ bool remove_service_unit(const std::string& name) {
 
 bool service_unit_exists(const std::string& name) { return fs::exists(unit_path(name)); }
 
+bool start_service_unit(const std::string& name) {
+    std::string cmd = "systemctl start " + name + " > /dev/null 2>&1";
+    return std::system(cmd.c_str()) == 0;
+}
+
+bool stop_service_unit(const std::string& name, bool force) {
+    std::string cmd = "systemctl stop " + name + " > /dev/null 2>&1";
+    bool ok = std::system(cmd.c_str()) == 0;
+    if (!ok && force) {
+        std::string killcmd = "systemctl kill -s SIGKILL " + name + " > /dev/null 2>&1";
+        std::system(killcmd.c_str());
+        ok = std::system(cmd.c_str()) == 0;
+    }
+    return ok;
+}
+
+bool restart_service_unit(const std::string& name, bool force) {
+    std::string cmd = "systemctl restart " + name + " > /dev/null 2>&1";
+    bool ok = std::system(cmd.c_str()) == 0;
+    if (!ok && force) {
+        stop_service_unit(name, true);
+        ok = std::system(cmd.c_str()) == 0;
+    }
+    return ok;
+}
+
+bool service_unit_status(const std::string& name, ServiceStatus& out) {
+    std::string status_cmd = "systemctl status " + name + " > /dev/null 2>&1";
+    out.exists = std::system(status_cmd.c_str()) == 0;
+    std::string active_cmd = "systemctl is-active --quiet " + name + " > /dev/null 2>&1";
+    out.running = std::system(active_cmd.c_str()) == 0;
+    return out.exists;
+}
+
 int create_status_socket(const std::string& name) {
     std::string path = "/tmp/" + name + ".sock";
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -126,6 +160,10 @@ bool create_service_unit(const std::string&, const std::string&, const std::stri
 
 bool remove_service_unit(const std::string&) { return false; }
 bool service_unit_exists(const std::string&) { return false; }
+bool start_service_unit(const std::string&) { return false; }
+bool stop_service_unit(const std::string&, bool) { return false; }
+bool restart_service_unit(const std::string&, bool) { return false; }
+bool service_unit_status(const std::string&, ServiceStatus&) { return false; }
 #endif
 
 } // namespace procutil

@@ -89,9 +89,19 @@ Options parse_options(int argc, char* argv[]) {
                                       "--daemon-config",
                                       "--install-service",
                                       "--uninstall-service",
+                                      "--start-service",
+                                      "--stop-service",
+                                      "--force-stop-service",
+                                      "--restart-service",
+                                      "--force-restart-service",
                                       "--service-config",
                                       "--service-name",
                                       "--daemon-name",
+                                      "--start-daemon",
+                                      "--stop-daemon",
+                                      "--force-stop-daemon",
+                                      "--restart-daemon",
+                                      "--force-restart-daemon",
                                       "--show-service",
                                       "--attach",
                                       "--background",
@@ -199,6 +209,13 @@ Options parse_options(int argc, char* argv[]) {
         opts.cli = true;
     opts.install_daemon = parser.has_flag("--install-daemon") || cfg_flag("--install-daemon");
     opts.uninstall_daemon = parser.has_flag("--uninstall-daemon") || cfg_flag("--uninstall-daemon");
+    opts.start_daemon = parser.has_flag("--start-daemon") || cfg_flag("--start-daemon");
+    opts.stop_daemon = parser.has_flag("--stop-daemon") || cfg_flag("--stop-daemon");
+    opts.force_stop_daemon =
+        parser.has_flag("--force-stop-daemon") || cfg_flag("--force-stop-daemon");
+    opts.restart_daemon = parser.has_flag("--restart-daemon") || cfg_flag("--restart-daemon");
+    opts.force_restart_daemon =
+        parser.has_flag("--force-restart-daemon") || cfg_flag("--force-restart-daemon");
     if (parser.has_flag("--daemon-config") || cfg_opts.count("--daemon-config")) {
         std::string val = parser.get_option("--daemon-config");
         if (val.empty())
@@ -208,6 +225,13 @@ Options parse_options(int argc, char* argv[]) {
     opts.install_service = parser.has_flag("--install-service") || cfg_flag("--install-service");
     opts.uninstall_service =
         parser.has_flag("--uninstall-service") || cfg_flag("--uninstall-service");
+    opts.start_service = parser.has_flag("--start-service") || cfg_flag("--start-service");
+    opts.stop_service = parser.has_flag("--stop-service") || cfg_flag("--stop-service");
+    opts.force_stop_service =
+        parser.has_flag("--force-stop-service") || cfg_flag("--force-stop-service");
+    opts.restart_service = parser.has_flag("--restart-service") || cfg_flag("--restart-service");
+    opts.force_restart_service =
+        parser.has_flag("--force-restart-service") || cfg_flag("--force-restart-service");
     if (parser.has_flag("--service-config") || cfg_opts.count("--service-config")) {
         std::string val = parser.get_option("--service-config");
         if (val.empty())

@@ -12,6 +12,22 @@ TEST_CASE("parse_options service flags") {
     REQUIRE(opts2.uninstall_service);
 }
 
+TEST_CASE("parse_options service control flags") {
+    const char* argv[] = {"prog", "path", "--start-service", "--stop-service", "--restart-service"};
+    Options opts = parse_options(5, const_cast<char**>(argv));
+    REQUIRE(opts.start_service);
+    REQUIRE(opts.stop_service);
+    REQUIRE(opts.restart_service);
+}
+
+TEST_CASE("parse_options daemon control flags") {
+    const char* argv[] = {"prog", "path", "--start-daemon", "--stop-daemon", "--restart-daemon"};
+    Options opts = parse_options(5, const_cast<char**>(argv));
+    REQUIRE(opts.start_daemon);
+    REQUIRE(opts.stop_daemon);
+    REQUIRE(opts.restart_daemon);
+}
+
 TEST_CASE("parse_options service name flags") {
     const char* argv[] = {"prog", "path", "--service-name", "svc"};
     Options opts = parse_options(4, const_cast<char**>(argv));

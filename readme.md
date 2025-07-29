@@ -135,6 +135,16 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--daemon-config` `<file>` – Config file for daemon install.
 - `--install-service` – Install system service.
 - `--uninstall-service` – Uninstall system service.
+- `--start-service` – Start installed service.
+- `--stop-service` – Stop installed service.
+- `--force-stop-service` – Force stop service.
+- `--restart-service` – Restart service.
+- `--force-restart-service` – Force restart service.
+- `--start-daemon` – Start daemon unit.
+- `--stop-daemon` – Stop daemon unit.
+- `--force-stop-daemon` – Force stop daemon.
+- `--restart-daemon` – Restart daemon unit.
+- `--force-restart-daemon` – Force restart daemon.
 - `--service-config` `<file>` – Config file for service install.
 - `--remove-lock` (`-R`) – Remove directory lock file and exit.
 - `--kill-all` – Terminate running instance and exit.

@@ -93,6 +93,68 @@ bool service_exists(const std::string& name) {
     return true;
 }
 
+bool start_service(const std::string& name) {
+    SC_HANDLE scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!scm)
+        return false;
+    SC_HANDLE svc = OpenServiceA(scm, name.c_str(), SERVICE_START);
+    if (!svc) {
+        CloseServiceHandle(scm);
+        return false;
+    }
+    bool ok = StartServiceA(svc, 0, nullptr) != 0;
+    CloseServiceHandle(svc);
+    CloseServiceHandle(scm);
+    return ok;
+}
+
+bool stop_service(const std::string& name, bool force) {
+    SC_HANDLE scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!scm)
+        return false;
+    SC_HANDLE svc = OpenServiceA(scm, name.c_str(), SERVICE_STOP | SERVICE_QUERY_STATUS);
+    if (!svc) {
+        CloseServiceHandle(scm);
+        return false;
+    }
+    SERVICE_STATUS status{};
+    bool ok = ControlService(svc, SERVICE_CONTROL_STOP, &status) != 0;
+    if (!ok && force) {
+        ok = ControlService(svc, SERVICE_CONTROL_STOP, &status) != 0;
+    }
+    CloseServiceHandle(svc);
+    CloseServiceHandle(scm);
+    return ok;
+}
+
+bool restart_service(const std::string& name, bool force) {
+    bool ok = stop_service(name, force);
+    if (!ok && !force)
+        return false;
+    return start_service(name);
+}
+
+bool service_status(const std::string& name, ServiceStatus& out) {
+    out.exists = false;
+    out.running = false;
+    SC_HANDLE scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!scm)
+        return false;
+    SC_HANDLE svc = OpenServiceA(scm, name.c_str(), SERVICE_QUERY_STATUS);
+    if (!svc) {
+        CloseServiceHandle(scm);
+        return false;
+    }
+    SERVICE_STATUS status{};
+    if (QueryServiceStatus(svc, &status)) {
+        out.exists = true;
+        out.running = status.dwCurrentState == SERVICE_RUNNING;
+    }
+    CloseServiceHandle(svc);
+    CloseServiceHandle(scm);
+    return out.exists;
+}
+
 int create_status_socket(const std::string& name) {
     (void)name;
     return -1;
