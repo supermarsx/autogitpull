@@ -8,7 +8,8 @@ rem  compresses the result using UPX.
 rem *************************************************************
 
 set "SCRIPT_DIR=%~dp0"
-set "CXXFLAGS=-std=c++20 -Os -flto -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -s -DYAML_CPP_STATIC_DEFINE -Wl,--gc-sections -pipe -static -static-libgcc -static-libstdc++"
+rem Enable exceptions and RTTI to support normal build features
+set "CXXFLAGS=-std=c++20 -Os -flto -ffunction-sections -fdata-sections -s -DYAML_CPP_STATIC_DEFINE -Wl,--gc-sections -pipe -static -static-libgcc -static-libstdc++"
 
 pushd "%SCRIPT_DIR%" || exit /b 1
 call "%SCRIPT_DIR%compile.bat" %* || exit /b 1
