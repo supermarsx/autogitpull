@@ -162,9 +162,13 @@ std::vector<std::pair<std::string, unsigned long>> find_running_instances() {
         pe.dwSize = sizeof(pe);
         if (Process32First(snap, &pe)) {
             do {
-                std::wstring exe = pe.szExeFile;
-                std::wstring name = exe;
+#ifdef UNICODE
+                std::wstring name = pe.szExeFile;
                 if (name == L"autogitpull.exe" || name == L"autogitpull")
+#else
+                std::string name = pe.szExeFile;
+                if (name == "autogitpull.exe" || name == "autogitpull")
+#endif
                     add_inst("autogitpull", static_cast<unsigned long>(pe.th32ProcessID));
             } while (Process32Next(snap, &pe));
         }
