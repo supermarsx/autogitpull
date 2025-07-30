@@ -84,6 +84,8 @@ void print_help(const char* prog) {
         {"--force-stop-daemon", "", "", "Force stop daemon", "Actions"},
         {"--restart-daemon", "", "", "Restart daemon service", "Actions"},
         {"--force-restart-daemon", "", "", "Force restart daemon", "Actions"},
+        {"--service-status", "", "", "Check service existence and running state", "Actions"},
+        {"--daemon-status", "", "", "Check daemon existence and running state", "Actions"},
         {"--show-service", "", "", "Show installed service name", "Actions"},
         {"--remove-lock", "-R", "", "Remove directory lock file and exit", "Actions"},
         {"--kill-all", "", "", "Terminate running instance and exit", "Actions"},

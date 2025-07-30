@@ -47,6 +47,18 @@ TEST_CASE("parse_options show service flag") {
     REQUIRE(opts.show_service);
 }
 
+TEST_CASE("parse_options service status flag") {
+    const char* argv[] = {"prog", "path", "--service-status"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.service_status);
+}
+
+TEST_CASE("parse_options daemon status flag") {
+    const char* argv[] = {"prog", "path", "--daemon-status"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.daemon_status);
+}
+
 TEST_CASE("parse_options list services flags") {
     const char* argv[] = {"prog", "path", "--list-services"};
     Options opts = parse_options(3, const_cast<char**>(argv));

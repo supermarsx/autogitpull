@@ -81,6 +81,8 @@ struct Options {
     bool force_stop_daemon = false;
     bool restart_daemon = false;
     bool force_restart_daemon = false;
+    bool service_status = false;
+    bool daemon_status = false;
     bool show_service = false;
     bool run_background = false;
     bool reattach = false;
