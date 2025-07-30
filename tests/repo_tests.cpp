@@ -51,6 +51,19 @@ TEST_CASE("build_repo_list ignores directories") {
     fs::remove_all(root);
 }
 
+TEST_CASE("build_repo_list skips files") {
+    fs::path root = fs::temp_directory_path() / "file_scan_test";
+    fs::remove_all(root);
+    fs::create_directories(root / "repo");
+    std::ofstream(root / "file.txt") << "ignore";
+
+    std::vector<fs::path> repos = build_repo_list(root, false, {}, 0);
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "repo") != repos.end());
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "file.txt") == repos.end());
+
+    fs::remove_all(root);
+}
+
 TEST_CASE("recursive iterator finds nested repo") {
     git::GitInitGuard guard;
     fs::path root = fs::temp_directory_path() / "recursive_test";

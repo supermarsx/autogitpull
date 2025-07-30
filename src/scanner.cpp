@@ -57,6 +57,11 @@ std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
                 ec.clear();
                 continue;
             }
+            if (!it->is_directory(ec)) {
+                if (ec)
+                    ec.clear();
+                continue;
+            }
             fs::path p = it->path();
             if (std::find(ignore.begin(), ignore.end(), p) != ignore.end())
                 continue;
