@@ -102,6 +102,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--force-stop-daemon",
                                       "--restart-daemon",
                                       "--force-restart-daemon",
+                                      "--service-status",
+                                      "--daemon-status",
                                       "--show-service",
                                       "--attach",
                                       "--background",
@@ -218,6 +220,8 @@ Options parse_options(int argc, char* argv[]) {
     opts.restart_daemon = parser.has_flag("--restart-daemon") || cfg_flag("--restart-daemon");
     opts.force_restart_daemon =
         parser.has_flag("--force-restart-daemon") || cfg_flag("--force-restart-daemon");
+    opts.service_status = parser.has_flag("--service-status") || cfg_flag("--service-status");
+    opts.daemon_status = parser.has_flag("--daemon-status") || cfg_flag("--daemon-status");
     if (parser.has_flag("--daemon-config") || cfg_opts.count("--daemon-config")) {
         std::string val = parser.get_option("--daemon-config");
         if (val.empty())

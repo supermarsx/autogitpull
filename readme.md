@@ -140,11 +140,13 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--force-stop-service` – Force stop service.
 - `--restart-service` – Restart service.
 - `--force-restart-service` – Force restart service.
+- `--service-status` – Check if the service exists and is running.
 - `--start-daemon` – Start daemon unit.
 - `--stop-daemon` – Stop daemon unit.
 - `--force-stop-daemon` – Force stop daemon.
 - `--restart-daemon` – Restart daemon unit.
 - `--force-restart-daemon` – Force restart daemon.
+- `--daemon-status` – Check if the daemon exists and is running.
 - `--service-config` `<file>` – Config file for service install.
 - `--remove-lock` (`-R`) – Remove directory lock file and exit.
 - `--kill-all` – Terminate running instance and exit.

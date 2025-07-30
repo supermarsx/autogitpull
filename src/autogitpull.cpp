@@ -51,6 +51,33 @@ int main(int argc, char* argv[]) {
                 std::cout << name << " " << (st.running ? "running" : "stopped") << "\n";
             return 0;
         }
+        if (opts.service_status) {
+#ifndef _WIN32
+            procutil::ServiceStatus st{};
+            procutil::service_unit_status(opts.daemon_name, st);
+#else
+            winservice::ServiceStatus st{};
+            winservice::service_status(opts.service_name, st);
+#endif
+            std::cout << (st.exists ? "exists" : "missing") << " "
+                      << (st.running ? "running" : "stopped") << "\n";
+            return 0;
+        }
+        if (opts.daemon_status) {
+#ifndef _WIN32
+            procutil::ServiceStatus st{};
+            procutil::service_unit_status(opts.daemon_name, st);
+            std::cout << (st.exists ? "exists" : "missing") << " "
+                      << (st.running ? "running" : "stopped") << "\n";
+            return 0;
+#else
+            winservice::ServiceStatus st{};
+            winservice::service_status(opts.service_name, st);
+            std::cout << (st.exists ? "exists" : "missing") << " "
+                      << (st.running ? "running" : "stopped") << "\n";
+            return 0;
+#endif
+        }
         if (opts.start_service) {
 #ifndef _WIN32
             return procutil::start_service_unit(opts.daemon_name) ? 0 : 1;
