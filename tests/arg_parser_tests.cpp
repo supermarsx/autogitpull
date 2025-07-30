@@ -129,6 +129,13 @@ TEST_CASE("ArgParser daemon flags") {
     REQUIRE(parser2.has_flag("--uninstall-daemon"));
 }
 
+TEST_CASE("ArgParser persist with value") {
+    const char* argv[] = {"prog", "--persist=myrun"};
+    ArgParser parser(2, const_cast<char**>(argv), {"--persist"});
+    REQUIRE(parser.has_flag("--persist"));
+    REQUIRE(parser.get_option("--persist") == std::string("myrun"));
+}
+
 TEST_CASE("ArgParser new short flags") {
     const char* argv[] = {"prog", "-x", "-m", "-w", "-X"};
     ArgParser parser(5, const_cast<char**>(argv),
