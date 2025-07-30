@@ -41,6 +41,16 @@ int main(int argc, char* argv[]) {
 #endif
             return 0;
         }
+        if (opts.list_services) {
+#ifndef _WIN32
+            auto svcs = procutil::list_installed_services();
+#else
+            auto svcs = winservice::list_installed_services();
+#endif
+            for (const auto& [name, st] : svcs)
+                std::cout << name << " " << (st.running ? "running" : "stopped") << "\n";
+            return 0;
+        }
         if (opts.start_service) {
 #ifndef _WIN32
             return procutil::start_service_unit(opts.daemon_name) ? 0 : 1;

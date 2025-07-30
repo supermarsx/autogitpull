@@ -115,6 +115,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--respawn-limit",
                                       "--kill-all",
                                       "--list-instances",
+                                      "--list-services",
+                                      "--list-daemons",
                                       "--rescan-new",
                                       "--show-commit-date",
                                       "--show-commit-author",
@@ -313,6 +315,8 @@ Options parse_options(int argc, char* argv[]) {
     }
     opts.kill_all = parser.has_flag("--kill-all") || cfg_flag("--kill-all");
     opts.list_instances = parser.has_flag("--list-instances") || cfg_flag("--list-instances");
+    opts.list_services = parser.has_flag("--list-services") || parser.has_flag("--list-daemons") ||
+                         cfg_flag("--list-services") || cfg_flag("--list-daemons");
     opts.rescan_new = parser.has_flag("--rescan-new") || cfg_flag("--rescan-new");
     if (opts.rescan_new) {
         std::string val = parser.get_option("--rescan-new");

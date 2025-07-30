@@ -148,6 +148,8 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--service-config` `<file>` – Config file for service install.
 - `--remove-lock` (`-R`) – Remove directory lock file and exit.
 - `--kill-all` – Terminate running instance and exit.
+- `--list-services` – List installed service units.
+- `--list-daemons` – Alias for `--list-services`.
 - `--ignore-lock` – Don't create or check lock file.
 
 

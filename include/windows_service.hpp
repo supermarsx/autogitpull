@@ -2,6 +2,8 @@
 #define WINDOWS_SERVICE_HPP
 
 #include <string>
+#include <vector>
+#include <utility>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -26,6 +28,7 @@ bool start_service(const std::string& name);
 bool stop_service(const std::string& name, bool force = false);
 bool restart_service(const std::string& name, bool force = false);
 bool service_status(const std::string& name, ServiceStatus& out);
+std::vector<std::pair<std::string, ServiceStatus>> list_installed_services();
 int create_status_socket(const std::string& name);
 int connect_status_socket(const std::string& name);
 void remove_status_socket(const std::string& name, int fd);
@@ -38,6 +41,7 @@ inline bool install_service(const std::string&, const std::string&, const std::s
 }
 inline bool uninstall_service(const std::string&) { return false; }
 inline bool service_exists(const std::string&) { return false; }
+inline std::vector<std::pair<std::string, ServiceStatus>> list_installed_services() { return {}; }
 #endif
 
 } // namespace winservice

@@ -3,6 +3,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <atomic>
+#include <vector>
+#include <string>
 #include "options.hpp"
 #include "logger.hpp"
 
@@ -153,6 +155,55 @@ bool service_status(const std::string& name, ServiceStatus& out) {
     CloseServiceHandle(svc);
     CloseServiceHandle(scm);
     return out.exists;
+}
+
+std::vector<std::pair<std::string, ServiceStatus>> list_installed_services() {
+    std::vector<std::pair<std::string, ServiceStatus>> result;
+    SC_HANDLE scm =
+        OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE | SC_MANAGER_CONNECT);
+    if (!scm)
+        return result;
+    DWORD bytes_needed = 0, count = 0, resume = 0;
+    EnumServicesStatusExA(scm, SC_ENUM_PROCESS_INFO, SERVICE_WIN32, SERVICE_STATE_ALL, nullptr, 0,
+                          &bytes_needed, &count, &resume, nullptr);
+    if (GetLastError() != ERROR_MORE_DATA) {
+        CloseServiceHandle(scm);
+        return result;
+    }
+    std::vector<BYTE> buf(bytes_needed);
+    if (!EnumServicesStatusExA(scm, SC_ENUM_PROCESS_INFO, SERVICE_WIN32, SERVICE_STATE_ALL,
+                               buf.data(), bytes_needed, &bytes_needed, &count, &resume, nullptr)) {
+        CloseServiceHandle(scm);
+        return result;
+    }
+    auto services = reinterpret_cast<ENUM_SERVICE_STATUS_PROCESSA*>(buf.data());
+    for (DWORD i = 0; i < count; ++i) {
+        SC_HANDLE svc = OpenServiceA(scm, services[i].lpServiceName,
+                                     SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS);
+        if (!svc)
+            continue;
+        DWORD needed = 0;
+        QueryServiceConfigA(svc, nullptr, 0, &needed);
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+            CloseServiceHandle(svc);
+            continue;
+        }
+        std::vector<char> cfg_buf(needed);
+        if (QueryServiceConfigA(svc, reinterpret_cast<LPQUERY_SERVICE_CONFIGA>(cfg_buf.data()),
+                                needed, &needed)) {
+            QUERY_SERVICE_CONFIGA* cfg = reinterpret_cast<QUERY_SERVICE_CONFIGA*>(cfg_buf.data());
+            if (cfg->lpBinaryPathName &&
+                std::string(cfg->lpBinaryPathName).find("autogitpull") != std::string::npos) {
+                ServiceStatus st{};
+                st.exists = true;
+                st.running = services[i].ServiceStatusProcess.dwCurrentState == SERVICE_RUNNING;
+                result.emplace_back(services[i].lpServiceName, st);
+            }
+        }
+        CloseServiceHandle(svc);
+    }
+    CloseServiceHandle(scm);
+    return result;
 }
 
 int create_status_socket(const std::string& name) {
