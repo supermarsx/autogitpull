@@ -92,6 +92,7 @@ struct Options {
     std::chrono::minutes respawn_window{10};
     bool kill_all = false;
     bool list_instances = false;
+    bool list_services = false;
     bool rescan_new = false;
     std::chrono::minutes rescan_interval{5};
     std::chrono::seconds updated_since{0};

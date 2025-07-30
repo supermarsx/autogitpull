@@ -10,6 +10,8 @@
 #endif
 #include <fstream>
 #include <filesystem>
+#include <vector>
+#include <cstdlib>
 
 namespace fs = std::filesystem;
 
@@ -48,8 +50,15 @@ bool daemonize() {
     return true;
 }
 
+static fs::path unit_dir() {
+    const char* env = std::getenv("AUTOGITPULL_UNIT_DIR");
+    if (env && *env)
+        return env;
+    return "/etc/systemd/system";
+}
+
 static std::string unit_path(const std::string& name) {
-    return "/etc/systemd/system/" + name + ".service";
+    return (unit_dir() / (name + ".service")).string();
 }
 
 bool create_service_unit(const std::string& name, const std::string& exec_path,
@@ -113,6 +122,35 @@ bool service_unit_status(const std::string& name, ServiceStatus& out) {
     return out.exists;
 }
 
+std::vector<std::pair<std::string, ServiceStatus>> list_installed_services() {
+    std::vector<std::pair<std::string, ServiceStatus>> result;
+    fs::path dir = unit_dir();
+    if (!fs::exists(dir))
+        return result;
+    for (const auto& entry : fs::directory_iterator(dir)) {
+        if (entry.path().extension() != ".service")
+            continue;
+        std::ifstream in(entry.path());
+        if (!in.is_open())
+            continue;
+        std::string line;
+        bool ours = false;
+        while (std::getline(in, line)) {
+            if (line.rfind("ExecStart=", 0) == 0 && line.find("autogitpull") != std::string::npos) {
+                ours = true;
+                break;
+            }
+        }
+        if (ours) {
+            std::string name = entry.path().stem().string();
+            ServiceStatus st{};
+            service_unit_status(name, st);
+            result.emplace_back(name, st);
+        }
+    }
+    return result;
+}
+
 int create_status_socket(const std::string& name) {
     std::string path = "/tmp/" + name + ".sock";
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -164,6 +202,7 @@ bool start_service_unit(const std::string&) { return false; }
 bool stop_service_unit(const std::string&, bool) { return false; }
 bool restart_service_unit(const std::string&, bool) { return false; }
 bool service_unit_status(const std::string&, ServiceStatus&) { return false; }
+std::vector<std::pair<std::string, ServiceStatus>> list_installed_services() { return {}; }
 #endif
 
 } // namespace procutil

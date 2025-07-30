@@ -2,6 +2,8 @@
 #define LINUX_DAEMON_HPP
 
 #include <string>
+#include <vector>
+#include <utility>
 
 namespace procutil {
 
@@ -23,6 +25,7 @@ bool start_service_unit(const std::string& name);
 bool stop_service_unit(const std::string& name, bool force = false);
 bool restart_service_unit(const std::string& name, bool force = false);
 bool service_unit_status(const std::string& name, ServiceStatus& out);
+std::vector<std::pair<std::string, ServiceStatus>> list_installed_services();
 
 #ifndef _WIN32
 int create_status_socket(const std::string& name);
@@ -32,6 +35,7 @@ void remove_status_socket(const std::string& name, int fd);
 inline int create_status_socket(const std::string&) { return -1; }
 inline int connect_status_socket(const std::string&) { return -1; }
 inline void remove_status_socket(const std::string&, int) {}
+inline std::vector<std::pair<std::string, ServiceStatus>> list_installed_services() { return {}; }
 #endif
 
 } // namespace procutil
