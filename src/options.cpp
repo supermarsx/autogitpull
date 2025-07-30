@@ -291,7 +291,13 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Invalid value for --max-runtime");
         opts.runtime_limit = std::chrono::seconds(sec);
     }
-    opts.persist = parser.has_flag("--persist") || cfg_flag("--persist");
+    bool persist_flag = parser.has_flag("--persist") || cfg_flag("--persist");
+    std::string persist_val;
+    if (persist_flag) {
+        persist_val = parser.get_option("--persist");
+        if (persist_val.empty())
+            persist_val = cfg_opt("--persist");
+    }
     if (parser.has_flag("--respawn-limit") || cfg_opts.count("--respawn-limit")) {
         std::string val = parser.get_option("--respawn-limit");
         if (val.empty())
@@ -651,8 +657,16 @@ Options parse_options(int argc, char* argv[]) {
             parser.positional().empty() ? fs::path() : fs::path(parser.positional().front());
     }
     if (opts.root.empty() && !opts.show_help && !opts.print_version && !opts.show_service &&
-        ((opts.attach_name.empty() && !opts.reattach) || opts.run_background))
+        ((opts.attach_name.empty() && !opts.reattach) || opts.run_background || persist_flag))
         throw std::runtime_error("Root path required");
+    if (persist_flag) {
+        opts.persist = true;
+        std::string name = persist_val;
+        if (name.empty())
+            name = opts.root.filename().string();
+        if (opts.attach_name.empty())
+            opts.attach_name = name;
+    }
     for (const auto& val : parser.get_all_options("--ignore"))
         opts.ignore_dirs.push_back(val);
 

@@ -35,7 +35,7 @@ void print_help(const char* prog) {
         {"--attach", "-A", "<name>", "Attach to daemon and show status", "Process"},
         {"--background", "-b", "<name>", "Run in background with attach name", "Process"},
         {"--reattach", "-B", "<name>", "Reattach to background process", "Process"},
-        {"--persist", "-P", "", "Keep running after exit", "Process"},
+        {"--persist", "-P", "[name]", "Keep running after exit (optional name)", "Process"},
         {"--respawn-limit", "", "<n[,min]>", "Respawn limit within minutes", "Process"},
         {"--max-runtime", "", "<sec>", "Exit after given runtime", "Process"},
         {"--pull-timeout", "-O", "<sec>", "Network operation timeout", "Process"},

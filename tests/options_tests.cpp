@@ -7,6 +7,7 @@ TEST_CASE("parse_options service flags") {
     REQUIRE(opts.install_service);
     REQUIRE(opts.service_config == std::string("cfg"));
     REQUIRE(opts.persist);
+    REQUIRE(opts.attach_name == std::string("path"));
     const char* argv2[] = {"prog", "path", "--uninstall-service"};
     Options opts2 = parse_options(3, const_cast<char**>(argv2));
     REQUIRE(opts2.uninstall_service);
@@ -73,6 +74,13 @@ TEST_CASE("parse_options reattach option") {
     Options opts = parse_options(3, const_cast<char**>(argv));
     REQUIRE(opts.reattach);
     REQUIRE(opts.attach_name == std::string("foo"));
+}
+
+TEST_CASE("parse_options persist name option") {
+    const char* argv[] = {"prog", "path", "--persist=myrun"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.persist);
+    REQUIRE(opts.attach_name == std::string("myrun"));
 }
 
 TEST_CASE("parse_options runtime options") {
