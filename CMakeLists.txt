@@ -40,7 +40,7 @@ target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread)
 
 add_executable(autogitpull src/autogitpull.cpp src/tui.cpp)
-target_link_libraries(autogitpull PRIVATE autogitpull_lib)
+target_link_libraries(autogitpull PRIVATE autogitpull_lib ftxui::dom ftxui::screen)
 if(MSVC)
     target_link_options(autogitpull PRIVATE /MT)
 elseif(APPLE)
@@ -53,6 +53,17 @@ if(MINGW)
 endif()
 
 include(FetchContent)
+
+find_package(ftxui CONFIG QUIET)
+if(NOT ftxui_FOUND)
+    message(STATUS "FTXUI not found, fetching via FetchContent...")
+    FetchContent_Declare(
+        ftxui
+        GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI.git
+        GIT_TAG v5.0.0
+    )
+    FetchContent_MakeAvailable(ftxui)
+endif()
 
 enable_testing()
 find_package(Catch2 3 QUIET)
@@ -69,7 +80,7 @@ add_executable(autogitpull_tests
   tests/arg_parser_tests.cpp tests/utils_tests.cpp tests/options_tests.cpp tests/config_tests.cpp tests/repo_tests.cpp tests/process_tests.cpp src/autogitpull.cpp src/tui.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
-target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib)
+target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib ftxui::dom ftxui::screen)
 add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
 
 # Address sanitizer memory leak test
@@ -98,5 +109,5 @@ target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)
 target_compile_options(memory_leak_test PRIVATE -fsanitize=address)
 target_link_options(memory_leak_test PRIVATE -fsanitize=address)
-target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain autogitpull_lib)
+target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain autogitpull_lib ftxui::dom ftxui::screen)
 add_test(NAME memory_leak_test COMMAND memory_leak_test)

@@ -9,21 +9,14 @@
 #include "resource_utils.hpp"
 #include "system_utils.hpp"
 #include "version.hpp"
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
 namespace fs = std::filesystem;
-
-const char* COLOR_RESET = "\033[0m";
-const char* COLOR_GREEN = "\033[32m";
-const char* COLOR_YELLOW = "\033[33m";
-const char* COLOR_RED = "\033[31m";
-const char* COLOR_CYAN = "\033[36m";
-const char* COLOR_GRAY = "\033[90m";
-const char* COLOR_BOLD = "\033[1m";
-const char* COLOR_MAGENTA = "\033[35m";
 
 #ifdef _WIN32
 void enable_win_ansi() {
@@ -40,6 +33,8 @@ void enable_win_ansi() {
 void enable_win_ansi() {}
 #endif
 
+using namespace ftxui;
+
 void draw_tui(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int interval, int seconds_left,
               bool scanning, const std::string& action, bool show_skipped, bool show_version,
@@ -47,83 +42,38 @@ void draw_tui(const std::vector<fs::path>& all_repos,
               bool show_affinity, bool track_vmem, bool show_commit_date, bool show_commit_author,
               bool session_dates_only, bool no_colors, const std::string& custom_color,
               int runtime_sec, bool show_datetime_line, bool show_header, bool show_repo_count) {
-    std::ostringstream out;
-    auto choose = [&](const char* def) {
-        return no_colors ? "" : (custom_color.empty() ? def : custom_color.c_str());
-    };
-    std::string reset = no_colors ? "" : COLOR_RESET;
-    std::string green = choose(COLOR_GREEN);
-    std::string yellow = choose(COLOR_YELLOW);
-    std::string red = choose(COLOR_RED);
-    std::string cyan = choose(COLOR_CYAN);
-    std::string gray = choose(COLOR_GRAY);
-    std::string bold = choose(COLOR_BOLD);
-    std::string magenta = choose(COLOR_MAGENTA);
-    out << "\033[2J\033[H";
-    out << bold << "AutoGitPull TUI";
+    (void)track_cpu;
+    (void)track_mem;
+    (void)track_threads;
+    (void)track_net;
+    (void)show_affinity;
+    (void)track_vmem;
+    (void)show_commit_date;
+    (void)show_commit_author;
+    (void)session_dates_only;
+
+    std::vector<Element> lines;
+    lines.push_back(text("AutoGitPull TUI") | bold);
     if (show_version)
-        out << " v" << AUTOGITPULL_VERSION;
-    out << reset << "\n";
+        lines.back() =
+            hbox({text("AutoGitPull TUI"), text(std::string(" v") + AUTOGITPULL_VERSION) | bold});
     if (show_datetime_line)
-        out << "Date: " << cyan << timestamp() << reset << "\n";
-    out << "Monitoring: " << yellow
-        << (all_repos.empty() ? "" : all_repos[0].parent_path().string()) << reset << "\n";
+        lines.push_back(text("Date: " + timestamp()));
+    if (!all_repos.empty())
+        lines.push_back(text("Monitoring: " + all_repos[0].parent_path().string()));
     if (show_repo_count)
-        out << "Repos: " << all_repos.size() << "\n";
-    out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
-    out << "Status: ";
-    if (scanning)
-        out << COLOR_YELLOW << action << COLOR_RESET;
-    else
-        out << green << "Idle" << reset;
-    out << " - Next scan in " << seconds_left << "s";
+        lines.push_back(text("Repos: " + std::to_string(all_repos.size())));
+    lines.push_back(text("Interval: " + std::to_string(interval) + "s (Ctrl+C to exit)"));
+    std::string status = scanning ? action : "Idle";
+    lines.push_back(
+        text("Status: " + status + " - Next scan in " + std::to_string(seconds_left) + "s"));
     if (runtime_sec >= 0)
-        out << " - Runtime " << format_duration_short(std::chrono::seconds(runtime_sec));
-    out << "\n";
-    if (track_cpu || track_mem || track_threads || show_affinity || track_vmem) {
-        out << "CPU: ";
-        if (track_cpu)
-            out << std::fixed << std::setprecision(1) << procutil::get_cpu_percent() << "% ";
-        else
-            out << "N/A ";
-        out << "  Mem: ";
-        if (track_mem)
-            out << procutil::get_memory_usage_mb() << " MB";
-        else
-            out << "N/A";
-        if (track_vmem)
-            out << "  VMem: " << procutil::get_virtual_memory_kb() / 1024 << " MB";
-        out << "  Threads: ";
-        if (track_threads)
-            out << procutil::get_thread_count();
-        else
-            out << "N/A";
-        if (show_affinity) {
-            std::string mask = procutil::get_cpu_affinity();
-            if (!mask.empty())
-                out << "  Core: " << mask;
-        }
-        out << "\n";
-    }
-    if (track_net) {
-        auto usage = procutil::get_network_usage();
-        auto fmt = [](std::size_t b) {
-            std::ostringstream ss;
-            if (b >= 1024 * 1024)
-                ss << b / (1024 * 1024) << " MB";
-            else
-                ss << b / 1024 << " KB";
-            return ss.str();
-        };
-        out << "Net: D " << fmt(usage.download_bytes) << "  U " << fmt(usage.upload_bytes) << "\n";
-    }
-    if (show_header) {
-        out << "--------------------------------------------------------------";
-        out << "-------------------\n";
-        out << bold << " [" << std::left << std::setw(9) << "Status" << "]  Repo" << reset << "\n";
-        out << "--------------------------------------------------------------";
-        out << "-------------------\n";
-    }
+        lines.back() =
+            hbox({text("Status: " + status),
+                  text(" - Next scan in " + std::to_string(seconds_left) + "s"),
+                  text(" - Runtime " + format_duration_short(std::chrono::seconds(runtime_sec)))});
+    if (show_header)
+        lines.push_back(separator());
     for (const auto& p : all_repos) {
         RepoInfo ri;
         auto it = repo_infos.find(p);
@@ -137,90 +87,59 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         }
         if (ri.status == RS_SKIPPED && !show_skipped)
             continue;
-        std::string color = gray, status_s = "Pending ";
+        std::string status_s = "Pending";
+        Color color = Color::GrayLight;
         switch (ri.status) {
-        case RS_PENDING:
-            color = COLOR_GRAY;
-            status_s = "Pending ";
-            break;
         case RS_CHECKING:
-            color = cyan;
-            status_s = "Checking ";
+            status_s = "Checking";
+            color = Color::CyanLight;
             break;
         case RS_UP_TO_DATE:
-            color = green;
-            status_s = "UpToDate ";
+            status_s = "UpToDate";
+            color = Color::GreenLight;
             break;
         case RS_PULLING:
-            color = yellow;
-            status_s = "Pulling  ";
+            status_s = "Pulling";
+            color = Color::YellowLight;
             break;
         case RS_PULL_OK:
-            color = green;
-            status_s = "Pulled   ";
+            status_s = "Pulled";
+            color = Color::GreenLight;
             break;
         case RS_PKGLOCK_FIXED:
-            color = yellow;
             status_s = "PkgLockOk";
+            color = Color::YellowLight;
             break;
         case RS_ERROR:
-            color = red;
-            status_s = "Error    ";
+            status_s = "Error";
+            color = Color::RedLight;
             break;
         case RS_SKIPPED:
-            color = gray;
-            status_s = "Skipped  ";
+            status_s = "Skipped";
+            color = Color::GrayLight;
             break;
         case RS_HEAD_PROBLEM:
-            color = red;
-            status_s = "HEAD/BR  ";
+            status_s = "HEAD/BR";
+            color = Color::RedLight;
             break;
         case RS_DIRTY:
-            color = red;
-            status_s = "Dirty    ";
+            status_s = "Dirty";
+            color = Color::RedLight;
             break;
         case RS_REMOTE_AHEAD:
-            color = magenta;
             status_s = "RemoteUp";
+            color = Color::MagentaLight;
+            break;
+        default:
             break;
         }
-        out << color << " [" << std::left << std::setw(9) << status_s << "]  "
-            << p.filename().string() << reset;
-        if (!ri.branch.empty()) {
-            out << "  (" << ri.branch;
-            if (!ri.commit.empty())
-                out << "@" << ri.commit;
-            out << ")";
-        }
-        if ((!session_dates_only || ri.pulled) && (show_commit_author || show_commit_date)) {
-            out << " {";
-            bool first = true;
-            if (show_commit_author && !ri.commit_author.empty()) {
-                out << ri.commit_author;
-                first = false;
-            }
-            if (show_commit_date && !ri.commit_date.empty()) {
-                if (!first)
-                    out << ' ';
-                out << ri.commit_date;
-            }
-            out << "}";
-        }
-        if (!ri.message.empty())
-            out << " - " << ri.message;
-        if (ri.auth_failed)
-            out << red << " [AUTH]" << reset;
-        if (ri.status == RS_PULLING)
-            out << " (" << ri.progress << "%)";
-        out << "\n";
+        std::string line = "[" + status_s + "]  " + p.filename().string();
+        lines.push_back(text(line) | ftxui::color(color));
     }
-    if (show_header) {
-        out << "--------------------------------------------------------------";
-        out << "-------------------\n";
-    }
-    std::cout << out.str() << std::flush;
-    // Explicitly clear the string buffer to avoid stale allocations
-    out.str("");
-    out.clear();
-    std::ostringstream().swap(out);
+    if (show_header)
+        lines.push_back(separator());
+    Element doc = vbox(std::move(lines));
+    auto screen = Screen::Create(Dimension::Full(), Dimension::Fit(doc));
+    Render(screen, doc);
+    std::cout << "\033[2J\033[H" << screen.ToString() << std::flush;
 }
