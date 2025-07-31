@@ -19,6 +19,7 @@ and shows progress either in an interactive TUI or with plain console output.
 - YAML or JSON configuration files
 - Detailed logging with resource tracking
 - Throttling and CPU/memory limits
+- Automatically resumes after system sleep/hibernation
 
 ## Usage
 
