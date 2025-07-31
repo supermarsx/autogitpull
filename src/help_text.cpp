@@ -91,6 +91,7 @@ void print_help(const char* prog) {
         {"--show-service", "", "", "Show installed service name", "Actions"},
         {"--remove-lock", "-R", "", "Remove directory lock file and exit", "Actions"},
         {"--kill-all", "", "", "Terminate running instance and exit", "Actions"},
+        {"--kill-on-sleep", "", "", "Exit if a system sleep is detected", "Actions"},
         {"--list-instances", "", "", "List running instance names and PIDs", "Actions"},
         {"--list-services", "", "", "List installed service units", "Actions"},
         {"--list-daemons", "", "", "Alias for --list-services", "Actions"},

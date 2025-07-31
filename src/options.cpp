@@ -116,6 +116,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--persist",
                                       "--respawn-limit",
                                       "--kill-all",
+                                      "--kill-on-sleep",
                                       "--list-instances",
                                       "--list-services",
                                       "--list-daemons",
@@ -326,6 +327,7 @@ Options parse_options(int argc, char* argv[]) {
         }
     }
     opts.kill_all = parser.has_flag("--kill-all") || cfg_flag("--kill-all");
+    opts.kill_on_sleep = parser.has_flag("--kill-on-sleep") || cfg_flag("--kill-on-sleep");
     opts.list_instances = parser.has_flag("--list-instances") || cfg_flag("--list-instances");
     opts.list_services = parser.has_flag("--list-services") || parser.has_flag("--list-daemons") ||
                          cfg_flag("--list-services") || cfg_flag("--list-daemons");

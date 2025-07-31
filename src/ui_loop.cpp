@@ -359,6 +359,10 @@ int run_event_loop(const Options& opts) {
         auto now = std::chrono::steady_clock::now();
         if (now - last_loop > std::chrono::minutes(10)) {
             log_info("Detected long pause; resuming");
+            if (opts.kill_on_sleep) {
+                log_info("Exiting due to system sleep");
+                break;
+            }
             countdown_ms = std::chrono::milliseconds(0);
         }
         last_loop = now;

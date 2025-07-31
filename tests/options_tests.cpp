@@ -108,6 +108,12 @@ TEST_CASE("parse_options kill-all option") {
     REQUIRE(opts.kill_all);
 }
 
+TEST_CASE("parse_options kill-on-sleep option") {
+    const char* argv[] = {"prog", "path", "--kill-on-sleep"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.kill_on_sleep);
+}
+
 TEST_CASE("parse_options rescan-new option default") {
     const char* argv[] = {"prog", "path", "--rescan-new"};
     Options opts = parse_options(3, const_cast<char**>(argv));
