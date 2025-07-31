@@ -35,7 +35,6 @@ void remove_status_socket(const std::string& name, int fd);
 inline int create_status_socket(const std::string&) { return -1; }
 inline int connect_status_socket(const std::string&) { return -1; }
 inline void remove_status_socket(const std::string&, int) {}
-inline std::vector<std::pair<std::string, ServiceStatus>> list_installed_services() { return {}; }
 #endif
 
 } // namespace procutil
