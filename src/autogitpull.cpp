@@ -7,6 +7,7 @@
 #include "process_monitor.hpp"
 #include "git_utils.hpp"
 #include "lock_utils.hpp"
+#include "history_utils.hpp"
 #include "version.hpp"
 #ifndef _WIN32
 #include "linux_daemon.hpp"
@@ -21,6 +22,15 @@ int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
         Options opts = parse_options(argc, argv);
+        if (opts.enable_history) {
+            std::string cmd;
+            for (int i = 1; i < argc; ++i) {
+                if (i > 1)
+                    cmd += ' ';
+                cmd += argv[i];
+            }
+            append_history(opts.history_file, cmd);
+        }
         if (opts.pull_timeout.count() > 0)
             git::set_libgit_timeout(static_cast<unsigned int>(opts.pull_timeout.count()));
         if (opts.show_help) {

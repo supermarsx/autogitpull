@@ -8,6 +8,7 @@
 #include "time_utils.hpp"
 #include "config_utils.hpp"
 #include "parse_utils.hpp"
+#include "history_utils.hpp"
 #include "lock_utils.hpp"
 #include "options.hpp"
 #include "scanner.hpp"

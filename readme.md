@@ -76,7 +76,7 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--auto-reload-config` – Reload config when the file changes.
 - `--rerun-last` – Reuse args from `.autogitpull.config`.
 - `--save-args` – Save args to config file.
-- `--enable-history` – Enable command history.
+- `--enable-history[=<file>]` – Enable command history (default `.autogitpull.config`).
 - `--config-yaml` (`-y`) `<file>` – Load options from YAML file.
 - `--config-json` (`-j`) `<file>` – Load options from JSON file.
 

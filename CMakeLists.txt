@@ -29,6 +29,7 @@ add_library(autogitpull_lib STATIC
     src/ui_loop.cpp
     src/options.cpp
     src/parse_utils.cpp
+    src/history_utils.cpp
     src/lock_utils.cpp
     src/process_monitor.cpp)
 if(NOT WIN32)
@@ -66,7 +67,7 @@ if(NOT Catch2_FOUND)
     FetchContent_MakeAvailable(Catch2)
 endif()
 add_executable(autogitpull_tests
-  tests/arg_parser_tests.cpp tests/utils_tests.cpp tests/options_tests.cpp tests/config_tests.cpp tests/repo_tests.cpp tests/process_tests.cpp tests/ui_output_tests.cpp src/autogitpull.cpp src/tui.cpp)
+  tests/arg_parser_tests.cpp tests/utils_tests.cpp tests/options_tests.cpp tests/config_tests.cpp tests/repo_tests.cpp tests/process_tests.cpp tests/ui_output_tests.cpp tests/history_tests.cpp src/autogitpull.cpp src/tui.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
 target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib)
@@ -87,6 +88,7 @@ add_executable(memory_leak_test
     src/debug_utils.cpp
     src/help_text.cpp
     src/parse_utils.cpp
+    src/history_utils.cpp
     src/lock_utils.cpp
     src/tui.cpp)
 if(NOT WIN32)
