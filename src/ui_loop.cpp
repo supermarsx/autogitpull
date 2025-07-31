@@ -345,6 +345,8 @@ int run_event_loop(const Options& opts) {
         guard = std::make_unique<AltScreenGuard>();
     std::string user_message;
     bool confirm_quit = false;
+    std::chrono::steady_clock::time_point confirm_until;
+    std::string confirm_prev_action;
 #ifndef _WIN32
     struct TermGuard {
         termios orig;
@@ -537,9 +539,20 @@ int run_event_loop(const Options& opts) {
                 } else if (c == 'q') {
                     if (!confirm_quit) {
                         confirm_quit = true;
-                        user_message = "Press q again to quit";
+                        confirm_until = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+                        {
+                            std::lock_guard<std::mutex> lk(action_mtx);
+                            confirm_prev_action = current_action;
+                            current_action = "Press q again to quit";
+                        }
                     } else {
                         running = false;
+                    }
+                } else {
+                    if (confirm_quit) {
+                        confirm_quit = false;
+                        std::lock_guard<std::mutex> lk(action_mtx);
+                        current_action = confirm_prev_action;
                     }
                 }
             }
@@ -567,9 +580,20 @@ int run_event_loop(const Options& opts) {
                 } else if (c == 'q') {
                     if (!confirm_quit) {
                         confirm_quit = true;
-                        user_message = "Press q again to quit";
+                        confirm_until = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+                        {
+                            std::lock_guard<std::mutex> lk(action_mtx);
+                            confirm_prev_action = current_action;
+                            current_action = "Press q again to quit";
+                        }
                     } else {
                         running = false;
+                    }
+                } else {
+                    if (confirm_quit) {
+                        confirm_quit = false;
+                        std::lock_guard<std::mutex> lk(action_mtx);
+                        current_action = confirm_prev_action;
                     }
                 }
             }
@@ -594,6 +618,11 @@ int run_event_loop(const Options& opts) {
         cli_countdown_ms -= opts.refresh_ms;
         if (opts.rescan_new)
             rescan_countdown_ms -= opts.refresh_ms;
+        if (confirm_quit && std::chrono::steady_clock::now() > confirm_until) {
+            confirm_quit = false;
+            std::lock_guard<std::mutex> lk(action_mtx);
+            current_action = confirm_prev_action;
+        }
     }
     running = false;
     if (scan_thread.joinable()) {
