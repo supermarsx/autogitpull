@@ -42,7 +42,9 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <termios.h>
 #else
+#include <conio.h>
 #include "windows_service.hpp"
 #endif
 
@@ -191,15 +193,16 @@ static void prepare_repos(const Options& opts, std::vector<fs::path>& all_repos,
 
 // Render either the TUI or CLI output
 static void update_ui(const Options& opts, const std::vector<fs::path>& all_repos,
-                      const std::map<fs::path, RepoInfo>& repo_infos, int sec_left, bool scanning,
-                      const std::string& act, std::chrono::milliseconds& cli_countdown_ms,
+                      const std::map<fs::path, RepoInfo>& repo_infos, int interval, int sec_left,
+                      bool scanning, const std::string& act,
+                      std::chrono::milliseconds& cli_countdown_ms, const std::string& message,
                       int runtime_sec) {
     if (!opts.silent && !opts.cli) {
-        draw_tui(all_repos, repo_infos, opts.interval, sec_left, scanning, act, opts.show_skipped,
+        draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, opts.show_skipped,
                  opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
                  opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem, opts.show_commit_date,
                  opts.show_commit_author, opts.session_dates_only, opts.no_colors,
-                 opts.custom_color, runtime_sec, opts.show_datetime_line, opts.show_header,
+                 opts.custom_color, message, runtime_sec, opts.show_datetime_line, opts.show_header,
                  opts.show_repo_count);
     }
 }
@@ -339,6 +342,38 @@ int run_event_loop(const Options& opts) {
     std::unique_ptr<AltScreenGuard> guard;
     if (!opts.cli && !opts.silent)
         guard = std::make_unique<AltScreenGuard>();
+    int interval = opts.interval;
+    std::string user_message;
+    bool confirm_quit = false;
+#ifndef _WIN32
+    struct TermGuard {
+        termios orig;
+        int orig_fl = 0;
+        bool active = false;
+        void setup() {
+            if (tcgetattr(STDIN_FILENO, &orig) == 0) {
+                termios t = orig;
+                t.c_lflag &= ~(ICANON | ECHO);
+                tcsetattr(STDIN_FILENO, TCSANOW, &t);
+                orig_fl = fcntl(STDIN_FILENO, F_GETFL, 0);
+                fcntl(STDIN_FILENO, F_SETFL, orig_fl | O_NONBLOCK);
+                active = true;
+            }
+        }
+        ~TermGuard() {
+            if (active) {
+                tcsetattr(STDIN_FILENO, TCSANOW, &orig);
+                fcntl(STDIN_FILENO, F_SETFL, orig_fl);
+            }
+        }
+    } term_guard;
+#else
+    struct TermGuard {
+        void setup() {}
+    } term_guard;
+#endif
+    if (opts.enable_hotkeys && !opts.cli && !opts.silent)
+        term_guard.setup();
     auto start_time = std::chrono::steady_clock::now();
     auto last_loop = start_time;
     size_t concurrency = opts.concurrency;
@@ -457,7 +492,7 @@ int run_event_loop(const Options& opts) {
                 opts.mem_limit, opts.download_limit, opts.upload_limit, opts.disk_limit,
                 opts.silent, opts.cli, opts.force_pull, opts.skip_timeout, opts.updated_since,
                 opts.show_pull_author, opts.pull_timeout, opts.repo_overrides);
-            countdown_ms = std::chrono::seconds(opts.interval);
+            countdown_ms = std::chrono::seconds(interval);
         }
 #ifndef _WIN32
         std::string status_msg;
@@ -476,9 +511,70 @@ int run_event_loop(const Options& opts) {
 #ifndef _WIN32
             status_msg = act + "\n";
 #endif
-            update_ui(opts, all_repos, repo_infos, sec_left, scanning, act, cli_countdown_ms,
-                      opts.show_runtime ? runtime_sec : -1);
+            update_ui(opts, all_repos, repo_infos, interval, sec_left, scanning, act,
+                      cli_countdown_ms, user_message, opts.show_runtime ? runtime_sec : -1);
         }
+#if defined(_WIN32)
+        if (opts.enable_hotkeys && !opts.cli && _kbhit()) {
+            int ch = _getch();
+            if (ch != 0 && ch != 224) {
+                char c = static_cast<char>(ch);
+                if (c == 'r') {
+                    countdown_ms = std::chrono::milliseconds(0);
+                    user_message = "Scanning now";
+                } else if (c == 'n') {
+                    rescan_countdown_ms = std::chrono::milliseconds(0);
+                    user_message = "Rescanning repos";
+                } else if (c == 'p') {
+                    interval += 10;
+                    countdown_ms = std::chrono::seconds(interval);
+                    user_message = "Interval " + std::to_string(interval) + "s";
+                } else if (c == 'o') {
+                    if (interval > 10)
+                        interval -= 10;
+                    countdown_ms = std::chrono::seconds(interval);
+                    user_message = "Interval " + std::to_string(interval) + "s";
+                } else if (c == 'q') {
+                    if (!confirm_quit) {
+                        confirm_quit = true;
+                        user_message = "Press q again to quit";
+                    } else {
+                        running = false;
+                    }
+                }
+            }
+        }
+#else
+        if (opts.enable_hotkeys && !opts.cli && !opts.silent) {
+            int ch = getchar();
+            if (ch != EOF) {
+                char c = static_cast<char>(ch);
+                if (c == 'r') {
+                    countdown_ms = std::chrono::milliseconds(0);
+                    user_message = "Scanning now";
+                } else if (c == 'n') {
+                    rescan_countdown_ms = std::chrono::milliseconds(0);
+                    user_message = "Rescanning repos";
+                } else if (c == 'p') {
+                    interval += 10;
+                    countdown_ms = std::chrono::seconds(interval);
+                    user_message = "Interval " + std::to_string(interval) + "s";
+                } else if (c == 'o') {
+                    if (interval > 10)
+                        interval -= 10;
+                    countdown_ms = std::chrono::seconds(interval);
+                    user_message = "Interval " + std::to_string(interval) + "s";
+                } else if (c == 'q') {
+                    if (!confirm_quit) {
+                        confirm_quit = true;
+                        user_message = "Press q again to quit";
+                    } else {
+                        running = false;
+                    }
+                }
+            }
+        }
+#endif
 #ifndef _WIN32
         if (status_fd >= 0) {
             const std::string& msg = status_msg;
