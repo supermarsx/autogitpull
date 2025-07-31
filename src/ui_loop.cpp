@@ -278,6 +278,7 @@ int run_event_loop(const Options& opts) {
         fs::create_directories(opts.log_dir);
     std::vector<fs::path> all_repos;
     std::map<fs::path, RepoInfo> repo_infos;
+    std::set<fs::path> first_validated;
     prepare_repos(opts, all_repos, repo_infos);
     std::vector<fs::path> first_valid;
     size_t valid_count = 0;
@@ -380,12 +381,19 @@ int run_event_loop(const Options& opts) {
             scan_thread.join();
             git_libgit2_shutdown();
             git_libgit2_init();
-            if (first_cycle && opts.cli && !opts.silent && opts.cli_print_skipped &&
-                !opts.show_skipped) {
-                for (const auto& sp : skip_repos)
-                    std::cout << "Skipped " << sp.filename().string() << "\n";
+            if (first_cycle) {
+                if (opts.keep_first_valid) {
+                    for (const auto& [p, info] : repo_infos) {
+                        if (info.status != RS_SKIPPED && info.status != RS_ERROR)
+                            first_validated.insert(p);
+                    }
+                }
+                if (opts.cli && !opts.silent && opts.cli_print_skipped && !opts.show_skipped) {
+                    for (const auto& sp : skip_repos)
+                        std::cout << "Skipped " << sp.filename().string() << "\n";
+                }
+                first_cycle = false;
             }
-            first_cycle = false;
             if (opts.single_run)
                 running = false;
         }
@@ -393,7 +401,7 @@ int run_event_loop(const Options& opts) {
             auto new_repos =
                 build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
             if (opts.keep_first_valid) {
-                for (const auto& p : first_valid) {
+                for (const auto& p : first_validated) {
                     if (std::find(new_repos.begin(), new_repos.end(), p) == new_repos.end())
                         new_repos.push_back(p);
                 }

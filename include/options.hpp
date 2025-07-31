@@ -105,6 +105,7 @@ struct Options {
     std::chrono::seconds pull_timeout{0};
     bool skip_timeout = true;
     bool cli_print_skipped = false;
+    bool keep_first_valid = false;
     bool show_help = false;
     bool print_version = false;
     std::map<std::filesystem::path, RepoOptions> repo_overrides;
