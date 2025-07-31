@@ -29,7 +29,16 @@ int run_with_monitor(const Options& opts) {
             log_error("Respawn limit reached");
             break;
         }
-        int rc = g_worker(opts);
+        int rc = 0;
+        try {
+            rc = g_worker(opts);
+        } catch (const std::exception& e) {
+            log_error(std::string("Worker exception: ") + e.what());
+            rc = 1;
+        } catch (...) {
+            log_error("Worker threw unknown exception");
+            rc = 1;
+        }
         log_info("Worker exited with code " + std::to_string(rc));
         (void)rc;
         std::this_thread::sleep_for(std::chrono::seconds(1));
