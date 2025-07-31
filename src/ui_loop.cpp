@@ -277,6 +277,7 @@ int run_event_loop(const Options& opts) {
     procutil::get_memory_usage_mb();
     procutil::get_thread_count();
     setup_logging(opts);
+    int interval = opts.interval;
     if (!opts.log_dir.empty())
         fs::create_directories(opts.log_dir);
     std::vector<fs::path> all_repos;
@@ -294,9 +295,9 @@ int run_event_loop(const Options& opts) {
     }
     while (valid_count == 0 && opts.wait_empty) {
         if (!opts.silent)
-            std::cout << "No valid repositories found. Retrying in " << opts.interval << "s..."
+            std::cout << "No valid repositories found. Retrying in " << interval << "s..."
                       << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(opts.interval));
+        std::this_thread::sleep_for(std::chrono::seconds(interval));
         prepare_repos(opts, all_repos, repo_infos);
         valid_count = 0;
         for (const auto& p : all_repos) {
@@ -309,7 +310,7 @@ int run_event_loop(const Options& opts) {
         return 0;
     }
     if (opts.cli && !opts.silent) {
-        std::cout << "Interval: " << opts.interval << "s"
+        std::cout << "Interval: " << interval << "s"
                   << " Refresh: " << opts.refresh_ms.count() << "ms";
         if (opts.pull_timeout.count() > 0)
             std::cout << " Timeout: " << opts.pull_timeout.count() << "s";

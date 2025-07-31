@@ -379,6 +379,13 @@ When the program starts, each repository is listed with the **Pending** status
 until it is checked for the first time. Once a scan begins the status switches
 to **Checking** and later reflects the pull result.
 
+### Versioning
+
+autogitpull uses a rolling release model. Each push to the `main` branch
+triggers the CI workflow that tags the commit with a date-based string such as
+`2025.07.31-1`. The `--version` flag prints this tag so the program is always
+identified by the latest CI release.
+
 ## Production requirements
 
 - **Git** must be available in your `PATH` for libgit2 to interact with repositories.
