@@ -343,6 +343,7 @@ int run_event_loop(const Options& opts) {
     std::unique_ptr<AltScreenGuard> guard;
     if (!opts.cli && !opts.silent)
         guard = std::make_unique<AltScreenGuard>();
+    int interval = opts.interval;
     std::string user_message;
     bool confirm_quit = false;
     std::chrono::steady_clock::time_point confirm_until;
