@@ -212,6 +212,12 @@ TEST_CASE("parse_options ignore lock") {
     REQUIRE(opts.ignore_lock);
 }
 
+TEST_CASE("parse_options enable hotkeys") {
+    const char* argv[] = {"prog", "path", "--enable-hotkeys"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.enable_hotkeys);
+}
+
 TEST_CASE("parse_options repo overrides") {
     fs::path cfg = fs::temp_directory_path() / "opts_repo.json";
     {

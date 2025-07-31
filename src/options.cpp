@@ -141,6 +141,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--rerun-last",
                                       "--save-args",
                                       "--enable-history",
+                                      "--enable-hotkeys",
                                       "--session-dates-only",
                                       "--print-skipped",
                                       "--show-pull-author",
@@ -362,6 +363,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.rerun_last = parser.has_flag("--rerun-last") || cfg_flag("--rerun-last");
     opts.save_args = parser.has_flag("--save-args") || cfg_flag("--save-args");
     opts.enable_history = parser.has_flag("--enable-history") || cfg_flag("--enable-history");
+    opts.enable_hotkeys = parser.has_flag("--enable-hotkeys") || cfg_flag("--enable-hotkeys");
     opts.session_dates_only =
         parser.has_flag("--session-dates-only") || cfg_flag("--session-dates-only");
     opts.cli_print_skipped = parser.has_flag("--print-skipped") || cfg_flag("--print-skipped");
