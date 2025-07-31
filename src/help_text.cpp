@@ -47,6 +47,7 @@ void print_help(const char* prog) {
         {"--rerun-last", "", "", "Reuse args from .autogitpull.config", "Config"},
         {"--save-args", "", "", "Save args to config file", "Config"},
         {"--enable-history", "", "", "Enable command history", "Config"},
+        {"--enable-hotkeys", "", "", "Enable TUI hotkeys", "Config"},
         {"--config-yaml", "-y", "<file>", "Load options from YAML file", "Config"},
         {"--config-json", "-j", "<file>", "Load options from JSON file", "Config"},
         {"--show-skipped", "-k", "", "Show skipped repositories", "Display"},

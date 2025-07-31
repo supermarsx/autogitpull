@@ -54,6 +54,7 @@ struct Options {
     std::string custom_color;
     std::vector<std::filesystem::path> ignore_dirs;
     bool enable_history = false;
+    bool enable_hotkeys = false;
     bool auto_config = false;
     bool auto_reload_config = false;
     bool rerun_last = false;
