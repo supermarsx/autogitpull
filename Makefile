@@ -57,7 +57,10 @@ lint:
 	clang-format --dry-run --Werror $(FORMAT_FILES)
 	cpplint --linelength=100 $(FORMAT_FILES)
 
+format:
+	clang-format -i $(FORMAT_FILES)
+
 deps:
 	./scripts/install_deps.sh
 
-.PHONY: all clean lint deps test
+.PHONY: all clean lint format deps test

@@ -7,8 +7,11 @@ on:
     branches: ["**"]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  format:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,10 +20,116 @@ jobs:
         uses: aminya/setup-cpp@v1
 
       - name: Install dependencies
-        run: ./scripts/install_deps.sh
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            scripts\install_deps.bat
+          else
+            ./scripts/install_deps.sh
+          fi
 
-      - name: Lint
+      - name: Install lint tools
+        run: pip install cpplint
+
+      - name: Install clang-format
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y clang-format
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            brew install clang-format
+          elif [ "$RUNNER_OS" = "Windows" ]; then
+            choco install -y llvm
+          fi
+
+      - name: Auto Format
+        run: make format && git diff --exit-code
+
+  lint:
+    needs: format
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        uses: aminya/setup-cpp@v1
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            scripts\install_deps.bat
+          else
+            ./scripts/install_deps.sh
+          fi
+
+      - name: Install lint tools
+        run: pip install cpplint
+
+      - name: Install clang-format
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y clang-format
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            brew install clang-format
+          elif [ "$RUNNER_OS" = "Windows" ]; then
+            choco install -y llvm
+          fi
+
+      - name: Auto Lint
         run: make lint
 
-      - name: Test
+  test:
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        uses: aminya/setup-cpp@v1
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            scripts\install_deps.bat
+          else
+            ./scripts/install_deps.sh
+          fi
+
+      - name: Auto Test
         run: make test
+
+  build:
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        uses: aminya/setup-cpp@v1
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            scripts\install_deps.bat
+          else
+            ./scripts/install_deps.sh
+          fi
+
+      - name: Auto Build
+        run: make

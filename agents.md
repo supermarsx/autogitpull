@@ -2,23 +2,28 @@
 
 To maintain code quality, all commits must pass the following checks **before** they are committed:
 
-1. `make lint` – runs `clang-format` and `cpplint` using the project's `.clang-format` configuration.
-2. The full test suite via `make test`.
+1. `make format` – automatically formats all source files.
+2. `make lint` – runs `clang-format` and `cpplint` using the project's `.clang-format` configuration.
+3. The full test suite via `make test`.
+4. A full build via `make` to verify compilation.
 
 Run these commands locally from the repository root:
 
 ```bash
+make format
 make lint
 make test
+make
 ```
 
-`clang-format` (configured by `.clang-format`) and `cpplint` are mandatory tools. You can auto-format sources with:
+`clang-format` (configured by `.clang-format`) and `cpplint` are mandatory tools. You can auto-format sources manually with:
 
 ```bash
 clang-format -i <file.cpp> <file.hpp>
 ```
 
 If any command fails, fix the issues before committing. Pull requests failing any of these checks will be rejected.
+The CI pipeline runs four sequential jobs—auto-format, auto-lint, auto-test and auto-build—on Linux, macOS and Windows. Ensure each stage succeeds before merging.
 
 When adding new C++ source files, update all build scripts (`compile.sh`, `compile.bat`, and `compile-cl.bat`) so they compile the new files. Build script changes are mandatory.
 ## Repository Overview
