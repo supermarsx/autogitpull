@@ -159,6 +159,15 @@ By default, repositories whose `origin` remote does not point to GitHub or requi
 
 Provide `--log-dir <path>` to store pull logs for each repository. After every pull operation the log is written to a timestamped file inside this directory and its location is shown in the TUI. Use `--log-file <path>` to append high level messages to the given file.
 
+### Persistent mode
+
+Run with `--persist` to automatically restart `autogitpull` whenever the main
+worker exits. This keeps the application alive if it is terminated while the
+computer is under heavy load or resumes from sleep or hibernation. Optionally
+specify a name like `--persist=myrun` to tag the instance. The
+`--respawn-limit` option controls how many restarts are allowed within a time
+window (set it to `0` for no limit).
+
 ### YAML configuration
 
 Frequently used options can be stored in a YAML file and loaded with `--config-yaml <file>`.
