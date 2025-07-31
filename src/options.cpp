@@ -418,6 +418,14 @@ Options parse_options(int argc, char* argv[]) {
     opts.rerun_last = parser.has_flag("--rerun-last") || cfg_flag("--rerun-last");
     opts.save_args = parser.has_flag("--save-args") || cfg_flag("--save-args");
     opts.enable_history = parser.has_flag("--enable-history") || cfg_flag("--enable-history");
+    if (opts.enable_history) {
+        std::string val = parser.get_option("--enable-history");
+        if (val.empty())
+            val = cfg_opt("--enable-history");
+        if (val.empty())
+            val = ".autogitpull.config";
+        opts.history_file = val;
+    }
     opts.enable_hotkeys = parser.has_flag("--enable-hotkeys") || cfg_flag("--enable-hotkeys");
     opts.session_dates_only =
         parser.has_flag("--session-dates-only") || cfg_flag("--session-dates-only");

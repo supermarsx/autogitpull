@@ -46,7 +46,7 @@ void print_help(const char* prog) {
         {"--auto-reload-config", "", "", "Reload config when the file changes", "Config"},
         {"--rerun-last", "", "", "Reuse args from .autogitpull.config", "Config"},
         {"--save-args", "", "", "Save args to config file", "Config"},
-        {"--enable-history", "", "", "Enable command history", "Config"},
+        {"--enable-history", "", "[=file]", "Enable command history", "Config"},
         {"--enable-hotkeys", "", "", "Enable TUI hotkeys", "Config"},
         {"--config-yaml", "-y", "<file>", "Load options from YAML file", "Config"},
         {"--config-json", "-j", "<file>", "Load options from JSON file", "Config"},
