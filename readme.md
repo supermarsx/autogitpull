@@ -90,6 +90,7 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--max-runtime` `<sec>` – Exit after given runtime.
 - `--pull-timeout` (`-O`) `<sec>` – Network operation timeout.
 - `--print-skipped` – Print skipped repositories once.
+- `--keep-first` – Keep repositories validated on the first scan.
 
 #### Logging
 - `--log-dir` (`-d`) `<path>` – Directory for pull logs.

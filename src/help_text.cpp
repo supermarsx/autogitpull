@@ -40,6 +40,7 @@ void print_help(const char* prog) {
         {"--max-runtime", "", "<sec>", "Exit after given runtime", "Process"},
         {"--pull-timeout", "-O", "<sec>", "Network operation timeout", "Process"},
         {"--print-skipped", "", "", "Print skipped repositories once", "Process"},
+        {"--keep-first", "", "", "Keep repos validated on first scan", "Process"},
         {"--auto-config", "", "", "Auto detect YAML or JSON config", "Config"},
         {"--auto-reload-config", "", "", "Reload config when the file changes", "Config"},
         {"--rerun-last", "", "", "Reuse args from .autogitpull.config", "Config"},
