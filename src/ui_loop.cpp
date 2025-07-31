@@ -102,7 +102,7 @@ void draw_cli(const std::vector<fs::path>& all_repos,
     if (show_repo_count)
         std::cout << "Repos: " << all_repos.size() << "\n";
     std::cout << "Status: ";
-    if (scanning)
+    if (scanning || action != "Idle")
         std::cout << action;
     else
         std::cout << "Idle";
@@ -343,7 +343,6 @@ int run_event_loop(const Options& opts) {
     std::unique_ptr<AltScreenGuard> guard;
     if (!opts.cli && !opts.silent)
         guard = std::make_unique<AltScreenGuard>();
-    int interval = opts.interval;
     std::string user_message;
     bool confirm_quit = false;
     std::chrono::steady_clock::time_point confirm_until;

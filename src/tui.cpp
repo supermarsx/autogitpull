@@ -73,7 +73,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         out << "Repos: " << all_repos.size() << "\n";
     out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
     out << "Status: ";
-    if (scanning)
+    if (scanning || action != "Idle")
         out << COLOR_YELLOW << action << COLOR_RESET;
     else
         out << green << "Idle" << reset;
