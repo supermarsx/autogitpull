@@ -69,8 +69,16 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         out << "Date: " << cyan << timestamp() << reset << "\n";
     out << "Monitoring: " << yellow
         << (all_repos.empty() ? "" : all_repos[0].parent_path().string()) << reset << "\n";
-    if (show_repo_count)
-        out << "Repos: " << all_repos.size() << "\n";
+    if (show_repo_count) {
+        size_t active = 0;
+        for (const auto& p : all_repos) {
+            auto it = repo_infos.find(p);
+            RepoStatus st = it != repo_infos.end() ? it->second.status : RS_PENDING;
+            if (st != RS_SKIPPED)
+                ++active;
+        }
+        out << "Repos: " << active << "/" << all_repos.size() << "\n";
+    }
     out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
     out << "Status: ";
     if (scanning || action != "Idle")
