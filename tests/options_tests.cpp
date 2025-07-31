@@ -200,7 +200,7 @@ TEST_CASE("parse_options print skipped and pull author") {
     REQUIRE(opts.show_pull_author);
 }
 
-TEST_CASE("parse_options keep first valid") {
+TEST_CASE("parse_options keep first alias") {
     const char* argv[] = {"prog", "path", "--keep-first"};
     Options opts = parse_options(3, const_cast<char**>(argv));
     REQUIRE(opts.keep_first_valid);
