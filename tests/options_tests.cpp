@@ -175,6 +175,12 @@ TEST_CASE("parse_options pull timeout") {
     REQUIRE(opts.pull_timeout == std::chrono::seconds(60));
 }
 
+TEST_CASE("parse_options keep first valid") {
+    const char* argv[] = {"prog", "path", "--keep-first-valid"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.keep_first_valid);
+}
+
 TEST_CASE("parse_options show repo count") {
     const char* argv[] = {"prog", "path", "--show-repo-count"};
     Options opts = parse_options(3, const_cast<char**>(argv));

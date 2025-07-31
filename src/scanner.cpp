@@ -303,7 +303,9 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         ri.commit_author = git::get_last_commit_author(p);
         ri.commit_date = git::get_last_commit_date(p);
         if (updated_since.count() > 0) {
-            std::time_t ct = git::get_last_commit_time(p);
+            std::time_t ct = git::get_remote_commit_time(p, ri.branch, include_private, nullptr);
+            if (ct == 0)
+                ct = git::get_last_commit_time(p);
             std::time_t now = std::time(nullptr);
             if (ct == 0 || now - ct > updated_since.count()) {
                 ri.status = RS_SKIPPED;

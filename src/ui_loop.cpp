@@ -279,10 +279,14 @@ int run_event_loop(const Options& opts) {
     std::vector<fs::path> all_repos;
     std::map<fs::path, RepoInfo> repo_infos;
     prepare_repos(opts, all_repos, repo_infos);
+    std::vector<fs::path> first_valid;
     size_t valid_count = 0;
     for (const auto& p : all_repos) {
-        if (fs::is_directory(p) && git::is_git_repo(p))
+        if (fs::is_directory(p) && git::is_git_repo(p)) {
             ++valid_count;
+            if (opts.keep_first_valid)
+                first_valid.push_back(p);
+        }
     }
     while (valid_count == 0 && opts.wait_empty) {
         if (!opts.silent)
@@ -306,6 +310,8 @@ int run_event_loop(const Options& opts) {
         if (opts.pull_timeout.count() > 0)
             std::cout << " Timeout: " << opts.pull_timeout.count() << "s";
         std::cout << " SkipTimeouts: " << (opts.skip_timeout ? "yes" : "no");
+        if (opts.keep_first_valid)
+            std::cout << " KeepFirst: yes";
         if (opts.runtime_limit.count() > 0)
             std::cout << " Runtime limit: " << format_duration_short(opts.runtime_limit);
         if (opts.rescan_new)
@@ -386,6 +392,12 @@ int run_event_loop(const Options& opts) {
         if (opts.rescan_new && rescan_countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
             auto new_repos =
                 build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+            if (opts.keep_first_valid) {
+                for (const auto& p : first_valid) {
+                    if (std::find(new_repos.begin(), new_repos.end(), p) == new_repos.end())
+                        new_repos.push_back(p);
+                }
+            }
             if (opts.sort_mode == Options::ALPHA)
                 std::sort(new_repos.begin(), new_repos.end());
             else if (opts.sort_mode == Options::REVERSE)
@@ -398,8 +410,11 @@ int run_event_loop(const Options& opts) {
                             RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
                 }
                 for (auto it = repo_infos.begin(); it != repo_infos.end();) {
-                    if (std::find(new_repos.begin(), new_repos.end(), it->first) ==
-                        new_repos.end()) {
+                    bool keep = opts.keep_first_valid &&
+                                std::find(first_valid.begin(), first_valid.end(), it->first) !=
+                                    first_valid.end();
+                    if (!keep && std::find(new_repos.begin(), new_repos.end(), it->first) ==
+                                     new_repos.end()) {
                         it = repo_infos.erase(it);
                     } else {
                         ++it;

@@ -134,6 +134,8 @@ constexpr int TRY_PULL_TIMEOUT = 4;
 std::string get_last_commit_date(const fs::path& repo);
 std::string get_last_commit_author(const fs::path& repo);
 std::time_t get_last_commit_time(const fs::path& repo);
+std::time_t get_remote_commit_time(const fs::path& repo, const std::string& branch,
+                                   bool use_credentials = false, bool* auth_failed = nullptr);
 
 } // namespace git
 

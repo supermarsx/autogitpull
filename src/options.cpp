@@ -132,6 +132,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--syslog-facility",
                                       "--pull-timeout",
                                       "--dont-skip-timeouts",
+                                      "--keep-first-valid",
                                       "--wait-empty",
                                       "--updated-since",
                                       "--auto-config",
@@ -349,6 +350,7 @@ Options parse_options(int argc, char* argv[]) {
         if (!ok)
             throw std::runtime_error("Invalid value for --updated-since");
     }
+    opts.keep_first_valid = parser.has_flag("--keep-first-valid") || cfg_flag("--keep-first-valid");
     opts.auto_config = parser.has_flag("--auto-config") || cfg_flag("--auto-config");
     opts.auto_reload_config =
         parser.has_flag("--auto-reload-config") || cfg_flag("--auto-reload-config");
