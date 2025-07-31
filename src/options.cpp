@@ -424,6 +424,17 @@ Options parse_options(int argc, char* argv[]) {
     opts.cli_print_skipped = parser.has_flag("--print-skipped") || cfg_flag("--print-skipped");
     opts.show_pull_author = parser.has_flag("--show-pull-author") || cfg_flag("--show-pull-author");
     opts.wait_empty = parser.has_flag("--wait-empty") || cfg_flag("--wait-empty");
+    if (opts.wait_empty) {
+        std::string val = parser.get_option("--wait-empty");
+        if (val.empty() && cfg_opts.count("--wait-empty"))
+            val = cfg_opt("--wait-empty");
+        if (!val.empty()) {
+            bool ok = false;
+            opts.wait_empty_limit = parse_int(val, 1, INT_MAX, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid value for --wait-empty");
+        }
+    }
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");

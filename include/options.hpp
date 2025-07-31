@@ -102,6 +102,7 @@ struct Options {
     std::chrono::seconds updated_since{0};
     bool keep_first_valid = false;
     bool wait_empty = false;
+    int wait_empty_limit = 0;
     bool use_syslog = false;
     int syslog_facility = 0;
     std::chrono::seconds pull_timeout{0};
