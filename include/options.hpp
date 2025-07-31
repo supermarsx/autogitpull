@@ -98,6 +98,7 @@ struct Options {
     bool rescan_new = false;
     std::chrono::minutes rescan_interval{5};
     std::chrono::seconds updated_since{0};
+    bool keep_first_valid = false;
     bool wait_empty = false;
     bool use_syslog = false;
     int syslog_facility = 0;

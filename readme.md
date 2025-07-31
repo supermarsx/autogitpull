@@ -51,6 +51,7 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--rescan-new` (`-w`) `<min>` – Rescan for new repos periodically.
 - `--wait-empty` (`-W`) – Keep retrying when no repos are found.
 - `--dont-skip-timeouts` – Retry repositories that timeout.
+- `--keep-first-valid` – Keep valid repos from the first scan even if missing.
 - `--updated-since` `<N[m|h|d|w|M]>` – Only sync repos updated recently.
 - `--help` (`-h`) – Show this message.
 
