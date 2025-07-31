@@ -234,3 +234,69 @@ TEST_CASE("parse_options repo overrides") {
     REQUIRE(opts.repo_overrides[fs::path("/tmp/repo")].force_pull.value_or(false));
     fs::remove(cfg);
 }
+
+struct DirGuard {
+    std::filesystem::path old;
+    explicit DirGuard(const std::filesystem::path& p) : old(std::filesystem::current_path()) { std::filesystem::current_path(p); }
+    ~DirGuard() { std::filesystem::current_path(old); }
+};
+
+TEST_CASE("parse_options auto-config root directory") {
+    fs::path root_dir = fs::temp_directory_path() / "auto_cfg_root";
+    fs::path cwd_dir = fs::temp_directory_path() / "auto_cfg_cwd";
+    fs::path exe_dir = fs::temp_directory_path() / "auto_cfg_exe";
+    fs::create_directories(root_dir);
+    fs::create_directories(cwd_dir);
+    fs::create_directories(exe_dir);
+    std::ofstream(root_dir / ".autogitpull.yaml") << "interval: 1\n";
+    std::ofstream(cwd_dir / ".autogitpull.yaml") << "interval: 2\n";
+    std::ofstream(exe_dir / ".autogitpull.yaml") << "interval: 3\n";
+    DirGuard guard(cwd_dir);
+    std::string exe = (exe_dir / "prog").string();
+    std::string root_s = root_dir.string();
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--auto-config")};
+    Options opts = parse_options(3, argv);
+    fs::remove_all(root_dir);
+    fs::remove_all(cwd_dir);
+    fs::remove_all(exe_dir);
+    REQUIRE(opts.interval == 1);
+}
+
+TEST_CASE("parse_options auto-config cwd fallback") {
+    fs::path root_dir = fs::temp_directory_path() / "auto_cfg_root2";
+    fs::path cwd_dir = fs::temp_directory_path() / "auto_cfg_cwd2";
+    fs::path exe_dir = fs::temp_directory_path() / "auto_cfg_exe2";
+    fs::create_directories(root_dir);
+    fs::create_directories(cwd_dir);
+    fs::create_directories(exe_dir);
+    std::ofstream(cwd_dir / ".autogitpull.yaml") << "interval: 2\n";
+    std::ofstream(exe_dir / ".autogitpull.yaml") << "interval: 3\n";
+    DirGuard guard(cwd_dir);
+    std::string exe = (exe_dir / "prog").string();
+    std::string root_s = root_dir.string();
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--auto-config")};
+    Options opts = parse_options(3, argv);
+    fs::remove_all(root_dir);
+    fs::remove_all(cwd_dir);
+    fs::remove_all(exe_dir);
+    REQUIRE(opts.interval == 2);
+}
+
+TEST_CASE("parse_options auto-config exe directory fallback") {
+    fs::path root_dir = fs::temp_directory_path() / "auto_cfg_root3";
+    fs::path cwd_dir = fs::temp_directory_path() / "auto_cfg_cwd3";
+    fs::path exe_dir = fs::temp_directory_path() / "auto_cfg_exe3";
+    fs::create_directories(root_dir);
+    fs::create_directories(cwd_dir);
+    fs::create_directories(exe_dir);
+    std::ofstream(exe_dir / ".autogitpull.yaml") << "interval: 3\n";
+    DirGuard guard(cwd_dir);
+    std::string exe = (exe_dir / "prog").string();
+    std::string root_s = root_dir.string();
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--auto-config")};
+    Options opts = parse_options(3, argv);
+    fs::remove_all(root_dir);
+    fs::remove_all(cwd_dir);
+    fs::remove_all(exe_dir);
+    REQUIRE(opts.interval == 3);
+}
