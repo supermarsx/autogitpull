@@ -353,7 +353,9 @@ Options parse_options(int argc, char* argv[]) {
         if (!ok)
             throw std::runtime_error("Invalid value for --updated-since");
     }
-    opts.keep_first_valid = parser.has_flag("--keep-first-valid") || cfg_flag("--keep-first-valid");
+    opts.keep_first_valid = parser.has_flag("--keep-first-valid") ||
+                            cfg_flag("--keep-first-valid") || parser.has_flag("--keep-first") ||
+                            cfg_flag("--keep-first");
     opts.auto_config = parser.has_flag("--auto-config") || cfg_flag("--auto-config");
     opts.auto_reload_config =
         parser.has_flag("--auto-reload-config") || cfg_flag("--auto-reload-config");
@@ -364,7 +366,6 @@ Options parse_options(int argc, char* argv[]) {
         parser.has_flag("--session-dates-only") || cfg_flag("--session-dates-only");
     opts.cli_print_skipped = parser.has_flag("--print-skipped") || cfg_flag("--print-skipped");
     opts.show_pull_author = parser.has_flag("--show-pull-author") || cfg_flag("--show-pull-author");
-    opts.keep_first_valid = parser.has_flag("--keep-first") || cfg_flag("--keep-first");
     opts.wait_empty = parser.has_flag("--wait-empty") || cfg_flag("--wait-empty");
     opts.silent = parser.has_flag("--silent") || cfg_flag("--silent");
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
