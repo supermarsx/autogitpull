@@ -99,8 +99,16 @@ void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
               const std::string& action, bool show_skipped, int runtime_sec, bool show_repo_count,
               bool session_dates_only) {
-    if (show_repo_count)
-        std::cout << "Repos: " << all_repos.size() << "\n";
+    if (show_repo_count) {
+        size_t active = 0;
+        for (const auto& p : all_repos) {
+            auto it = repo_infos.find(p);
+            RepoStatus st = it != repo_infos.end() ? it->second.status : RS_PENDING;
+            if (st != RS_SKIPPED)
+                ++active;
+        }
+        std::cout << "Repos: " << active << "/" << all_repos.size() << "\n";
+    }
     std::cout << "Status: ";
     if (scanning || action != "Idle")
         std::cout << action;
