@@ -351,8 +351,8 @@ int run_event_loop(const Options& opts) {
     while (running) {
         auto now = std::chrono::steady_clock::now();
         if (now - last_loop > std::chrono::minutes(10)) {
-            log_info("Detected long pause; restarting");
-            break;
+            log_info("Detected long pause; resuming");
+            countdown_ms = std::chrono::milliseconds(0);
         }
         last_loop = now;
         auto elapsed = now - start_time;
