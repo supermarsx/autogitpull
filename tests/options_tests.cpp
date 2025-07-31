@@ -300,3 +300,17 @@ TEST_CASE("parse_options auto-config exe directory fallback") {
     fs::remove_all(exe_dir);
     REQUIRE(opts.interval == 3);
 }
+
+TEST_CASE("parse_options wait empty flag") {
+    const char* argv[] = {"prog", "path", "--wait-empty"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.wait_empty);
+    REQUIRE(opts.wait_empty_limit == 0);
+}
+
+TEST_CASE("parse_options wait empty with limit") {
+    const char* argv[] = {"prog", "path", "--wait-empty", "5"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.wait_empty);
+    REQUIRE(opts.wait_empty_limit == 5);
+}

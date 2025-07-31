@@ -301,7 +301,9 @@ int run_event_loop(const Options& opts) {
                 first_valid.push_back(p);
         }
     }
-    while (valid_count == 0 && opts.wait_empty) {
+    int empty_attempts = 0;
+    while (valid_count == 0 && opts.wait_empty &&
+           (opts.wait_empty_limit == 0 || empty_attempts < opts.wait_empty_limit)) {
         if (!opts.silent)
             std::cout << "No valid repositories found. Retrying in " << interval << "s..."
                       << std::endl;
@@ -312,6 +314,7 @@ int run_event_loop(const Options& opts) {
             if (fs::is_directory(p) && git::is_git_repo(p))
                 ++valid_count;
         }
+        ++empty_attempts;
     }
     if (valid_count == 0) {
         std::cout << "No valid repositories found. Exiting." << std::endl;
