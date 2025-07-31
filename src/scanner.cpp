@@ -383,36 +383,44 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 
     std::atomic<size_t> next_index{0};
     auto worker = [&]() {
-        while (running) {
-            size_t idx = next_index.fetch_add(1);
-            if (idx >= all_repos.size())
-                break;
-            const auto& p = all_repos[idx];
-            RepoOptions ro;
-            auto it_ro = overrides.find(p);
-            if (it_ro != overrides.end())
-                ro = it_ro->second;
-            size_t dl = ro.download_limit.value_or(down_limit);
-            size_t ul = ro.upload_limit.value_or(up_limit);
-            size_t disk = ro.disk_limit.value_or(disk_limit);
-            bool fp = ro.force_pull.value_or(force_pull);
-            std::chrono::seconds pt = ro.pull_timeout.value_or(pull_timeout);
-            process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
-                         include_private, log_dir, check_only, hash_check, dl, ul, disk, silent,
-                         cli_mode, fp, skip_timeout, updated_since, show_pull_author, pt);
-            if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
-                log_error("Memory limit exceeded");
-                running = false;
-                break;
-            }
-            if (cpu_percent_limit > 0) {
-                double cpu = procutil::get_cpu_percent();
-                if (cpu > cpu_percent_limit) {
-                    double over = cpu / cpu_percent_limit - 1.0;
-                    std::this_thread::sleep_for(
-                        std::chrono::milliseconds(static_cast<int>(over * 100)));
+        try {
+            while (running) {
+                size_t idx = next_index.fetch_add(1);
+                if (idx >= all_repos.size())
+                    break;
+                const auto& p = all_repos[idx];
+                RepoOptions ro;
+                auto it_ro = overrides.find(p);
+                if (it_ro != overrides.end())
+                    ro = it_ro->second;
+                size_t dl = ro.download_limit.value_or(down_limit);
+                size_t ul = ro.upload_limit.value_or(up_limit);
+                size_t disk = ro.disk_limit.value_or(disk_limit);
+                bool fp = ro.force_pull.value_or(force_pull);
+                std::chrono::seconds pt = ro.pull_timeout.value_or(pull_timeout);
+                process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
+                             include_private, log_dir, check_only, hash_check, dl, ul, disk, silent,
+                             cli_mode, fp, skip_timeout, updated_since, show_pull_author, pt);
+                if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
+                    log_error("Memory limit exceeded");
+                    running = false;
+                    break;
+                }
+                if (cpu_percent_limit > 0) {
+                    double cpu = procutil::get_cpu_percent();
+                    if (cpu > cpu_percent_limit) {
+                        double over = cpu / cpu_percent_limit - 1.0;
+                        std::this_thread::sleep_for(
+                            std::chrono::milliseconds(static_cast<int>(over * 100)));
+                    }
                 }
             }
+        } catch (const std::exception& e) {
+            log_error(std::string("Worker thread exception: ") + e.what());
+            running = false;
+        } catch (...) {
+            log_error("Worker thread unknown exception");
+            running = false;
         }
     };
 

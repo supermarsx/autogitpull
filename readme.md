@@ -166,10 +166,11 @@ Provide `--log-dir <path>` to store pull logs for each repository. After every p
 
 Run with `--persist` to automatically restart `autogitpull` whenever the main
 worker exits. This keeps the application alive if it is terminated while the
-computer is under heavy load or resumes from sleep or hibernation. Optionally
-specify a name like `--persist=myrun` to tag the instance. The
-`--respawn-limit` option controls how many restarts are allowed within a time
-window (set it to `0` for no limit).
+computer is under heavy load or resumes from sleep or hibernation. Unhandled
+errors from the worker are caught and logged so the monitor can restart the
+process cleanly. Optionally specify a name like `--persist=myrun` to tag the
+instance. The `--respawn-limit` option controls how many restarts are allowed
+within a time window (set it to `0` for no limit).
 
 ### YAML configuration
 
