@@ -295,13 +295,10 @@ int run_event_loop(const Options& opts) {
     std::map<fs::path, RepoInfo> repo_infos;
     std::set<fs::path> first_validated;
     prepare_repos(opts, all_repos, repo_infos);
-    std::vector<fs::path> first_valid;
     size_t valid_count = 0;
     for (const auto& p : all_repos) {
         if (fs::is_directory(p) && git::is_git_repo(p)) {
             ++valid_count;
-            if (opts.keep_first_valid)
-                first_valid.push_back(p);
         }
     }
     int empty_attempts = 0;
@@ -476,19 +473,15 @@ int run_event_loop(const Options& opts) {
                         repo_infos[p] =
                             RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
                 }
-                for (auto it = repo_infos.begin(); it != repo_infos.end();) {
-                    bool keep = opts.keep_first_valid &&
-                                std::find(first_valid.begin(), first_valid.end(), it->first) !=
-                                    first_valid.end();
-                    if (!keep && std::find(new_repos.begin(), new_repos.end(), it->first) ==
-                                     new_repos.end()) {
-                        it = repo_infos.erase(it);
-                    } else {
-                        ++it;
-                    }
-                }
             }
-            all_repos = new_repos;
+            for (const auto& p : new_repos) {
+                if (std::find(all_repos.begin(), all_repos.end(), p) == all_repos.end())
+                    all_repos.push_back(p);
+            }
+            if (opts.sort_mode == Options::ALPHA)
+                std::sort(all_repos.begin(), all_repos.end());
+            else if (opts.sort_mode == Options::REVERSE)
+                std::sort(all_repos.rbegin(), all_repos.rend());
             rescan_countdown_ms = opts.rescan_interval;
         }
         if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
