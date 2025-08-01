@@ -118,7 +118,7 @@ void print_help(const char* prog) {
         {"--no-mem-tracker", "", "", "Disable memory usage tracker", "Tracking"},
         {"--no-thread-tracker", "", "", "Disable thread tracker", "Tracking"},
         {"--net-tracker", "", "", "Track network usage", "Tracking"},
-        {"--cpu-percent", "-E", "<n>", "Approximate CPU usage limit", "Resource limits"},
+        {"--cpu-percent", "-E", "<n.n>", "Approximate CPU usage limit", "Resource limits"},
         {"--cpu-cores", "", "<mask>", "Set CPU affinity mask", "Resource limits"},
         {"--mem-limit", "-Y", "<MB>", "Abort if memory exceeds this amount", "Resource limits"},
         {"--download-limit", "", "<KB/s>", "Limit total download rate", "Resource limits"},

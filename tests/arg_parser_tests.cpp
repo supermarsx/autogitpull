@@ -167,6 +167,23 @@ TEST_CASE("parse_int helper invalid") {
     REQUIRE_FALSE(ok);
 }
 
+TEST_CASE("parse_double helper valid") {
+    const char* argv[] = {"prog", "--num", "5.5"};
+    ArgParser parser(3, const_cast<char**>(argv), {"--num"});
+    bool ok = false;
+    double v = parse_double(parser, "--num", 0.0, 10.0, ok);
+    REQUIRE(ok);
+    REQUIRE(v == Approx(5.5));
+}
+
+TEST_CASE("parse_double helper invalid") {
+    const char* argv[] = {"prog", "--num", "bad"};
+    ArgParser parser(3, const_cast<char**>(argv), {"--num"});
+    bool ok = false;
+    parse_double(parser, "--num", 0.0, 10.0, ok);
+    REQUIRE_FALSE(ok);
+}
+
 TEST_CASE("parse_size_t helper range") {
     const char* argv[] = {"prog", "--num", "100"};
     ArgParser parser(3, const_cast<char**>(argv), {"--num"});

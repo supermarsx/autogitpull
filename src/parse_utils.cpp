@@ -24,6 +24,34 @@ int parse_int(const ArgParser& parser, const std::string& flag, int min, int max
     return parse_int(parser.get_option(flag), min, max, ok);
 }
 
+double parse_double(const std::string& value, double min, double max, bool& ok) {
+    ok = false;
+    try {
+        size_t idx = 0;
+        double v = std::stod(value, &idx);
+        if (idx != value.size())
+            return 0.0;
+        auto pos = value.find('.');
+        if (pos != std::string::npos && value.size() - pos - 1 > 1)
+            return 0.0;
+        if (v < min || v > max)
+            return 0.0;
+        ok = true;
+        return v;
+    } catch (...) {
+        return 0.0;
+    }
+}
+
+double parse_double(const ArgParser& parser, const std::string& flag, double min, double max,
+                    bool& ok) {
+    if (!parser.has_flag(flag)) {
+        ok = false;
+        return 0.0;
+    }
+    return parse_double(parser.get_option(flag), min, max, ok);
+}
+
 unsigned int parse_uint(const std::string& value, unsigned int min, unsigned int max, bool& ok) {
     ok = false;
     try {

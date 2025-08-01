@@ -358,7 +358,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
                 bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
-                size_t concurrency, int cpu_percent_limit, size_t mem_limit, size_t down_limit,
+                size_t concurrency, double cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
                 bool skip_timeout, std::chrono::seconds updated_since, bool show_pull_author,
                 std::chrono::seconds pull_timeout,
@@ -406,7 +406,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                     running = false;
                     break;
                 }
-                if (cpu_percent_limit > 0) {
+                if (cpu_percent_limit > 0.0) {
                     double cpu = procutil::get_cpu_percent();
                     if (cpu > cpu_percent_limit) {
                         double over = cpu / cpu_percent_limit - 1.0;
