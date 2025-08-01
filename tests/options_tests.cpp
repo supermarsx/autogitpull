@@ -347,3 +347,10 @@ TEST_CASE("parse_options max log size") {
     Options opts = parse_options(4, const_cast<char**>(argv));
     REQUIRE(opts.max_log_size == 100 * 1024);
 }
+
+TEST_CASE("parse_options alert flags") {
+    const char* argv[] = {"prog", "path", "--confirm-alert", "--sudo-su"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.confirm_alert);
+    REQUIRE(opts.sudo_su);
+}

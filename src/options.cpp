@@ -206,7 +206,9 @@ Options parse_options(int argc, char* argv[]) {
                                       "--censor-char",
                                       "--keep-first",
                                       "--hard-reset",
-                                      "--confirm-reset"};
+                                      "--confirm-reset",
+                                      "--confirm-alert",
+                                      "--sudo-su"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
                                                  {'v', "--show-version"},
@@ -464,6 +466,8 @@ Options parse_options(int argc, char* argv[]) {
     opts.print_version = parser.has_flag("--version");
     opts.hard_reset = parser.has_flag("--hard-reset") || cfg_flag("--hard-reset");
     opts.confirm_reset = parser.has_flag("--confirm-reset") || cfg_flag("--confirm-reset");
+    opts.confirm_alert = parser.has_flag("--confirm-alert") || cfg_flag("--confirm-alert");
+    opts.sudo_su = parser.has_flag("--sudo-su") || cfg_flag("--sudo-su");
     if (!parser.unknown_flags().empty()) {
         throw std::runtime_error("Unknown option: " + parser.unknown_flags().front());
     }
@@ -875,4 +879,12 @@ Options parse_options(int argc, char* argv[]) {
             opts.history_file = hist.string();
     }
     return opts;
+}
+
+bool alerts_allowed(const Options& opts) {
+    if (opts.confirm_alert || opts.sudo_su)
+        return true;
+    if (opts.interval < 15 || opts.force_pull)
+        return false;
+    return true;
 }

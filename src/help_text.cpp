@@ -102,6 +102,8 @@ void print_help(const char* prog) {
         {"--ignore-lock", "", "", "Don't create or check lock file", "Actions"},
         {"--hard-reset", "", "", "Delete all logs and configs", "Actions"},
         {"--confirm-reset", "", "", "Confirm --hard-reset", "Actions"},
+        {"--confirm-alert", "", "", "Confirm unsafe options", "Actions"},
+        {"--sudo-su", "", "", "Suppress confirmation alerts", "Actions"},
         {"--log-dir", "-d", "<path>", "Directory for pull logs", "Logging"},
         {"--log-file", "-l", "<path>", "File for general logs", "Logging"},
         {"--max-log-size", "", "<bytes>", "Rotate --log-file when over this size", "Logging"},
