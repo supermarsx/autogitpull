@@ -204,3 +204,13 @@ TEST_CASE("parse_bytes units") {
     REQUIRE(parse_bytes("3G", 0, SIZE_MAX, ok) == 3ull * 1024 * 1024 * 1024);
     REQUIRE(ok);
 }
+
+TEST_CASE("parse_time_ms units") {
+    bool ok = false;
+    REQUIRE(parse_time_ms("250ms", ok) == std::chrono::milliseconds(250));
+    REQUIRE(ok);
+    REQUIRE(parse_time_ms("2s", ok) == std::chrono::milliseconds(2000));
+    REQUIRE(ok);
+    REQUIRE(parse_time_ms("1m", ok) == std::chrono::milliseconds(60000));
+    REQUIRE(ok);
+}

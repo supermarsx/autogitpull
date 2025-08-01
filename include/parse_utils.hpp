@@ -34,4 +34,9 @@ unsigned long long parse_ull(const std::string& value, unsigned long long min,
 std::chrono::seconds parse_duration(const ArgParser& parser, const std::string& flag, bool& ok);
 std::chrono::seconds parse_duration(const std::string& value, bool& ok);
 
+// Parse milliseconds with optional unit suffix. Supports ms (default),
+// seconds with 's' and minutes with 'm'.
+std::chrono::milliseconds parse_time_ms(const ArgParser& parser, const std::string& flag, bool& ok);
+std::chrono::milliseconds parse_time_ms(const std::string& value, bool& ok);
+
 #endif // PARSE_UTILS_HPP

@@ -165,6 +165,52 @@ std::chrono::seconds parse_duration(const ArgParser& parser, const std::string& 
     return parse_duration(parser.get_option(flag), ok);
 }
 
+std::chrono::milliseconds parse_time_ms(const std::string& value, bool& ok) {
+    ok = false;
+    if (value.empty())
+        return std::chrono::milliseconds(0);
+    std::string num = value;
+    enum Unit { MS, S, M } unit = MS;
+    if (num.size() > 1 && num.substr(num.size() - 2) == "ms") {
+        unit = MS;
+        num.resize(num.size() - 2);
+    } else if (num.back() == 's') {
+        unit = S;
+        num.pop_back();
+    } else if (num.back() == 'm') {
+        unit = M;
+        num.pop_back();
+    } else if (!std::isdigit(static_cast<unsigned char>(num.back()))) {
+        return std::chrono::milliseconds(0);
+    }
+    long long n = 0;
+    try {
+        n = std::stoll(num);
+    } catch (...) {
+        return std::chrono::milliseconds(0);
+    }
+    if (n < 0)
+        return std::chrono::milliseconds(0);
+    ok = true;
+    switch (unit) {
+    case S:
+        return std::chrono::milliseconds(n * 1000);
+    case M:
+        return std::chrono::milliseconds(n * 60000);
+    default:
+        return std::chrono::milliseconds(n);
+    }
+}
+
+std::chrono::milliseconds parse_time_ms(const ArgParser& parser, const std::string& flag,
+                                        bool& ok) {
+    if (!parser.has_flag(flag)) {
+        ok = false;
+        return std::chrono::milliseconds(0);
+    }
+    return parse_time_ms(parser.get_option(flag), ok);
+}
+
 static size_t unit_multiplier(const std::string& unit) {
     std::string u;
     for (char c : unit)

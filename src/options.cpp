@@ -665,16 +665,14 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Invalid value for --interval");
     }
     if (cfg_opts.count("--refresh-rate")) {
-        int v = parse_int(cfg_opt("--refresh-rate"), 1, INT_MAX, ok);
-        if (!ok)
+        opts.refresh_ms = parse_time_ms(cfg_opt("--refresh-rate"), ok);
+        if (!ok || opts.refresh_ms.count() < 1)
             throw std::runtime_error("Invalid value for --refresh-rate");
-        opts.refresh_ms = std::chrono::milliseconds(v);
     }
     if (parser.has_flag("--refresh-rate")) {
-        int v = parse_int(parser, "--refresh-rate", 1, INT_MAX, ok);
-        if (!ok)
+        opts.refresh_ms = parse_time_ms(parser, "--refresh-rate", ok);
+        if (!ok || opts.refresh_ms.count() < 1)
             throw std::runtime_error("Invalid value for --refresh-rate");
-        opts.refresh_ms = std::chrono::milliseconds(v);
     }
     if (cfg_opts.count("--cpu-poll")) {
         opts.cpu_poll_sec = parse_uint(cfg_opt("--cpu-poll"), 1u, UINT_MAX, ok);
