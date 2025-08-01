@@ -164,3 +164,58 @@ std::chrono::seconds parse_duration(const ArgParser& parser, const std::string& 
     }
     return parse_duration(parser.get_option(flag), ok);
 }
+
+static size_t unit_multiplier(const std::string& unit) {
+    std::string u;
+    for (char c : unit)
+        u += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    if (u == "" || u == "B")
+        return 1;
+    if (u == "K" || u == "KB")
+        return 1024ull;
+    if (u == "M" || u == "MB")
+        return 1024ull * 1024ull;
+    if (u == "G" || u == "GB")
+        return 1024ull * 1024ull * 1024ull;
+    if (u == "T" || u == "TB")
+        return 1024ull * 1024ull * 1024ull * 1024ull;
+    if (u == "P" || u == "PB")
+        return 1024ull * 1024ull * 1024ull * 1024ull * 1024ull;
+    return 0;
+}
+
+size_t parse_bytes(const std::string& value, size_t min, size_t max, bool& ok) {
+    ok = false;
+    if (value.empty())
+        return 0;
+    size_t pos = value.size();
+    while (pos > 0 && std::isalpha(static_cast<unsigned char>(value[pos - 1])))
+        --pos;
+    std::string num = value.substr(0, pos);
+    std::string unit = value.substr(pos);
+    if (num.empty())
+        return 0;
+    unsigned long long base = 0;
+    try {
+        base = std::stoull(num);
+    } catch (...) {
+        return 0;
+    }
+    size_t mul = unit_multiplier(unit);
+    if (mul == 0)
+        return 0;
+    unsigned long long bytes = base * static_cast<unsigned long long>(mul);
+    if (bytes < min || bytes > max)
+        return 0;
+    ok = true;
+    return static_cast<size_t>(bytes);
+}
+
+size_t parse_bytes(const ArgParser& parser, const std::string& flag, size_t min, size_t max,
+                   bool& ok) {
+    if (!parser.has_flag(flag)) {
+        ok = false;
+        return 0;
+    }
+    return parse_bytes(parser.get_option(flag), min, max, ok);
+}

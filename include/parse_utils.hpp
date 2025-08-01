@@ -17,6 +17,9 @@ unsigned int parse_uint(const std::string& value, unsigned int min, unsigned int
 size_t parse_size_t(const ArgParser& parser, const std::string& flag, size_t min, size_t max,
                     bool& ok);
 size_t parse_size_t(const std::string& value, size_t min, size_t max, bool& ok);
+size_t parse_bytes(const ArgParser& parser, const std::string& flag, size_t min, size_t max,
+                   bool& ok);
+size_t parse_bytes(const std::string& value, size_t min, size_t max, bool& ok);
 unsigned long long parse_ull(const ArgParser& parser, const std::string& flag,
                              unsigned long long min, unsigned long long max, bool& ok);
 unsigned long long parse_ull(const std::string& value, unsigned long long min,

@@ -57,7 +57,8 @@
         "mem-limit": 0,
         "download-limit": 0,
         "upload-limit": 0,
-        "disk-limit": 0
+        "disk-limit": 0,
+        "total-traffic-limit": 0
     },
     "Actions": {
         "check-only": false,
