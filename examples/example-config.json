@@ -52,7 +52,7 @@
         "net-tracker": false
     },
     "Resource limits": {
-        "cpu-percent": 50,
+        "cpu-percent": 50.0,
         "cpu-cores": "0xff",
         "mem-limit": 0,
         "download-limit": 0,

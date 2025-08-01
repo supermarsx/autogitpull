@@ -522,7 +522,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string v = cfg_opt("--cpu-percent");
         if (!v.empty() && v.back() == '%')
             v.pop_back();
-        opts.cpu_percent_limit = parse_int(v, 0, 100, ok);
+        opts.cpu_percent_limit = parse_double(v, 0.0, 100.0, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --cpu-percent");
     }
@@ -530,7 +530,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string v = parser.get_option("--cpu-percent");
         if (!v.empty() && v.back() == '%')
             v.pop_back();
-        opts.cpu_percent_limit = parse_int(v, 0, 100, ok);
+        opts.cpu_percent_limit = parse_double(v, 0.0, 100.0, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --cpu-percent");
     }

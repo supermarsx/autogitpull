@@ -31,7 +31,7 @@ struct Options {
     unsigned int thread_poll_sec = 5;
     size_t concurrency = 1;
     size_t max_threads = 0;
-    int cpu_percent_limit = 0;
+    double cpu_percent_limit = 0.0;
     unsigned long long cpu_core_mask = 0;
     size_t mem_limit = 0;
     size_t download_limit = 0;

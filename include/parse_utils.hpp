@@ -8,6 +8,9 @@
 
 int parse_int(const ArgParser& parser, const std::string& flag, int min, int max, bool& ok);
 int parse_int(const std::string& value, int min, int max, bool& ok);
+double parse_double(const ArgParser& parser, const std::string& flag, double min, double max,
+                    bool& ok);
+double parse_double(const std::string& value, double min, double max, bool& ok);
 unsigned int parse_uint(const ArgParser& parser, const std::string& flag, unsigned int min,
                         unsigned int max, bool& ok);
 unsigned int parse_uint(const std::string& value, unsigned int min, unsigned int max, bool& ok);
