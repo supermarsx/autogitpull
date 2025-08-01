@@ -117,11 +117,14 @@ struct Options {
     bool print_version = false;
     bool hard_reset = false;
     bool confirm_reset = false;
+    bool confirm_alert = false;
+    bool sudo_su = false;
     std::map<std::filesystem::path, RepoOptions> repo_overrides;
     enum SortMode { DEFAULT, ALPHA, REVERSE } sort_mode = DEFAULT;
 };
 
 Options parse_options(int argc, char* argv[]);
+bool alerts_allowed(const Options& opts);
 int run_event_loop(const Options& opts);
 
 #endif // OPTIONS_HPP

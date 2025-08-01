@@ -178,6 +178,11 @@ int main(int argc, char* argv[]) {
                 std::cout << name << " " << pid << "\n";
             return 0;
         }
+        if (!alerts_allowed(opts)) {
+            std::cerr << "WARNING: --interval below 15s or --force-pull used" << std::endl;
+            std::cerr << "Re-run with --confirm-alert or --sudo-su to proceed" << std::endl;
+            return 1;
+        }
         return run_with_monitor(opts);
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";

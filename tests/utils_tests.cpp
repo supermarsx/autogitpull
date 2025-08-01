@@ -76,6 +76,21 @@ TEST_CASE("find_running_instances lists instances") {
 #endif
 }
 
+TEST_CASE("alerts_allowed logic") {
+    Options opts;
+    opts.interval = 10;
+    REQUIRE_FALSE(alerts_allowed(opts));
+    opts.confirm_alert = true;
+    REQUIRE(alerts_allowed(opts));
+    opts.confirm_alert = false;
+    opts.sudo_su = true;
+    REQUIRE(alerts_allowed(opts));
+    opts.sudo_su = false;
+    opts.interval = 20;
+    opts.force_pull = true;
+    REQUIRE_FALSE(alerts_allowed(opts));
+}
+
 TEST_CASE("find_running_instances detects process name") {
 #if defined(__linux__) || defined(__APPLE__)
     pid_t pid = fork();

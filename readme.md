@@ -23,7 +23,7 @@ and shows progress either in an interactive TUI or with plain console output.
 
 ## Usage
 
-`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms|s|m>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--max-log-size <bytes>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n.n>] [--cpu-cores <mask>] [--mem-limit <M/G>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/MB>] [--upload-limit <KB/MB>] [--disk-limit <KB/MB>] [--total-traffic-limit <KB/MB/GB>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--hard-reset] [--confirm-reset] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist[=name]] [--help]`
+`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms|s|m>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--max-log-size <bytes>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n.n>] [--cpu-cores <mask>] [--mem-limit <M/G>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/MB>] [--upload-limit <KB/MB>] [--disk-limit <KB/MB>] [--total-traffic-limit <KB/MB/GB>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--hard-reset] [--confirm-reset] [--confirm-alert] [--sudo-su] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist[=name]] [--help]`
 
 ### TLDR usage tips
 
@@ -162,6 +162,8 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--ignore-lock` – Don't create or check lock file.
 - `--hard-reset` – Delete all logs and configs.
 - `--confirm-reset` – Confirm `--hard-reset`.
+- `--confirm-alert` – Confirm unsafe interval or force pull.
+- `--sudo-su` – Suppress confirmation alerts.
 
 
 By default, repositories whose `origin` remote does not point to GitHub or require authentication are skipped during scanning. Use `--include-private` to include them. Skipped repositories are hidden from the TUI unless `--show-skipped` is also provided.
