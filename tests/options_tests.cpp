@@ -19,6 +19,9 @@ TEST_CASE("parse_options service control flags") {
     REQUIRE(opts.start_service);
     REQUIRE(opts.stop_service);
     REQUIRE(opts.restart_service);
+    REQUIRE(opts.start_service_name == std::string("autogitpull"));
+    REQUIRE(opts.stop_service_name == std::string("autogitpull"));
+    REQUIRE(opts.restart_service_name == std::string("autogitpull"));
 }
 
 TEST_CASE("parse_options daemon control flags") {
@@ -27,6 +30,9 @@ TEST_CASE("parse_options daemon control flags") {
     REQUIRE(opts.start_daemon);
     REQUIRE(opts.stop_daemon);
     REQUIRE(opts.restart_daemon);
+    REQUIRE(opts.start_daemon_name == std::string("autogitpull"));
+    REQUIRE(opts.stop_daemon_name == std::string("autogitpull"));
+    REQUIRE(opts.restart_daemon_name == std::string("autogitpull"));
 }
 
 TEST_CASE("parse_options service name flags") {
@@ -35,10 +41,38 @@ TEST_CASE("parse_options service name flags") {
     REQUIRE(opts.service_name == std::string("svc"));
 }
 
+TEST_CASE("parse_options start service name override") {
+    const char* argv[] = {"prog", "path", "--start-service", "svc"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.start_service);
+    REQUIRE(opts.start_service_name == std::string("svc"));
+}
+
+TEST_CASE("parse_options start service default name") {
+    const char* argv[] = {"prog", "path", "--service-name", "svc", "--start-service"};
+    Options opts = parse_options(5, const_cast<char**>(argv));
+    REQUIRE(opts.start_service);
+    REQUIRE(opts.start_service_name == std::string("svc"));
+}
+
 TEST_CASE("parse_options daemon name flag") {
     const char* argv[] = {"prog", "path", "--daemon-name", "dname"};
     Options opts = parse_options(4, const_cast<char**>(argv));
     REQUIRE(opts.daemon_name == std::string("dname"));
+}
+
+TEST_CASE("parse_options start daemon name override") {
+    const char* argv[] = {"prog", "path", "--start-daemon", "dname"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.start_daemon);
+    REQUIRE(opts.start_daemon_name == std::string("dname"));
+}
+
+TEST_CASE("parse_options start daemon default name") {
+    const char* argv[] = {"prog", "path", "--daemon-name", "dname", "--start-daemon"};
+    Options opts = parse_options(5, const_cast<char**>(argv));
+    REQUIRE(opts.start_daemon);
+    REQUIRE(opts.start_daemon_name == std::string("dname"));
 }
 
 TEST_CASE("parse_options show service flag") {

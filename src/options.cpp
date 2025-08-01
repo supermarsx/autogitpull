@@ -281,10 +281,25 @@ Options parse_options(int argc, char* argv[]) {
     opts.install_daemon = parser.has_flag("--install-daemon") || cfg_flag("--install-daemon");
     opts.uninstall_daemon = parser.has_flag("--uninstall-daemon") || cfg_flag("--uninstall-daemon");
     opts.start_daemon = parser.has_flag("--start-daemon") || cfg_flag("--start-daemon");
+    if (opts.start_daemon) {
+        opts.start_daemon_name = parser.get_option("--start-daemon");
+        if (opts.start_daemon_name.empty())
+            opts.start_daemon_name = cfg_opt("--start-daemon");
+    }
     opts.stop_daemon = parser.has_flag("--stop-daemon") || cfg_flag("--stop-daemon");
+    if (opts.stop_daemon) {
+        opts.stop_daemon_name = parser.get_option("--stop-daemon");
+        if (opts.stop_daemon_name.empty())
+            opts.stop_daemon_name = cfg_opt("--stop-daemon");
+    }
     opts.force_stop_daemon =
         parser.has_flag("--force-stop-daemon") || cfg_flag("--force-stop-daemon");
     opts.restart_daemon = parser.has_flag("--restart-daemon") || cfg_flag("--restart-daemon");
+    if (opts.restart_daemon) {
+        opts.restart_daemon_name = parser.get_option("--restart-daemon");
+        if (opts.restart_daemon_name.empty())
+            opts.restart_daemon_name = cfg_opt("--restart-daemon");
+    }
     opts.force_restart_daemon =
         parser.has_flag("--force-restart-daemon") || cfg_flag("--force-restart-daemon");
     opts.service_status = parser.has_flag("--service-status") || cfg_flag("--service-status");
@@ -299,10 +314,25 @@ Options parse_options(int argc, char* argv[]) {
     opts.uninstall_service =
         parser.has_flag("--uninstall-service") || cfg_flag("--uninstall-service");
     opts.start_service = parser.has_flag("--start-service") || cfg_flag("--start-service");
+    if (opts.start_service) {
+        opts.start_service_name = parser.get_option("--start-service");
+        if (opts.start_service_name.empty())
+            opts.start_service_name = cfg_opt("--start-service");
+    }
     opts.stop_service = parser.has_flag("--stop-service") || cfg_flag("--stop-service");
+    if (opts.stop_service) {
+        opts.stop_service_name = parser.get_option("--stop-service");
+        if (opts.stop_service_name.empty())
+            opts.stop_service_name = cfg_opt("--stop-service");
+    }
     opts.force_stop_service =
         parser.has_flag("--force-stop-service") || cfg_flag("--force-stop-service");
     opts.restart_service = parser.has_flag("--restart-service") || cfg_flag("--restart-service");
+    if (opts.restart_service) {
+        opts.restart_service_name = parser.get_option("--restart-service");
+        if (opts.restart_service_name.empty())
+            opts.restart_service_name = cfg_opt("--restart-service");
+    }
     opts.force_restart_service =
         parser.has_flag("--force-restart-service") || cfg_flag("--force-restart-service");
     if (parser.has_flag("--service-config") || cfg_opts.count("--service-config")) {
@@ -323,6 +353,18 @@ Options parse_options(int argc, char* argv[]) {
             val = cfg_opt("--daemon-name");
         opts.daemon_name = val;
     }
+    if (opts.start_service_name.empty())
+        opts.start_service_name = opts.service_name;
+    if (opts.stop_service_name.empty())
+        opts.stop_service_name = opts.service_name;
+    if (opts.restart_service_name.empty())
+        opts.restart_service_name = opts.service_name;
+    if (opts.start_daemon_name.empty())
+        opts.start_daemon_name = opts.daemon_name;
+    if (opts.stop_daemon_name.empty())
+        opts.stop_daemon_name = opts.daemon_name;
+    if (opts.restart_daemon_name.empty())
+        opts.restart_daemon_name = opts.daemon_name;
     opts.show_service = parser.has_flag("--show-service") || cfg_flag("--show-service");
     if (parser.has_flag("--attach") || cfg_opts.count("--attach")) {
         std::string val = parser.get_option("--attach");
