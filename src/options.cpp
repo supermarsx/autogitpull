@@ -204,7 +204,9 @@ Options parse_options(int argc, char* argv[]) {
                                       "--show-pull-author",
                                       "--censor-names",
                                       "--censor-char",
-                                      "--keep-first"};
+                                      "--keep-first",
+                                      "--hard-reset",
+                                      "--confirm-reset"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
                                                  {'v', "--show-version"},
@@ -460,6 +462,8 @@ Options parse_options(int argc, char* argv[]) {
     opts.recursive_scan = parser.has_flag("--recursive") || cfg_flag("--recursive");
     opts.show_help = parser.has_flag("--help");
     opts.print_version = parser.has_flag("--version");
+    opts.hard_reset = parser.has_flag("--hard-reset") || cfg_flag("--hard-reset");
+    opts.confirm_reset = parser.has_flag("--confirm-reset") || cfg_flag("--confirm-reset");
     if (!parser.unknown_flags().empty()) {
         throw std::runtime_error("Unknown option: " + parser.unknown_flags().front());
     }
