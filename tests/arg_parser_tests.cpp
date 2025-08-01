@@ -174,3 +174,13 @@ TEST_CASE("parse_size_t helper range") {
     parse_size_t(parser, "--num", 0, 50, ok);
     REQUIRE_FALSE(ok);
 }
+
+TEST_CASE("parse_bytes units") {
+    bool ok = false;
+    REQUIRE(parse_bytes("1KB", 0, SIZE_MAX, ok) == 1024);
+    REQUIRE(ok);
+    REQUIRE(parse_bytes("2MB", 0, SIZE_MAX, ok) == 2 * 1024 * 1024);
+    REQUIRE(ok);
+    REQUIRE(parse_bytes("1G", 0, SIZE_MAX, ok) == 1024ull * 1024 * 1024);
+    REQUIRE(ok);
+}

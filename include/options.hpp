@@ -37,6 +37,7 @@ struct Options {
     size_t download_limit = 0;
     size_t upload_limit = 0;
     size_t disk_limit = 0;
+    size_t total_traffic_limit = 0;
     size_t max_depth = 0;
     bool cpu_tracker = true;
     bool mem_tracker = true;

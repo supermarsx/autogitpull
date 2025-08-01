@@ -125,6 +125,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--download-limit",
                                       "--upload-limit",
                                       "--disk-limit",
+                                      "--total-traffic-limit",
                                       "--max-depth",
                                       "--cli",
                                       "--single-run",
@@ -545,44 +546,54 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Invalid value for --cpu-cores");
     }
     if (cfg_opts.count("--mem-limit")) {
-        opts.mem_limit = parse_size_t(cfg_opt("--mem-limit"), 0, SIZE_MAX, ok);
+        opts.mem_limit = parse_bytes(cfg_opt("--mem-limit"), 0, SIZE_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --mem-limit");
     }
     if (parser.has_flag("--mem-limit")) {
-        opts.mem_limit = parse_size_t(parser, "--mem-limit", 0, SIZE_MAX, ok);
+        opts.mem_limit = parse_bytes(parser, "--mem-limit", 0, SIZE_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --mem-limit");
     }
     if (cfg_opts.count("--download-limit")) {
-        opts.download_limit = parse_size_t(cfg_opt("--download-limit"), 0, SIZE_MAX, ok);
+        opts.download_limit = parse_bytes(cfg_opt("--download-limit"), 0, SIZE_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --download-limit");
     }
     if (parser.has_flag("--download-limit")) {
-        opts.download_limit = parse_size_t(parser, "--download-limit", 0, SIZE_MAX, ok);
+        opts.download_limit = parse_bytes(parser, "--download-limit", 0, SIZE_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --download-limit");
     }
     if (cfg_opts.count("--upload-limit")) {
-        opts.upload_limit = parse_size_t(cfg_opt("--upload-limit"), 0, SIZE_MAX, ok);
+        opts.upload_limit = parse_bytes(cfg_opt("--upload-limit"), 0, SIZE_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --upload-limit");
     }
     if (parser.has_flag("--upload-limit")) {
-        opts.upload_limit = parse_size_t(parser, "--upload-limit", 0, SIZE_MAX, ok);
+        opts.upload_limit = parse_bytes(parser, "--upload-limit", 0, SIZE_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --upload-limit");
     }
     if (cfg_opts.count("--disk-limit")) {
-        opts.disk_limit = parse_size_t(cfg_opt("--disk-limit"), 0, SIZE_MAX, ok);
+        opts.disk_limit = parse_bytes(cfg_opt("--disk-limit"), 0, SIZE_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --disk-limit");
     }
     if (parser.has_flag("--disk-limit")) {
-        opts.disk_limit = parse_size_t(parser, "--disk-limit", 0, SIZE_MAX, ok);
+        opts.disk_limit = parse_bytes(parser, "--disk-limit", 0, SIZE_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --disk-limit");
+    }
+    if (cfg_opts.count("--total-traffic-limit")) {
+        opts.total_traffic_limit = parse_bytes(cfg_opt("--total-traffic-limit"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --total-traffic-limit");
+    }
+    if (parser.has_flag("--total-traffic-limit")) {
+        opts.total_traffic_limit = parse_bytes(parser, "--total-traffic-limit", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --total-traffic-limit");
     }
     if (cfg_opts.count("--max-depth")) {
         opts.max_depth = parse_size_t(cfg_opt("--max-depth"), 0, SIZE_MAX, ok);
@@ -778,17 +789,17 @@ Options parse_options(int argc, char* argv[]) {
         if (rflag("--force-pull") || rflag("--discard-dirty"))
             ro.force_pull = true;
         if (values.count("--download-limit")) {
-            ro.download_limit = parse_size_t(ropt("--download-limit"), 0, SIZE_MAX, ok);
+            ro.download_limit = parse_bytes(ropt("--download-limit"), 0, SIZE_MAX, ok);
             if (!ok)
                 throw std::runtime_error("Invalid per-repo download-limit");
         }
         if (values.count("--upload-limit")) {
-            ro.upload_limit = parse_size_t(ropt("--upload-limit"), 0, SIZE_MAX, ok);
+            ro.upload_limit = parse_bytes(ropt("--upload-limit"), 0, SIZE_MAX, ok);
             if (!ok)
                 throw std::runtime_error("Invalid per-repo upload-limit");
         }
         if (values.count("--disk-limit")) {
-            ro.disk_limit = parse_size_t(ropt("--disk-limit"), 0, SIZE_MAX, ok);
+            ro.disk_limit = parse_bytes(ropt("--disk-limit"), 0, SIZE_MAX, ok);
             if (!ok)
                 throw std::runtime_error("Invalid per-repo disk-limit");
         }

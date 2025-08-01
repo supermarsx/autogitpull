@@ -19,6 +19,12 @@ unsigned long long parse_ull(const ArgParser& parser, const std::string& flag,
 unsigned long long parse_ull(const std::string& value, unsigned long long min,
                              unsigned long long max, bool& ok);
 
+// Parse a byte size string like "10MB" or "2G".
+// Supports suffixes: KB, MB, GB, TB, PB and the shorthand K/M/G/T/P.
+size_t parse_bytes(const ArgParser& parser, const std::string& flag, size_t min, size_t max,
+                   bool& ok);
+size_t parse_bytes(const std::string& value, size_t min, size_t max, bool& ok);
+
 // Parse a duration string like "30m" or "2h".
 // Supported units: s (seconds), m (minutes), h (hours),
 // d (days), w (weeks), M (months ~30 days).

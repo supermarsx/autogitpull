@@ -314,3 +314,9 @@ TEST_CASE("parse_options wait empty with limit") {
     REQUIRE(opts.wait_empty);
     REQUIRE(opts.wait_empty_limit == 5);
 }
+
+TEST_CASE("parse_options total traffic limit") {
+    const char* argv[] = {"prog", "path", "--total-traffic-limit", "1GB"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.total_traffic_limit == 1024ull * 1024 * 1024);
+}
