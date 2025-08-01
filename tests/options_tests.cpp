@@ -314,3 +314,17 @@ TEST_CASE("parse_options wait empty with limit") {
     REQUIRE(opts.wait_empty);
     REQUIRE(opts.wait_empty_limit == 5);
 }
+
+TEST_CASE("parse_options censor names flag") {
+    const char* argv[] = {"prog", "path", "--censor-names"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.censor_names);
+    REQUIRE(opts.censor_char == '*');
+}
+
+TEST_CASE("parse_options censor char") {
+    const char* argv[] = {"prog", "path", "--censor-char", "#"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(!opts.censor_names);
+    REQUIRE(opts.censor_char == '#');
+}

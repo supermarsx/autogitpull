@@ -200,6 +200,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--session-dates-only",
                                       "--print-skipped",
                                       "--show-pull-author",
+                                      "--censor-names",
+                                      "--censor-char",
                                       "--keep-first"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
@@ -431,6 +433,15 @@ Options parse_options(int argc, char* argv[]) {
         parser.has_flag("--session-dates-only") || cfg_flag("--session-dates-only");
     opts.cli_print_skipped = parser.has_flag("--print-skipped") || cfg_flag("--print-skipped");
     opts.show_pull_author = parser.has_flag("--show-pull-author") || cfg_flag("--show-pull-author");
+    opts.censor_names = parser.has_flag("--censor-names") || cfg_flag("--censor-names");
+    if (parser.has_flag("--censor-char") || cfg_opts.count("--censor-char")) {
+        std::string val = parser.get_option("--censor-char");
+        if (val.empty())
+            val = cfg_opt("--censor-char");
+        if (val.empty())
+            throw std::runtime_error("--censor-char requires a character");
+        opts.censor_char = val[0];
+    }
     opts.wait_empty = parser.has_flag("--wait-empty") || cfg_flag("--wait-empty");
     if (opts.wait_empty) {
         std::string val = parser.get_option("--wait-empty");

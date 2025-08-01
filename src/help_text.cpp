@@ -66,6 +66,8 @@ void print_help(const char* prog) {
         {"--row-order", "", "<mode>", "Row ordering (alpha/reverse)", "Display"},
         {"--color", "", "<ansi>", "Override status color", "Display"},
         {"--no-colors", "-C", "", "Disable ANSI colors", "Display"},
+        {"--censor-names", "", "", "Mask repository names", "Display"},
+        {"--censor-char", "", "<ch>", "Character for name masking", "Display"},
         {"--check-only", "-x", "", "Only check for updates", "Actions"},
         {"--no-hash-check", "-N", "", "Always pull without hash check", "Actions"},
         {"--force-pull", "-f", "", "Discard local changes when pulling", "Actions"},

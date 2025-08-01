@@ -70,6 +70,8 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--row-order` `<mode>` – Row ordering (alpha/reverse).
 - `--color` `<ansi>` – Override status color.
 - `--no-colors` (`-C`) – Disable ANSI colors.
+- `--censor-names` – Mask repository names in output.
+- `--censor-char` `<ch>` – Character used for masking.
 
 #### Config
 - `--auto-config` – Auto detect YAML or JSON config.
