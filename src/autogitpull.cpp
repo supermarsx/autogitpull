@@ -17,6 +17,21 @@
 
 namespace fs = std::filesystem;
 
+static void perform_hard_reset(const Options& opts) {
+    std::error_code ec;
+    if (!opts.log_file.empty())
+        fs::remove(opts.log_file, ec);
+    if (!opts.log_dir.empty())
+        fs::remove_all(opts.log_dir, ec);
+    if (!opts.root.empty()) {
+        fs::remove(opts.root / ".autogitpull.lock", ec);
+        fs::remove(opts.root / ".autogitpull.yaml", ec);
+        fs::remove(opts.root / ".autogitpull.json", ec);
+        fs::path hist = opts.root / opts.history_file;
+        fs::remove(hist, ec);
+    }
+}
+
 #ifndef AUTOGITPULL_NO_MAIN
 int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
@@ -145,6 +160,16 @@ int main(int argc, char* argv[]) {
             } else {
                 std::cout << "No running instance" << std::endl;
             }
+            return 0;
+        }
+        if (opts.hard_reset) {
+            std::cerr << "WARNING: --hard-reset will delete all application data" << std::endl;
+            if (!opts.confirm_reset) {
+                std::cerr << "Re-run with --confirm-reset to proceed" << std::endl;
+                return 1;
+            }
+            perform_hard_reset(opts);
+            std::cout << "Reset complete" << std::endl;
             return 0;
         }
         if (opts.list_instances) {

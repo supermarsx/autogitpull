@@ -108,6 +108,13 @@ TEST_CASE("parse_options kill-all option") {
     REQUIRE(opts.kill_all);
 }
 
+TEST_CASE("parse_options hard reset flags") {
+    const char* argv[] = {"prog", "path", "--hard-reset", "--confirm-reset"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.hard_reset);
+    REQUIRE(opts.confirm_reset);
+}
+
 TEST_CASE("parse_options kill-on-sleep option") {
     const char* argv[] = {"prog", "path", "--kill-on-sleep"};
     Options opts = parse_options(3, const_cast<char**>(argv));
