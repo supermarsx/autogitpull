@@ -219,3 +219,15 @@ size_t parse_bytes(const ArgParser& parser, const std::string& flag, size_t min,
     }
     return parse_bytes(parser.get_option(flag), min, max, ok);
 }
+
+size_t parse_bytes(const std::string& value, bool& ok) {
+    return parse_bytes(value, 0, SIZE_MAX, ok);
+}
+
+size_t parse_bytes(const ArgParser& parser, const std::string& flag, bool& ok) {
+    if (!parser.has_flag(flag)) {
+        ok = false;
+        return 0;
+    }
+    return parse_bytes(parser.get_option(flag), 0, SIZE_MAX, ok);
+}

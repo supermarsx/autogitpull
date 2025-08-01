@@ -328,3 +328,9 @@ TEST_CASE("parse_options censor char") {
     REQUIRE(!opts.censor_names);
     REQUIRE(opts.censor_char == '#');
 }
+
+TEST_CASE("parse_options max log size") {
+    const char* argv[] = {"prog", "path", "--max-log-size", "100KB"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.max_log_size == 100 * 1024);
+}

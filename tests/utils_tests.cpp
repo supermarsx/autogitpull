@@ -186,6 +186,19 @@ TEST_CASE("Logger appends messages") {
     shutdown_logger();
 }
 
+TEST_CASE("Logger rotates when exceeding max size") {
+    fs::path log = fs::temp_directory_path() / "autogitpull_logger_rotate.log";
+    fs::remove(log);
+    init_logger(log.string(), LogLevel::INFO, 200);
+    REQUIRE(logger_initialized());
+    for (int i = 0; i < 50; ++i)
+        log_info("entry " + std::to_string(i));
+    shutdown_logger();
+    std::error_code ec;
+    REQUIRE(std::filesystem::file_size(log, ec) <= 200);
+    fs::remove(log);
+}
+
 TEST_CASE("--log-file without value creates file") {
     const char* argv[] = {"prog", "--log-file"};
     ArgParser parser(2, const_cast<char**>(argv), {"--log-file"});

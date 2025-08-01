@@ -102,6 +102,7 @@ void print_help(const char* prog) {
         {"--ignore-lock", "", "", "Don't create or check lock file", "Actions"},
         {"--log-dir", "-d", "<path>", "Directory for pull logs", "Logging"},
         {"--log-file", "-l", "<path>", "File for general logs", "Logging"},
+        {"--max-log-size", "", "<bytes>", "Rotate --log-file when over this size", "Logging"},
         {"--log-level", "-L", "<level>", "Set log verbosity", "Logging"},
         {"--verbose", "-g", "", "Shorthand for --log-level DEBUG", "Logging"},
         {"--debug-memory", "-m", "", "Log memory usage each scan", "Logging"},

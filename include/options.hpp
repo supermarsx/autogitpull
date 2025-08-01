@@ -24,6 +24,7 @@ struct Options {
     LogLevel log_level = LogLevel::INFO;
     std::filesystem::path log_dir;
     std::string log_file;
+    size_t max_log_size = 0;
     int interval = 30;
     std::chrono::milliseconds refresh_ms{250};
     unsigned int cpu_poll_sec = 5;
