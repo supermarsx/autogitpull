@@ -214,3 +214,13 @@ TEST_CASE("parse_time_ms units") {
     REQUIRE(parse_time_ms("1m", ok) == std::chrono::milliseconds(60000));
     REQUIRE(ok);
 }
+
+TEST_CASE("parse_duration units") {
+    bool ok = false;
+    REQUIRE(parse_duration("5s", ok) == std::chrono::seconds(5));
+    REQUIRE(ok);
+    REQUIRE(parse_duration("2m", ok) == std::chrono::minutes(2));
+    REQUIRE(ok);
+    REQUIRE(parse_duration("1h", ok) == std::chrono::hours(1));
+    REQUIRE(ok);
+}

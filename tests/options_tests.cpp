@@ -175,6 +175,21 @@ TEST_CASE("parse_options refresh rate units") {
     REQUIRE(opts.refresh_ms == std::chrono::seconds(2));
 }
 
+TEST_CASE("parse_options poll duration units") {
+    const char* argv[] = {"prog",
+                          "path",
+                          "--cpu-poll",
+                          "2m",
+                          "--mem-poll",
+                          "1m",
+                          "--thread-poll",
+                          "30s"};
+    Options opts = parse_options(8, const_cast<char**>(argv));
+    REQUIRE(opts.cpu_poll_sec == 120);
+    REQUIRE(opts.mem_poll_sec == 60);
+    REQUIRE(opts.thread_poll_sec == 30);
+}
+
 TEST_CASE("parse_options commit options") {
     const char* argv[] = {"prog",
                           "path",
