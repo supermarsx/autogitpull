@@ -28,7 +28,7 @@ if not exist "%ROOT_DIR%\dist" mkdir "%ROOT_DIR%\dist"
     "%ROOT_DIR%\src\autogitpull.cpp" "%ROOT_DIR%\src\scanner.cpp" "%ROOT_DIR%\src\ui_loop.cpp" ^
     "%ROOT_DIR%\src\git_utils.cpp" "%ROOT_DIR%\src\tui.cpp" "%ROOT_DIR%\src\logger.cpp" ^
     "%ROOT_DIR%\src\resource_utils.cpp" "%ROOT_DIR%\src\system_utils.cpp" "%ROOT_DIR%\src\time_utils.cpp" ^
-    "%ROOT_DIR%\src\config_utils.cpp" "%ROOT_DIR%\src\debug_utils.cpp" "%ROOT_DIR%\src\options.cpp" ^
+    "%ROOT_DIR%\src\config_utils.cpp" "%ROOT_DIR%\src\ignore_utils.cpp" "%ROOT_DIR%\src\debug_utils.cpp" "%ROOT_DIR%\src\options.cpp" ^
     "%ROOT_DIR%\src\parse_utils.cpp" "%ROOT_DIR%\src\history_utils.cpp" "%ROOT_DIR%\src\lock_utils.cpp" "%ROOT_DIR%\src\process_monitor.cpp" ^
     "%ROOT_DIR%\src\help_text.cpp" "%ROOT_DIR%\src\linux_daemon.cpp" "%ROOT_DIR%\src\windows_service.cpp" ^
     "%LIBGIT2_LIB%\libgit2.a" "%YAMLCPP_LIB%\libyaml-cpp.a" -lz -lssh2 -lws2_32 -lwinhttp ^
