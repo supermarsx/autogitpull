@@ -98,7 +98,7 @@ std::string status_label(RepoStatus status) {
 void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
               const std::string& action, bool show_skipped, int runtime_sec, bool show_repo_count,
-              bool session_dates_only) {
+              bool session_dates_only, bool censor_names, char censor_char) {
     if (show_repo_count) {
         size_t active = 0;
         for (const auto& p : all_repos) {
@@ -127,7 +127,10 @@ void draw_cli(const std::vector<fs::path>& all_repos,
             ri = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
         if (ri.status == RS_SKIPPED && !show_skipped)
             continue;
-        std::cout << " [" << status_label(ri.status) << "] " << p.filename().string();
+        std::string name = p.filename().string();
+        if (censor_names)
+            name.assign(name.size(), censor_char);
+        std::cout << " [" << status_label(ri.status) << "] " << name;
         if (!ri.branch.empty()) {
             std::cout << " (" << ri.branch;
             if (!ri.commit.empty())
@@ -211,7 +214,7 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
                  opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem, opts.show_commit_date,
                  opts.show_commit_author, opts.session_dates_only, opts.no_colors,
                  opts.custom_color, message, runtime_sec, opts.show_datetime_line, opts.show_header,
-                 opts.show_repo_count);
+                 opts.show_repo_count, opts.censor_names, opts.censor_char);
     }
 }
 int run_event_loop(const Options& opts) {
@@ -441,8 +444,12 @@ int run_event_loop(const Options& opts) {
                     }
                 }
                 if (opts.cli && !opts.silent && opts.cli_print_skipped && !opts.show_skipped) {
-                    for (const auto& sp : skip_repos)
-                        std::cout << "Skipped " << sp.filename().string() << "\n";
+                    for (const auto& sp : skip_repos) {
+                        std::string name = sp.filename().string();
+                        if (opts.censor_names)
+                            name.assign(name.size(), opts.censor_char);
+                        std::cout << "Skipped " << name << "\n";
+                    }
                 }
                 first_cycle = false;
             }
