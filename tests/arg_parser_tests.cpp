@@ -1,4 +1,7 @@
 #include "test_common.hpp"
+#include <climits>
+#include <catch2/catch_approx.hpp>
+using Catch::Approx;
 
 TEST_CASE("ArgParser basic parsing") {
     const char* argv[] = {"prog", "--foo", "--opt", "42", "pos", "--unknown"};
@@ -190,4 +193,14 @@ TEST_CASE("parse_size_t helper range") {
     bool ok = false;
     parse_size_t(parser, "--num", 0, 50, ok);
     REQUIRE_FALSE(ok);
+}
+
+TEST_CASE("parse_bytes units") {
+    bool ok = false;
+    REQUIRE(parse_bytes("1KB", 0, SIZE_MAX, ok) == 1024);
+    REQUIRE(ok);
+    REQUIRE(parse_bytes("2MB", 0, SIZE_MAX, ok) == 2 * 1024 * 1024);
+    REQUIRE(ok);
+    REQUIRE(parse_bytes("3G", 0, SIZE_MAX, ok) == 3ull * 1024 * 1024 * 1024);
+    REQUIRE(ok);
 }
