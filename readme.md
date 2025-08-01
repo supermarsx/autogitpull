@@ -23,7 +23,7 @@ and shows progress either in an interactive TUI or with plain console output.
 
 ## Usage
 
-`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n.n>] [--cpu-cores <mask>] [--mem-limit <MB>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/s>] [--upload-limit <KB/s>] [--disk-limit <KB/s>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist[=name]] [--help]`
+`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms>] [--cpu-poll <s>] [--mem-poll <s>] [--thread-poll <s>] [--log-dir <path>] [--log-file <path>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n.n>] [--cpu-cores <mask>] [--mem-limit <M/G>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/MB>] [--upload-limit <KB/MB>] [--disk-limit <KB/MB>] [--total-traffic-limit <KB/MB/GB>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist[=name]] [--help]`
 
 ### TLDR usage tips
 
@@ -115,10 +115,11 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 #### Resource limits
 - `--cpu-percent` (`-E`) `<n.n>` – Approximate CPU usage limit.
 - `--cpu-cores` `<mask>` – Set CPU affinity mask.
-- `--mem-limit` (`-Y`) `<MB>` – Abort if memory exceeds this amount.
-- `--download-limit` `<KB/s>` – Limit total download rate.
-- `--upload-limit` `<KB/s>` – Limit total upload rate.
-- `--disk-limit` `<KB/s>` – Limit disk throughput.
+- `--mem-limit` (`-Y`) `<M/G>` – Abort if memory exceeds this amount.
+- `--download-limit` `<KB/MB>` – Limit total download rate.
+- `--upload-limit` `<KB/MB>` – Limit total upload rate.
+- `--disk-limit` `<KB/MB>` – Limit disk throughput.
+- `--total-traffic-limit` `<KB/MB/GB>` – Stop after transferring this much data.
 
 #### Tracking
 - `--cpu-poll` `<s>` – CPU polling interval.
