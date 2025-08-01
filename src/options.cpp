@@ -721,34 +721,40 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Invalid value for --refresh-rate");
     }
     if (cfg_opts.count("--cpu-poll")) {
-        opts.cpu_poll_sec = parse_uint(cfg_opt("--cpu-poll"), 1u, UINT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(cfg_opt("--cpu-poll"), ok);
+        if (!ok || dur.count() < 1 || dur.count() > UINT_MAX)
             throw std::runtime_error("Invalid value for --cpu-poll");
+        opts.cpu_poll_sec = static_cast<unsigned int>(dur.count());
     }
     if (parser.has_flag("--cpu-poll")) {
-        opts.cpu_poll_sec = parse_uint(parser, "--cpu-poll", 1u, UINT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(parser, "--cpu-poll", ok);
+        if (!ok || dur.count() < 1 || dur.count() > UINT_MAX)
             throw std::runtime_error("Invalid value for --cpu-poll");
+        opts.cpu_poll_sec = static_cast<unsigned int>(dur.count());
     }
     if (cfg_opts.count("--mem-poll")) {
-        opts.mem_poll_sec = parse_uint(cfg_opt("--mem-poll"), 1u, UINT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(cfg_opt("--mem-poll"), ok);
+        if (!ok || dur.count() < 1 || dur.count() > UINT_MAX)
             throw std::runtime_error("Invalid value for --mem-poll");
+        opts.mem_poll_sec = static_cast<unsigned int>(dur.count());
     }
     if (parser.has_flag("--mem-poll")) {
-        opts.mem_poll_sec = parse_uint(parser, "--mem-poll", 1u, UINT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(parser, "--mem-poll", ok);
+        if (!ok || dur.count() < 1 || dur.count() > UINT_MAX)
             throw std::runtime_error("Invalid value for --mem-poll");
+        opts.mem_poll_sec = static_cast<unsigned int>(dur.count());
     }
     if (cfg_opts.count("--thread-poll")) {
-        opts.thread_poll_sec = parse_uint(cfg_opt("--thread-poll"), 1u, UINT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(cfg_opt("--thread-poll"), ok);
+        if (!ok || dur.count() < 1 || dur.count() > UINT_MAX)
             throw std::runtime_error("Invalid value for --thread-poll");
+        opts.thread_poll_sec = static_cast<unsigned int>(dur.count());
     }
     if (parser.has_flag("--thread-poll")) {
-        opts.thread_poll_sec = parse_uint(parser, "--thread-poll", 1u, UINT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(parser, "--thread-poll", ok);
+        if (!ok || dur.count() < 1 || dur.count() > UINT_MAX)
             throw std::runtime_error("Invalid value for --thread-poll");
+        opts.thread_poll_sec = static_cast<unsigned int>(dur.count());
     }
     if (parser.has_flag("--log-dir") || cfg_opts.count("--log-dir")) {
         std::string val = parser.get_option("--log-dir");
