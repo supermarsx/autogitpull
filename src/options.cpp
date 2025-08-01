@@ -854,5 +854,27 @@ Options parse_options(int argc, char* argv[]) {
         }
         opts.repo_overrides[fs::path(repo)] = ro;
     }
+
+    if ((opts.rerun_last || opts.save_args || opts.enable_history) &&
+        opts.history_file == ".autogitpull.config") {
+        auto find_hist = [](const fs::path& dir) -> fs::path {
+            if (dir.empty())
+                return {};
+            fs::path c = dir / ".autogitpull.config";
+            if (fs::exists(c))
+                return c;
+            return {};
+        };
+        fs::path exe_dir;
+        if (argv && argv[0])
+            exe_dir = fs::absolute(argv[0]).parent_path();
+        fs::path hist = find_hist(opts.root);
+        if (hist.empty())
+            hist = find_hist(fs::current_path());
+        if (hist.empty())
+            hist = find_hist(exe_dir);
+        if (!hist.empty())
+            opts.history_file = hist.string();
+    }
     return opts;
 }
