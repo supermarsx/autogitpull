@@ -82,6 +82,12 @@ struct Options {
     std::string service_config;
     std::string service_name = "autogitpull";
     std::string daemon_name = "autogitpull";
+    std::string start_service_name;
+    std::string stop_service_name;
+    std::string restart_service_name;
+    std::string start_daemon_name;
+    std::string stop_daemon_name;
+    std::string restart_daemon_name;
     bool start_daemon = false;
     bool stop_daemon = false;
     bool force_stop_daemon = false;

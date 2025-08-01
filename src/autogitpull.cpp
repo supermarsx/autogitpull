@@ -103,37 +103,62 @@ int main(int argc, char* argv[]) {
             return 0;
 #endif
         }
+#define SERVICE_NAME(name) ((name).empty() ? opts.service_name : (name))
+#define DAEMON_NAME(name) ((name).empty() ? opts.daemon_name : (name))
         if (opts.start_service) {
 #ifndef _WIN32
-            return procutil::start_service_unit(opts.daemon_name) ? 0 : 1;
+            return procutil::start_service_unit(DAEMON_NAME(opts.start_service_name)) ? 0 : 1;
 #else
-            return winservice::start_service(opts.service_name) ? 0 : 1;
+            return winservice::start_service(SERVICE_NAME(opts.start_service_name)) ? 0 : 1;
 #endif
         }
         if (opts.stop_service) {
 #ifndef _WIN32
-            return procutil::stop_service_unit(opts.daemon_name, opts.force_stop_service) ? 0 : 1;
+            return procutil::stop_service_unit(DAEMON_NAME(opts.stop_service_name),
+                                               opts.force_stop_service)
+                       ? 0
+                       : 1;
 #else
-            return winservice::stop_service(opts.service_name, opts.force_stop_service) ? 0 : 1;
+            return winservice::stop_service(SERVICE_NAME(opts.stop_service_name),
+                                            opts.force_stop_service)
+                       ? 0
+                       : 1;
 #endif
         }
         if (opts.restart_service) {
 #ifndef _WIN32
-            return procutil::restart_service_unit(opts.daemon_name, opts.force_restart_service) ? 0
-                                                                                                : 1;
+            return procutil::restart_service_unit(DAEMON_NAME(opts.restart_service_name),
+                                                  opts.force_restart_service)
+                       ? 0
+                       : 1;
 #else
-            return winservice::restart_service(opts.service_name, opts.force_restart_service) ? 0
-                                                                                              : 1;
+            return winservice::restart_service(SERVICE_NAME(opts.restart_service_name),
+                                               opts.force_restart_service)
+                       ? 0
+                       : 1;
 #endif
         }
+#undef SERVICE_NAME
+#undef DAEMON_NAME
 #ifndef _WIN32
         if (opts.start_daemon)
-            return procutil::start_service_unit(opts.daemon_name) ? 0 : 1;
+            return procutil::start_service_unit(
+                       opts.start_daemon_name.empty() ? opts.daemon_name : opts.start_daemon_name)
+                       ? 0
+                       : 1;
         if (opts.stop_daemon)
-            return procutil::stop_service_unit(opts.daemon_name, opts.force_stop_daemon) ? 0 : 1;
+            return procutil::stop_service_unit(
+                       opts.stop_daemon_name.empty() ? opts.daemon_name : opts.stop_daemon_name,
+                       opts.force_stop_daemon)
+                       ? 0
+                       : 1;
         if (opts.restart_daemon)
-            return procutil::restart_service_unit(opts.daemon_name, opts.force_restart_daemon) ? 0
-                                                                                               : 1;
+            return procutil::restart_service_unit(opts.restart_daemon_name.empty()
+                                                      ? opts.daemon_name
+                                                      : opts.restart_daemon_name,
+                                                  opts.force_restart_daemon)
+                       ? 0
+                       : 1;
 #endif
         if (opts.remove_lock) {
             if (!opts.root.empty()) {
