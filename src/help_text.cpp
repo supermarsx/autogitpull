@@ -94,8 +94,8 @@ void print_help(const char* prog) {
         {"--daemon-status", "", "", "Check daemon existence and running state", "Actions"},
         {"--show-service", "", "", "Show installed service name", "Actions"},
         {"--remove-lock", "-R", "", "Remove directory lock file and exit", "Actions"},
-        {"--kill-all", "", "", "Terminate running instance and exit", "Actions"},
-        {"--kill-on-sleep", "", "", "Exit if a system sleep is detected", "Actions"},
+        {"--kill-all", "", "", "Terminate running instance and exit", "Kill"},
+        {"--kill-on-sleep", "", "", "Exit if a system sleep is detected", "Kill"},
         {"--list-instances", "", "", "List running instance names and PIDs", "Actions"},
         {"--list-services", "", "", "List installed service units", "Actions"},
         {"--list-daemons", "", "", "Alias for --list-services", "Actions"},
@@ -162,9 +162,9 @@ void print_help(const char* prog) {
     std::cout << "Configuration can be read from YAML or JSON files.\n\n";
     std::cout << "Usage: " << prog << " <root-folder> [options]\n";
     std::cout << "       " << prog << " --root <path> [options]\n\n";
-    const std::vector<std::string> order{"Basics",          "Display",  "Config",
-                                         "Process",         "Logging",  "Concurrency",
-                                         "Resource limits", "Tracking", "Actions"};
+    const std::vector<std::string> order{"Basics",  "Display",     "Config",          "Process",
+                                         "Logging", "Concurrency", "Resource limits", "Tracking",
+                                         "Actions", "Kill"};
     for (const auto& cat : order) {
         if (!groups.count(cat))
             continue;
