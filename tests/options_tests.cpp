@@ -135,6 +135,12 @@ TEST_CASE("parse_options rescan-new custom interval") {
     REQUIRE(opts.rescan_interval == std::chrono::minutes(10));
 }
 
+TEST_CASE("parse_options refresh rate units") {
+    const char* argv[] = {"prog", "path", "--refresh-rate", "2s"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.refresh_ms == std::chrono::seconds(2));
+}
+
 TEST_CASE("parse_options commit options") {
     const char* argv[] = {"prog",
                           "path",

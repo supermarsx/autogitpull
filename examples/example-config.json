@@ -5,7 +5,7 @@
         "show-skipped": false,
         "show-version": false,
         "interval": 30,
-        "refresh-rate": 250,
+        "refresh-rate": "250ms",
         "cli": false,
         "single-run": false,
         "single-repo": false,

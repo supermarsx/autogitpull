@@ -19,7 +19,7 @@ void print_help(const char* prog) {
         {"--include-private", "-p", "", "Include private repositories", "Basics"},
         {"--root", "-o", "<path>", "Root folder of repositories", "Basics"},
         {"--interval", "-i", "<sec>", "Delay between scans", "Basics"},
-        {"--refresh-rate", "-r", "<ms>", "TUI refresh rate", "Basics"},
+        {"--refresh-rate", "-r", "<ms|s|m>", "TUI refresh rate", "Basics"},
         {"--recursive", "-e", "", "Scan subdirectories recursively", "Basics"},
         {"--max-depth", "-D", "<n>", "Limit recursive scan depth", "Basics"},
         {"--ignore", "-I", "<dir>", "Directory to ignore (repeatable)", "Basics"},

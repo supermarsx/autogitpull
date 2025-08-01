@@ -2,7 +2,7 @@
 General : root : repos include - private : true show - skipped : false show -
                                                                  version
     : false interval : 30 refresh -
-      rate : 250 cli : false single - run : false single -
+      rate : 250ms cli : false single - run : false single -
                                             repo : false silent : false recursive
     : false max -
       depth : 0 row - order : default color : "" no - colors : false show - commit -
