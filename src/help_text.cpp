@@ -93,13 +93,13 @@ void print_help(const char* prog) {
         {"--service-status", "", "", "Check service existence and running state", "Actions"},
         {"--daemon-status", "", "", "Check daemon existence and running state", "Actions"},
         {"--show-service", "", "", "Show installed service name", "Actions"},
-        {"--remove-lock", "-R", "", "Remove directory lock file and exit", "Actions"},
+        {"--remove-lock", "-R", "", "Remove directory lock file and exit", "Lock"},
         {"--kill-all", "", "", "Terminate running instance and exit", "Kill"},
         {"--kill-on-sleep", "", "", "Exit if a system sleep is detected", "Kill"},
         {"--list-instances", "", "", "List running instance names and PIDs", "Actions"},
         {"--list-services", "", "", "List installed service units", "Actions"},
         {"--list-daemons", "", "", "Alias for --list-services", "Actions"},
-        {"--ignore-lock", "", "", "Don't create or check lock file", "Actions"},
+        {"--ignore-lock", "", "", "Don't create or check lock file", "Lock"},
         {"--hard-reset", "", "", "Delete all logs and configs", "Actions"},
         {"--confirm-reset", "", "", "Confirm --hard-reset", "Actions"},
         {"--confirm-alert", "", "", "Confirm unsafe options", "Actions"},
@@ -164,9 +164,9 @@ void print_help(const char* prog) {
     std::cout << "Configuration can be read from YAML or JSON files.\n\n";
     std::cout << "Usage: " << prog << " <root-folder> [options]\n";
     std::cout << "       " << prog << " --root <path> [options]\n\n";
-    const std::vector<std::string> order{"Basics",  "Display",     "Config",          "Process",
-                                         "Logging", "Concurrency", "Resource limits", "Tracking",
-                                         "Actions", "Kill"};
+    const std::vector<std::string> order{
+        "Basics",          "Display",  "Config",  "Process", "Logging", "Concurrency",
+        "Resource limits", "Tracking", "Actions", "Lock",    "Kill"};
     for (const auto& cat : order) {
         if (!groups.count(cat))
             continue;
