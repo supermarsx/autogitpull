@@ -106,6 +106,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--thread-poll",
                                       "--log-dir",
                                       "--log-file",
+                                      "--max-log-size",
                                       "--concurrency",
                                       "--check-only",
                                       "--no-hash-check",
@@ -714,6 +715,15 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty())
             val = cfg_opt("--log-file");
         opts.log_file = val;
+    }
+    if (parser.has_flag("--max-log-size") || cfg_opts.count("--max-log-size")) {
+        std::string val = parser.get_option("--max-log-size");
+        if (val.empty())
+            val = cfg_opt("--max-log-size");
+        bool ok = false;
+        opts.max_log_size = parse_bytes(val, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --max-log-size");
     }
     opts.show_commit_date = parser.has_flag("--show-commit-date") || cfg_flag("--show-commit-date");
     opts.show_commit_author =

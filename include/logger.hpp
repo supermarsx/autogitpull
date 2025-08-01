@@ -4,7 +4,7 @@
 
 enum class LogLevel { DEBUG = 0, INFO, WARNING, ERR };
 
-void init_logger(const std::string& path, LogLevel level = LogLevel::INFO);
+void init_logger(const std::string& path, LogLevel level = LogLevel::INFO, size_t max_size = 0);
 void set_log_level(LogLevel level);
 bool logger_initialized();
 void log_debug(const std::string& msg);
