@@ -21,6 +21,7 @@ SRC = \
     src/system_utils.cpp \
     src/time_utils.cpp \
     src/config_utils.cpp \
+    src/ignore_utils.cpp \
     src/debug_utils.cpp \
     src/scanner.cpp \
     src/ui_loop.cpp \

@@ -208,7 +208,12 @@ Options parse_options(int argc, char* argv[]) {
                                       "--hard-reset",
                                       "--confirm-reset",
                                       "--confirm-alert",
-                                      "--sudo-su"};
+                                      "--sudo-su",
+                                      "--add-ignore",
+                                      "--remove-ignore",
+                                      "--clear-ignores",
+                                      "--find-ignores",
+                                      "--depth"};
     const std::map<char, std::string> short_opts{{'p', "--include-private"},
                                                  {'k', "--show-skipped"},
                                                  {'v', "--show-version"},
@@ -510,6 +515,24 @@ Options parse_options(int argc, char* argv[]) {
     opts.confirm_reset = parser.has_flag("--confirm-reset") || cfg_flag("--confirm-reset");
     opts.confirm_alert = parser.has_flag("--confirm-alert") || cfg_flag("--confirm-alert");
     opts.sudo_su = parser.has_flag("--sudo-su") || cfg_flag("--sudo-su");
+    opts.add_ignore = parser.has_flag("--add-ignore") || cfg_flag("--add-ignore");
+    if (opts.add_ignore)
+        opts.add_ignore_repo = parser.get_option("--add-ignore");
+    opts.remove_ignore = parser.has_flag("--remove-ignore") || cfg_flag("--remove-ignore");
+    if (opts.remove_ignore)
+        opts.remove_ignore_repo = parser.get_option("--remove-ignore");
+    opts.clear_ignores = parser.has_flag("--clear-ignores") || cfg_flag("--clear-ignores");
+    opts.find_ignores = parser.has_flag("--find-ignores") || cfg_flag("--find-ignores");
+    if (parser.has_flag("--depth") || cfg_opts.count("--depth")) {
+        std::string val = parser.get_option("--depth");
+        if (val.empty())
+            val = cfg_opt("--depth");
+        bool ok = false;
+        unsigned int d = parse_uint(val, 0, UINT_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --depth");
+        opts.depth = d;
+    }
     if (!parser.unknown_flags().empty()) {
         throw std::runtime_error("Unknown option: " + parser.unknown_flags().front());
     }

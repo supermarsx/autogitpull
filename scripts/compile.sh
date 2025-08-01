@@ -58,6 +58,7 @@ SRCS=(
     "${ROOT_DIR}/src/system_utils.cpp"
     "${ROOT_DIR}/src/time_utils.cpp"
     "${ROOT_DIR}/src/config_utils.cpp"
+    "${ROOT_DIR}/src/ignore_utils.cpp"
     "${ROOT_DIR}/src/debug_utils.cpp"
     "${ROOT_DIR}/src/options.cpp"
     "${ROOT_DIR}/src/parse_utils.cpp"

@@ -125,6 +125,13 @@ struct Options {
     bool confirm_reset = false;
     bool confirm_alert = false;
     bool sudo_su = false;
+    bool add_ignore = false;
+    bool remove_ignore = false;
+    bool clear_ignores = false;
+    bool find_ignores = false;
+    std::string add_ignore_repo;
+    std::string remove_ignore_repo;
+    unsigned int depth = 2;
     std::map<std::filesystem::path, RepoOptions> repo_overrides;
     enum SortMode { DEFAULT, ALPHA, REVERSE } sort_mode = DEFAULT;
 };
