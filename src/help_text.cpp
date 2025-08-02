@@ -22,7 +22,7 @@ void print_help(const char* prog) {
         {"--refresh-rate", "-r", "<ms|s|m>", "TUI refresh rate", "Basics"},
         {"--recursive", "-e", "", "Scan subdirectories recursively", "Basics"},
         {"--max-depth", "-D", "<n>", "Limit recursive scan depth", "Basics"},
-        {"--ignore", "-I", "<dir>", "Directory to ignore (repeatable)", "Basics"},
+        {"--ignore", "-I", "<dir>", "Directory to ignore (repeatable)", "Ignores"},
         {"--single-run", "-u", "", "Run a single scan cycle and exit", "Basics"},
         {"--single-repo", "-S", "", "Only monitor the specified root repo", "Basics"},
         {"--rescan-new", "-w", "<min>", "Rescan for new repos every N minutes (default 5)",
@@ -105,11 +105,11 @@ void print_help(const char* prog) {
         {"--confirm-reset", "", "", "Confirm --hard-reset", "Actions"},
         {"--confirm-alert", "", "", "Confirm unsafe options", "Actions"},
         {"--sudo-su", "", "", "Suppress confirmation alerts", "Actions"},
-        {"--add-ignore", "", "<repo>", "Add path to .autogitpull.ignore", "Actions"},
-        {"--remove-ignore", "", "<repo>", "Remove path from ignore file", "Actions"},
-        {"--clear-ignores", "", "", "Delete all ignore entries", "Actions"},
-        {"--find-ignores", "", "", "List ignore entries", "Actions"},
-        {"--depth", "", "<n>", "Depth for --find-ignores/--clear-ignores", "Actions"},
+        {"--add-ignore", "", "<repo>", "Add path to .autogitpull.ignore", "Ignores"},
+        {"--remove-ignore", "", "<repo>", "Remove path from ignore file", "Ignores"},
+        {"--clear-ignores", "", "", "Delete all ignore entries", "Ignores"},
+        {"--find-ignores", "", "", "List ignore entries", "Ignores"},
+        {"--depth", "", "<n>", "Depth for --find-ignores/--clear-ignores", "Ignores"},
         {"--log-dir", "-d", "<path>", "Directory for pull logs", "Logging"},
         {"--log-file", "-l", "<path>", "File for general logs", "Logging"},
         {"--max-log-size", "", "<bytes>", "Rotate --log-file when over this size", "Logging"},
@@ -173,7 +173,7 @@ void print_help(const char* prog) {
     std::cout << "       " << prog << " --root <path> [options]\n\n";
     const std::vector<std::string> order{
         "Basics",   "Display", "Config",  "Process", "Logging", "Concurrency", "Resource limits",
-        "Tracking", "Actions", "Service", "Daemon",  "Lock",    "Kill"};
+        "Tracking", "Ignores", "Actions", "Service", "Daemon",  "Lock",        "Kill"};
     for (const auto& cat : order) {
         if (!groups.count(cat))
             continue;
