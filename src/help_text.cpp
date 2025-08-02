@@ -41,6 +41,7 @@ void print_help(const char* prog) {
         {"--respawn-limit", "", "<n[,min]>", "Respawn limit within minutes", "Process"},
         {"--max-runtime", "", "<sec>", "Exit after given runtime", "Process"},
         {"--pull-timeout", "-O", "<sec>", "Network operation timeout", "Process"},
+        {"--exit-on-timeout", "", "", "Terminate worker on poll timeout", "Process"},
         {"--print-skipped", "", "", "Print skipped repositories once", "Process"},
         {"--keep-first", "", "", "Keep repos validated on first scan", "Process"},
         {"--auto-config", "", "", "Auto detect YAML or JSON config", "Config"},
@@ -147,6 +148,7 @@ void print_help(const char* prog) {
         {"--syslog", "", "", "Log to syslog", "Logging"},
         {"--syslog-facility", "", "<n>", "Syslog facility", "Logging"},
         {"--pull-timeout", "-O", "<sec>", "Network operation timeout", "Process"},
+        {"--exit-on-timeout", "", "", "Terminate worker on poll timeout", "Process"},
         {"--help", "-h", "", "Show this message", "Basics"}};
 
     std::map<std::string, std::vector<const OptionInfo*>> groups;

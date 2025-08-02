@@ -92,6 +92,7 @@ Most options have single-letter shorthands. Run `autogitpull --help` for a compl
 - `--respawn-limit` `<n[,min]>` – Respawn limit within minutes.
 - `--max-runtime` `<sec>` – Exit after given runtime.
 - `--pull-timeout` (`-O`) `<sec>` – Network operation timeout.
+- `--exit-on-timeout` – Terminate worker if a poll exceeds the timeout.
 - `--print-skipped` – Print skipped repositories once.
 - `--keep-first` – Keep repositories validated on the first scan.
 

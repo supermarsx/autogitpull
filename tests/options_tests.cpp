@@ -176,14 +176,8 @@ TEST_CASE("parse_options refresh rate units") {
 }
 
 TEST_CASE("parse_options poll duration units") {
-    const char* argv[] = {"prog",
-                          "path",
-                          "--cpu-poll",
-                          "2m",
-                          "--mem-poll",
-                          "1m",
-                          "--thread-poll",
-                          "30s"};
+    const char* argv[] = {"prog",       "path", "--cpu-poll",    "2m",
+                          "--mem-poll", "1m",   "--thread-poll", "30s"};
     Options opts = parse_options(8, const_cast<char**>(argv));
     REQUIRE(opts.cpu_poll_sec == 120);
     REQUIRE(opts.mem_poll_sec == 60);
@@ -243,6 +237,12 @@ TEST_CASE("parse_options pull timeout") {
     REQUIRE(opts.pull_timeout == std::chrono::seconds(60));
 }
 
+TEST_CASE("parse_options exit on timeout") {
+    const char* argv[] = {"prog", "path", "--exit-on-timeout"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.exit_on_timeout);
+}
+
 TEST_CASE("parse_options keep first valid") {
     const char* argv[] = {"prog", "path", "--keep-first-valid"};
     Options opts = parse_options(3, const_cast<char**>(argv));
@@ -299,7 +299,9 @@ TEST_CASE("parse_options repo overrides") {
 
 struct DirGuard {
     std::filesystem::path old;
-    explicit DirGuard(const std::filesystem::path& p) : old(std::filesystem::current_path()) { std::filesystem::current_path(p); }
+    explicit DirGuard(const std::filesystem::path& p) : old(std::filesystem::current_path()) {
+        std::filesystem::current_path(p);
+    }
     ~DirGuard() { std::filesystem::current_path(old); }
 };
 
@@ -316,7 +318,8 @@ TEST_CASE("parse_options auto-config root directory") {
     DirGuard guard(cwd_dir);
     std::string exe = (exe_dir / "prog").string();
     std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--auto-config")};
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                    const_cast<char*>("--auto-config")};
     Options opts = parse_options(3, argv);
     fs::remove_all(root_dir);
     fs::remove_all(cwd_dir);
@@ -336,7 +339,8 @@ TEST_CASE("parse_options auto-config cwd fallback") {
     DirGuard guard(cwd_dir);
     std::string exe = (exe_dir / "prog").string();
     std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--auto-config")};
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                    const_cast<char*>("--auto-config")};
     Options opts = parse_options(3, argv);
     fs::remove_all(root_dir);
     fs::remove_all(cwd_dir);
@@ -355,7 +359,8 @@ TEST_CASE("parse_options auto-config exe directory fallback") {
     DirGuard guard(cwd_dir);
     std::string exe = (exe_dir / "prog").string();
     std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--auto-config")};
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                    const_cast<char*>("--auto-config")};
     Options opts = parse_options(3, argv);
     fs::remove_all(root_dir);
     fs::remove_all(cwd_dir);
