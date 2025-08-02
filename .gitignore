@@ -1,11 +1,19 @@
+# Build artifacts
 build/
+
+# Distribution files
 dist/
+
+# External libraries
 libs/
 
 # Log files
-*.log
-logs/
 log/
+logs/
+*.log
+
+# Ignores
+.autogitpull.ignore
 
 # Generated icon files
 */.bld
