@@ -63,6 +63,11 @@ bool debugMemory = false;
 bool dumpState = false;
 size_t dumpThreshold = 0;
 
+bool poll_timed_out(const Options& opts, std::chrono::steady_clock::time_point start,
+                    std::chrono::steady_clock::time_point now) {
+    return opts.exit_on_timeout && opts.pull_timeout.count() > 0 && now - start > opts.pull_timeout;
+}
+
 void handle_signal(int) {
     if (g_running_ptr)
         g_running_ptr->store(false);
@@ -346,6 +351,7 @@ int run_event_loop(const Options& opts) {
     std::signal(SIGTERM, handle_signal);
 #endif
     th_compat::jthread scan_thread;
+    std::chrono::steady_clock::time_point scan_start;
     std::chrono::milliseconds countdown_ms(0);
     std::chrono::milliseconds cli_countdown_ms(0);
     std::chrono::milliseconds rescan_countdown_ms(opts.rescan_new ? opts.rescan_interval
@@ -405,6 +411,14 @@ int run_event_loop(const Options& opts) {
 #endif
     while (running) {
         auto now = std::chrono::steady_clock::now();
+        if (scanning && poll_timed_out(opts, scan_start, now)) {
+            log_error("Polling exceeded timeout; terminating worker");
+            running = false;
+#if defined(__cpp_lib_jthread)
+            scan_thread.request_stop();
+#endif
+            break;
+        }
         if (now - last_loop > std::chrono::minutes(10)) {
             log_info("Detected long pause; resuming");
             if (opts.kill_on_sleep) {
@@ -497,6 +511,7 @@ int run_event_loop(const Options& opts) {
                 }
             }
             scanning = true;
+            scan_start = std::chrono::steady_clock::now();
             scan_thread = th_compat::jthread(
                 scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
                 std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
