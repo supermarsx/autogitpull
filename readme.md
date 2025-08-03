@@ -37,6 +37,8 @@ Repositories with uncommitted changes are skipped by default to avoid losing wor
 ### Usage options
 
 Most options have single-letter shorthands. Run `autogitpull --help` for a complete list.
+The full catalogue of flags with their default values is documented in
+[`docs/cli_options.md`](docs/cli_options.md).
 
 #### Basics
 - `--include-private` (`-p`) – Include private repositories.

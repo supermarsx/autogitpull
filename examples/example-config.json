@@ -1,46 +1,131 @@
 {
-    "General": {
-        "root": "repos",
-        "include-private": true,
-        "show-skipped": false,
-        "show-version": false,
+    "Basics": {
+        "include-private": false,
+        "root": "",
         "interval": 30,
-        "refresh-rate": "250ms",
-        "cli": false,
-        "single-run": false,
-        "single-repo": false,
-        "silent": false,
+        "refresh-rate": 250,
         "recursive": false,
         "max-depth": 0,
-        "row-order": "default",
-        "color": "",
-        "no-colors": false,
-        "show-commit-date": false,
-        "show-commit-author": false,
-        "vmem": false,
-        "updated-since": "",
+        "ignore": "",
+        "single-run": false,
+        "single-repo": false,
+        "rescan-new": false,
+        "wait-empty": false,
+        "dont-skip-timeouts": false,
+        "keep-first-valid": false,
+        "updated-since": 0,
+        "help": false
+    },
+    "Process": {
+        "cli": false,
+        "silent": false,
+        "attach": "",
+        "background": false,
+        "reattach": false,
+        "persist": false,
+        "respawn-limit": 0,
+        "max-runtime": 0,
+        "pull-timeout": 0,
+        "exit-on-timeout": false,
+        "print-skipped": false,
+        "keep-first": false
+    },
+    "Config": {
         "auto-config": false,
         "auto-reload-config": false,
         "rerun-last": false,
         "save-args": false,
         "enable-history": false,
-        "session-dates-only": false
+        "enable-hotkeys": false,
+        "config-yaml": "",
+        "config-json": ""
+    },
+    "Display": {
+        "show-skipped": false,
+        "show-version": false,
+        "version": false,
+        "show-runtime": false,
+        "show-repo-count": false,
+        "show-commit-date": false,
+        "show-commit-author": false,
+        "show-pull-author": false,
+        "session-dates-only": false,
+        "hide-date-time": true,
+        "hide-header": true,
+        "row-order": "DEFAULT",
+        "color": "",
+        "no-colors": false,
+        "censor-names": false,
+        "censor-char": "'*'"
+    },
+    "Actions": {
+        "check-only": false,
+        "no-hash-check": false,
+        "force-pull": false,
+        "discard-dirty": false,
+        "list-instances": false,
+        "hard-reset": false,
+        "confirm-reset": false,
+        "confirm-alert": false,
+        "sudo-su": false,
+        "add-ignore": false,
+        "remove-ignore": false,
+        "clear-ignores": false,
+        "find-ignores": false,
+        "depth": 2
+    },
+    "Daemon": {
+        "install-daemon": false,
+        "uninstall-daemon": false,
+        "daemon-config": "",
+        "daemon-name": "autogitpull",
+        "start-daemon": false,
+        "stop-daemon": false,
+        "force-stop-daemon": false,
+        "restart-daemon": false,
+        "force-restart-daemon": false,
+        "daemon-status": false
+    },
+    "Service": {
+        "install-service": false,
+        "uninstall-service": false,
+        "start-service": false,
+        "stop-service": false,
+        "force-stop-service": false,
+        "restart-service": false,
+        "force-restart-service": false,
+        "service-config": "",
+        "service-name": "autogitpull",
+        "service-status": false,
+        "show-service": false,
+        "list-services": false,
+        "list-daemons": false
+    },
+    "Lock": {
+        "remove-lock": false,
+        "ignore-lock": false
+    },
+    "Kill": {
+        "kill-all": false,
+        "kill-on-sleep": false
     },
     "Logging": {
-        "log-dir": "logs",
-        "log-file": "autogitpull.log",
+        "log-dir": "",
+        "log-file": "",
+        "max-log-size": 0,
         "log-level": "INFO",
-        "verbose": false,
+        "verbose": "INFO",
         "debug-memory": false,
         "dump-state": false,
         "dump-large": 0,
         "syslog": false,
-        "syslog-facility": 1
+        "syslog-facility": 0
     },
     "Concurrency": {
-        "concurrency": 4,
-        "single-thread": false,
-        "max-threads": 8
+        "concurrency": 1,
+        "threads": 1,
+        "single-thread": 1,
+        "max-threads": 0
     },
     "Tracking": {
         "cpu-poll": 5,
@@ -49,25 +134,16 @@
         "no-cpu-tracker": false,
         "no-mem-tracker": false,
         "no-thread-tracker": false,
-        "net-tracker": false
+        "net-tracker": false,
+        "vmem": false
     },
     "Resource limits": {
-        "cpu-percent": 50.0,
-        "cpu-cores": "0xff",
+        "cpu-percent": 0.0,
+        "cpu-cores": 0,
         "mem-limit": 0,
         "download-limit": 0,
         "upload-limit": 0,
         "disk-limit": 0,
         "total-traffic-limit": 0
-    },
-    "Actions": {
-        "check-only": false,
-        "no-hash-check": false,
-        "force-pull": false,
-        "discard-dirty": false
-    },
-    "repos/example": {
-        "force-pull": true,
-        "pull-timeout": 30
     }
 }

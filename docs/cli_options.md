@@ -1,0 +1,197 @@
+# Command Line Options
+
+
+## Actions
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--add-ignore` | false (disabled) | Add path to .autogitpull.ignore |
+| `--check-only` | false (disabled) | Only check for updates |
+| `--clear-ignores` | false (disabled) | Delete all ignore entries |
+| `--confirm-alert` | false (disabled) | Confirm unsafe options |
+| `--confirm-reset` | false (disabled) | Confirm --hard-reset |
+| `--depth` | 2 | Depth for --find-ignores/--clear-ignores |
+| `--discard-dirty` | false (disabled) | Alias for --force-pull |
+| `--find-ignores` | false (disabled) | List ignore entries |
+| `--force-pull` | false (disabled) | Discard local changes when pulling |
+| `--hard-reset` | false (disabled) | Delete all logs and configs |
+| `--list-instances` | false (disabled) | List running instance names and PIDs |
+| `--no-hash-check` | false (feature enabled) | Always pull without hash check |
+| `--remove-ignore` | false (disabled) | Remove path from ignore file |
+| `--sudo-su` | false (disabled) | Suppress confirmation alerts |
+
+## Basics
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dont-skip-timeouts` | false | Retry repositories that timeout |
+| `--help` | false (disabled) | Show this message |
+| `--ignore` |  | Directory to ignore (repeatable) |
+| `--include-private` | false (disabled) | Include private repositories |
+| `--interval` | 30 | Delay between scans |
+| `--keep-first-valid` | false (disabled) | Keep valid repos from first scan |
+| `--max-depth` | 0 | Limit recursive scan depth |
+| `--recursive` | false (disabled) | Scan subdirectories recursively |
+| `--refresh-rate` | 250 | TUI refresh rate |
+| `--rescan-new` | false (disabled) | Rescan for new repos every N minutes (default 5) |
+| `--root` |  | Root folder of repositories |
+| `--single-repo` | false (disabled) | Only monitor the specified root repo |
+| `--single-run` | false (disabled) | Run a single scan cycle and exit |
+| `--updated-since` | 0 | Only sync repos updated recently |
+| `--wait-empty` | false (disabled) | Keep retrying when no repos are found (optional limit) |
+
+## Concurrency
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--concurrency` | 1 | Number of worker threads |
+| `--max-threads` | 0 | Cap the scanning worker threads |
+| `--single-thread` | 1 | Run using a single worker thread |
+| `--threads` | 1 | Alias for --concurrency |
+
+## Config
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--auto-config` | false (disabled) | Auto detect YAML or JSON config |
+| `--auto-reload-config` | false (disabled) | Reload config when the file changes |
+| `--config-json` |  | Load options from JSON file |
+| `--config-yaml` |  | Load options from YAML file |
+| `--enable-history` | false (disabled) | Enable command history |
+| `--enable-hotkeys` | false (disabled) | Enable TUI hotkeys |
+| `--rerun-last` | false (disabled) | Reuse args from .autogitpull.config |
+| `--save-args` | false (disabled) | Save args to config file |
+
+## Daemon
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--daemon-config` |  | Config file for daemon install |
+| `--daemon-name` | autogitpull | Daemon unit name for install |
+| `--daemon-status` | false (disabled) | Check daemon existence and running state |
+| `--force-restart-daemon` | false (disabled) | Force restart daemon |
+| `--force-stop-daemon` | false (disabled) | Force stop daemon |
+| `--install-daemon` | false (disabled) | Install background daemon |
+| `--restart-daemon` | false (disabled) | Restart daemon service |
+| `--start-daemon` | false (disabled) | Start daemon service |
+| `--stop-daemon` | false (disabled) | Stop daemon service |
+| `--uninstall-daemon` | false (disabled) | Uninstall background daemon |
+
+## Display
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--censor-char` | '*' | Character for name masking |
+| `--censor-names` | false (disabled) | Mask repository names |
+| `--color` |  | Override status color |
+| `--color` |  | Override status color |
+| `--hide-date-time` | true (enabled) | Hide date/time line in TUI |
+| `--hide-date-time` | true (enabled) | Hide date/time line in TUI |
+| `--hide-header` | true (enabled) | Hide status header |
+| `--hide-header` | true (enabled) | Hide status header |
+| `--no-colors` | false | Disable ANSI colors |
+| `--no-colors` | false | Disable ANSI colors |
+| `--row-order` | DEFAULT | Row ordering (alpha/reverse) |
+| `--row-order` | DEFAULT | Row ordering (alpha/reverse) |
+| `--session-dates-only` | false (disabled) | Only show dates for repos pulled this session |
+| `--show-commit-author` | false (disabled) | Display last commit author |
+| `--show-commit-author` | false (disabled) | Display last commit author |
+| `--show-commit-date` | false (disabled) | Display last commit time |
+| `--show-commit-date` | false (disabled) | Display last commit time |
+| `--show-pull-author` | false (disabled) | Show author when pull succeeds |
+| `--show-repo-count` | false (disabled) | Display number of repositories |
+| `--show-runtime` | false (disabled) | Display elapsed runtime |
+| `--show-skipped` | false (disabled) | Show skipped repositories |
+| `--show-version` | false (disabled) | Display program version in TUI |
+| `--version` | false (disabled) | Print program version and exit |
+
+## Kill
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--kill-all` | false (disabled) | Terminate running instance and exit |
+| `--kill-on-sleep` | false (disabled) | Exit if a system sleep is detected |
+
+## Lock
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--ignore-lock` | false (disabled) | Don't create or check lock file |
+| `--remove-lock` | false (disabled) | Remove directory lock file and exit |
+
+## Logging
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--debug-memory` | false (disabled) | Log memory usage each scan |
+| `--dump-large` | 0 | Dump threshold for --dump-state |
+| `--dump-state` | false (disabled) | Dump container state when large |
+| `--log-dir` |  | Directory for pull logs |
+| `--log-file` |  | File for general logs |
+| `--log-level` | INFO | Set log verbosity |
+| `--max-log-size` | 0 | Rotate --log-file when over this size |
+| `--syslog` | false (disabled) | Log to syslog |
+| `--syslog-facility` | 0 | Syslog facility |
+| `--verbose` | INFO | Shorthand for --log-level DEBUG |
+
+## Process
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--attach` |  | Attach to daemon and show status |
+| `--background` | false (disabled) | Run in background with attach name |
+| `--cli` | false (disabled) | Use console output |
+| `--exit-on-timeout` | false (disabled) | Terminate worker on poll timeout |
+| `--exit-on-timeout` | false (disabled) | Terminate worker on poll timeout |
+| `--keep-first` | false (disabled) | Keep repos validated on first scan |
+| `--max-runtime` | 0 | Exit after given runtime |
+| `--persist` | false (disabled) | Keep running after exit (optional name) |
+| `--print-skipped` | false (disabled) | Print skipped repositories once |
+| `--pull-timeout` | 0 | Network operation timeout |
+| `--pull-timeout` | 0 | Network operation timeout |
+| `--reattach` | false (disabled) | Reattach to background process |
+| `--respawn-limit` | 0 | Respawn limit within minutes |
+| `--silent` | false (disabled) | Disable console output |
+
+## Resource limits
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--cpu-cores` | 0 | Set CPU affinity mask |
+| `--cpu-percent` | 0.0 | Approximate CPU usage limit |
+| `--disk-limit` | 0 | Limit disk throughput |
+| `--download-limit` | 0 | Limit total download rate |
+| `--mem-limit` | 0 | Abort if memory exceeds this amount |
+| `--total-traffic-limit` | 0 | Stop after this much traffic |
+| `--upload-limit` | 0 | Limit total upload rate |
+
+## Service
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--force-restart-service` | false (disabled) | Force restart service |
+| `--force-stop-service` | false (disabled) | Force stop service |
+| `--install-service` | false (disabled) | Install system service |
+| `--list-daemons` | false (disabled) | Alias for --list-services |
+| `--list-services` | false (disabled) | List installed service units |
+| `--restart-service` | false (disabled) | Restart service |
+| `--service-config` |  | Config file for service install |
+| `--service-name` | autogitpull | Service name for install |
+| `--service-status` | false (disabled) | Check service existence and running state |
+| `--show-service` | false (disabled) | Show installed service name |
+| `--start-service` | false (disabled) | Start installed service |
+| `--stop-service` | false (disabled) | Stop installed service |
+| `--uninstall-service` | false (disabled) | Uninstall system service |
+
+## Tracking
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--cpu-poll` | 5 | CPU usage polling interval |
+| `--mem-poll` | 5 | Memory usage polling interval |
+| `--net-tracker` | false (disabled) | Track network usage |
+| `--no-cpu-tracker` | false (feature enabled) | Disable CPU usage tracker |
+| `--no-mem-tracker` | false (feature enabled) | Disable memory usage tracker |
+| `--no-thread-tracker` | false (feature enabled) | Disable thread tracker |
+| `--thread-poll` | 5 | Thread count polling interval |
+| `--vmem` | false (disabled) | Show virtual memory usage |
