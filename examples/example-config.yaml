@@ -1,38 +1,134 @@
-#Example configuration for autogitpull
-General : root : repos include - private : true show - skipped : false show -
-                                                                 version
-    : false interval : 30 refresh -
-      rate : 250ms cli : false single - run : false single -
-                                            repo : false silent : false recursive
-    : false max -
-      depth : 0 row - order : default color : "" no - colors : false show - commit -
-                                                               date : false show - commit -
-                                                                      author : false vmem
-    : false updated -
-      since : "" auto - config : false auto - reload - config : false rerun - last : false save -
-                                                                                     args
-    : false enable -
-      history : false session - dates -
-                only : false Logging : log - dir : logs log - file : autogitpull.log log -
-                                                   level : INFO verbose
-    : false debug -
-      memory : false dump - state : false dump - large : 0 syslog : false syslog -
-                                                                    facility : 1 Concurrency
-    : concurrency : 4 single -
-      thread : false max -
-               threads : 8 Tracking : cpu - poll : 5 mem - poll : 5 thread - poll : 5 no - cpu -
-                                      tracker : false no - mem - tracker : false no - thread -
-                                                                           tracker
-    : false net -
-      tracker : false Resource limits : cpu - percent : 50 cpu - cores : 0xff mem -
-                                        limit : 0 download - limit : 0 upload - limit : 0 disk -
-                                        limit : 0 Actions : check - only : false no - hash -
-                                                                           check
-    : false force -
-      pull : false discard - dirty : false remove - lock : false kill -
-                                                           all : false
-
-#Per - repository overrides
-                                                                 repos /
-                                                                 example : force -
-                                                           pull : true pull - timeout : 30
+Basics:
+  include-private: False
+  root: 
+  interval: 30
+  refresh-rate: 250
+  recursive: False
+  max-depth: 0
+  ignore: 
+  single-run: False
+  single-repo: False
+  rescan-new: False
+  wait-empty: False
+  dont-skip-timeouts: False
+  keep-first-valid: False
+  updated-since: 0
+  help: False
+Process:
+  cli: False
+  silent: False
+  attach: 
+  background: False
+  reattach: False
+  persist: False
+  respawn-limit: 0
+  max-runtime: 0
+  pull-timeout: 0
+  exit-on-timeout: False
+  print-skipped: False
+  keep-first: False
+Config:
+  auto-config: False
+  auto-reload-config: False
+  rerun-last: False
+  save-args: False
+  enable-history: False
+  enable-hotkeys: False
+  config-yaml: 
+  config-json: 
+Display:
+  show-skipped: False
+  show-version: False
+  version: False
+  show-runtime: False
+  show-repo-count: False
+  show-commit-date: False
+  show-commit-author: False
+  show-pull-author: False
+  session-dates-only: False
+  hide-date-time: True
+  hide-header: True
+  row-order: DEFAULT
+  color: 
+  no-colors: False
+  censor-names: False
+  censor-char: '*'
+Actions:
+  check-only: False
+  no-hash-check: False
+  force-pull: False
+  discard-dirty: False
+  list-instances: False
+  hard-reset: False
+  confirm-reset: False
+  confirm-alert: False
+  sudo-su: False
+  add-ignore: False
+  remove-ignore: False
+  clear-ignores: False
+  find-ignores: False
+  depth: 2
+Daemon:
+  install-daemon: False
+  uninstall-daemon: False
+  daemon-config: 
+  daemon-name: autogitpull
+  start-daemon: False
+  stop-daemon: False
+  force-stop-daemon: False
+  restart-daemon: False
+  force-restart-daemon: False
+  daemon-status: False
+Service:
+  install-service: False
+  uninstall-service: False
+  start-service: False
+  stop-service: False
+  force-stop-service: False
+  restart-service: False
+  force-restart-service: False
+  service-config: 
+  service-name: autogitpull
+  service-status: False
+  show-service: False
+  list-services: False
+  list-daemons: False
+Lock:
+  remove-lock: False
+  ignore-lock: False
+Kill:
+  kill-all: False
+  kill-on-sleep: False
+Logging:
+  log-dir: 
+  log-file: 
+  max-log-size: 0
+  log-level: INFO
+  verbose: INFO
+  debug-memory: False
+  dump-state: False
+  dump-large: 0
+  syslog: False
+  syslog-facility: 0
+Concurrency:
+  concurrency: 1
+  threads: 1
+  single-thread: 1
+  max-threads: 0
+Tracking:
+  cpu-poll: 5
+  mem-poll: 5
+  thread-poll: 5
+  no-cpu-tracker: False
+  no-mem-tracker: False
+  no-thread-tracker: False
+  net-tracker: False
+  vmem: False
+Resource limits:
+  cpu-percent: 0.0
+  cpu-cores: 0
+  mem-limit: 0
+  download-limit: 0
+  upload-limit: 0
+  disk-limit: 0
+  total-traffic-limit: 0

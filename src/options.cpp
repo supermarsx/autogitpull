@@ -261,6 +261,16 @@ Options parse_options(int argc, char* argv[]) {
                                                  {'W', "--wait-empty"},
                                                  {'Z', "--show-repo-count"}};
     ArgParser parser(argc, argv, known, short_opts);
+    for (const auto& kv : cfg_opts) {
+        if (!known.count(kv.first))
+            throw std::runtime_error("Unknown option in config: " + kv.first);
+    }
+    for (const auto& repo : cfg_repo_opts) {
+        for (const auto& kv : repo.second) {
+            if (!known.count(kv.first))
+                throw std::runtime_error("Unknown option in config: " + kv.first);
+        }
+    }
 
     auto cfg_flag = [&](const std::string& k) {
         auto it = cfg_opts.find(k);
