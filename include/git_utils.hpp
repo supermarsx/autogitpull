@@ -130,6 +130,7 @@ int try_pull(const fs::path& repo, std::string& out_pull_log,
              size_t disk_limit_kbps = 0, bool force_pull = false);
 
 constexpr int TRY_PULL_TIMEOUT = 4;
+constexpr int TRY_PULL_RATE_LIMIT = 5;
 
 std::string get_last_commit_date(const fs::path& repo);
 std::string get_last_commit_author(const fs::path& repo);

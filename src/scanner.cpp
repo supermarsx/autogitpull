@@ -176,6 +176,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
                          size_t down_limit, size_t up_limit, size_t disk_limit, bool force_pull,
                          bool was_accessible, bool skip_timeout, bool skip_accessible_errors,
                          bool cli_mode, bool silent, std::chrono::seconds pull_timeout) {
+    (void)skip_timeout;
     {
         std::lock_guard<std::mutex> lk(action_mtx);
         action = "Pulling " + p.filename().string();
@@ -236,14 +237,21 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
     } else if (code == git::TRY_PULL_TIMEOUT) {
         ri.status = RS_ERROR;
         ri.message = "Pull timed out";
-        if (skip_timeout && (!was_accessible || skip_accessible_errors))
-            skip_repos.insert(p);
-        else if (was_accessible)
+        if (was_accessible)
             std::this_thread::sleep_for(std::chrono::seconds(1));
         if (logger_initialized())
             log_error(p.string() + " pull timed out");
         if (cli_mode && !silent)
             std::cout << "Timed out " << p.filename().string() << std::endl;
+    } else if (code == git::TRY_PULL_RATE_LIMIT) {
+        ri.status = RS_ERROR;
+        ri.message = "Rate limited";
+        if (was_accessible)
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        if (logger_initialized())
+            log_error(p.string() + " rate limited");
+        if (cli_mode && !silent)
+            std::cout << "Rate limited " << p.filename().string() << std::endl;
     } else {
         ri.status = RS_ERROR;
         ri.message = "Pull failed (see log)";

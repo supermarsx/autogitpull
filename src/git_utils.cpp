@@ -4,6 +4,7 @@
 #include <functional>
 #include <thread>
 #include <ctime>
+#include <algorithm>
 #include "resource_utils.hpp"
 
 using namespace std;
@@ -281,11 +282,42 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         std::string msg = "Fetch failed";
         if (e && e->message)
             msg = e->message;
-        out_pull_log = msg;
-        finalize();
-        if (msg.find("timed out") != std::string::npos || msg.find("timeout") != std::string::npos)
-            return TRY_PULL_TIMEOUT;
-        return 2;
+        std::string msg_lower = msg;
+        std::transform(msg_lower.begin(), msg_lower.end(), msg_lower.begin(), ::tolower);
+        bool is_rate_limit = msg_lower.find("rate limit") != std::string::npos ||
+                             msg_lower.find("429") != std::string::npos;
+        if (is_rate_limit) {
+            finalize();
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            err = git_remote_fetch(remote.get(), nullptr, &fetch_opts, nullptr);
+            if (err != 0) {
+                e = git_error_last();
+                msg = "Fetch failed";
+                if (e && e->message)
+                    msg = e->message;
+                msg_lower = msg;
+                std::transform(msg_lower.begin(), msg_lower.end(), msg_lower.begin(), ::tolower);
+                out_pull_log = msg;
+                finalize();
+                if (msg_lower.find("timed out") != std::string::npos ||
+                    msg_lower.find("timeout") != std::string::npos)
+                    return TRY_PULL_TIMEOUT;
+                if (msg_lower.find("rate limit") != std::string::npos ||
+                    msg_lower.find("429") != std::string::npos)
+                    return TRY_PULL_RATE_LIMIT;
+                return 2;
+            }
+        } else {
+            out_pull_log = msg;
+            finalize();
+            if (msg_lower.find("timed out") != std::string::npos ||
+                msg_lower.find("timeout") != std::string::npos)
+                return TRY_PULL_TIMEOUT;
+            if (msg_lower.find("rate limit") != std::string::npos ||
+                msg_lower.find("429") != std::string::npos)
+                return TRY_PULL_RATE_LIMIT;
+            return 2;
+        }
     }
     git_oid remote_oid;
     string refname = string("refs/remotes/origin/") + branch;
