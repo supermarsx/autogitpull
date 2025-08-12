@@ -5,15 +5,23 @@ Basics:
   refresh-rate: 250
   recursive: False
   max-depth: 0
-  ignore: 
   single-run: False
   single-repo: False
   rescan-new: False
   wait-empty: False
   dont-skip-timeouts: False
+  retry-skipped: False
+  skip-accessible-errors: False
   keep-first-valid: False
   updated-since: 0
   help: False
+Ignores:
+  ignore: 
+  add-ignore: False
+  remove-ignore: False
+  clear-ignores: False
+  find-ignores: False
+  depth: 2
 Process:
   cli: False
   silent: False
@@ -38,6 +46,7 @@ Config:
   config-json: 
 Display:
   show-skipped: False
+  show-notgit: False
   show-version: False
   version: False
   show-runtime: False
@@ -63,11 +72,6 @@ Actions:
   confirm-reset: False
   confirm-alert: False
   sudo-su: False
-  add-ignore: False
-  remove-ignore: False
-  clear-ignores: False
-  find-ignores: False
-  depth: 2
 Daemon:
   install-daemon: False
   uninstall-daemon: False

@@ -192,6 +192,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--pull-timeout",
                                       "--exit-on-timeout",
                                       "--dont-skip-timeouts",
+                                      "--retry-skipped",
                                       "--skip-accessible-errors",
                                       "--keep-first-valid",
                                       "--wait-empty",
@@ -866,6 +867,7 @@ Options parse_options(int argc, char* argv[]) {
         !(parser.has_flag("--dont-skip-timeouts") || cfg_flag("--dont-skip-timeouts"));
     opts.skip_accessible_errors =
         parser.has_flag("--skip-accessible-errors") || cfg_flag("--skip-accessible-errors");
+    opts.retry_skipped = parser.has_flag("--retry-skipped") || cfg_flag("--retry-skipped");
     opts.exit_on_timeout = parser.has_flag("--exit-on-timeout") || cfg_flag("--exit-on-timeout");
     if (parser.has_flag("--root") || cfg_opts.count("--root")) {
         std::string val = parser.get_option("--root");

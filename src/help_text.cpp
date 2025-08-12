@@ -30,6 +30,7 @@ void print_help(const char* prog) {
         {"--wait-empty", "-W", "[n]", "Keep retrying when no repos are found (optional limit)",
          "Basics"},
         {"--dont-skip-timeouts", "", "", "Retry repositories that timeout", "Basics"},
+        {"--retry-skipped", "", "", "Retry repositories skipped previously", "Basics"},
         {"--skip-accessible-errors", "", "", "Skip repos with errors even if previously accessible",
          "Basics"},
         {"--keep-first-valid", "", "", "Keep valid repos from first scan", "Basics"},
