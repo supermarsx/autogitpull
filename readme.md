@@ -23,7 +23,7 @@ and shows progress either in an interactive TUI or with plain console output.
 
 ## Usage
 
-`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms|s|m>] [--cpu-poll <N[s|m|h|d|w|M]>] [--mem-poll <N[s|m|h|d|w|M]>] [--thread-poll <N[s|m|h|d|w|M]>] [--log-dir <path>] [--log-file <path>] [--max-log-size <bytes>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n.n>] [--cpu-cores <mask>] [--mem-limit <M/G>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/MB>] [--upload-limit <KB/MB>] [--disk-limit <KB/MB>] [--total-traffic-limit <KB/MB/GB>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--hard-reset] [--confirm-reset] [--confirm-alert] [--sudo-su] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist[=name]] [--help]`
+`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-notgit] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms|s|m>] [--cpu-poll <N[s|m|h|d|w|M]>] [--mem-poll <N[s|m|h|d|w|M]>] [--thread-poll <N[s|m|h|d|w|M]>] [--log-dir <path>] [--log-file <path>] [--max-log-size <bytes>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n.n>] [--cpu-cores <mask>] [--mem-limit <M/G>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/MB>] [--upload-limit <KB/MB>] [--disk-limit <KB/MB>] [--total-traffic-limit <KB/MB/GB>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--hard-reset] [--confirm-reset] [--confirm-alert] [--sudo-su] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist[=name]] [--help]`
 
 ### TLDR usage tips
 
@@ -59,6 +59,7 @@ The full catalogue of flags with their default values is documented in
 
 #### Display
 - `--show-skipped` (`-k`) – Show skipped repositories.
+- `--show-notgit` – Show non-git directories.
 - `--show-version` (`-v`) – Display program version in TUI.
 - `--version` (`-V`) – Print program version and exit.
 - `--show-runtime` – Display elapsed runtime.

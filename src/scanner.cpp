@@ -90,11 +90,10 @@ static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& s
     ri.status = RS_CHECKING;
     ri.message = "";
     if (!fs::is_directory(p) || !git::is_git_repo(p)) {
-        ri.status = RS_SKIPPED;
-        ri.message = "Not a git repo (skipped)";
-        skip_repos.insert(p);
+        ri.status = RS_NOT_GIT;
+        ri.message = "Not a git repo";
         if (logger_initialized())
-            log_debug(p.string() + " skipped: not a git repo");
+            log_debug(p.string() + " tagged: not a git repo");
         return false;
     }
     ri.commit = git::get_local_hash(p);
@@ -268,14 +267,17 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
     {
         std::lock_guard<std::mutex> lk(mtx);
         auto it = repo_infos.find(p);
-        if (it != repo_infos.end() &&
-            (it->second.status == RS_PULLING || it->second.status == RS_CHECKING)) {
-            // Repo already being processed elsewhere
-            if (!silent)
-                std::cerr << "Skipping " << p << " - busy\n";
-            if (logger_initialized())
-                log_debug("Skipping " + p.string() + " - busy");
-            return;
+        if (it != repo_infos.end()) {
+            if (it->second.status == RS_NOT_GIT)
+                return;
+            if (it->second.status == RS_PULLING || it->second.status == RS_CHECKING) {
+                // Repo already being processed elsewhere
+                if (!silent)
+                    std::cerr << "Skipping " << p << " - busy\n";
+                if (logger_initialized())
+                    log_debug("Skipping " + p.string() + " - busy");
+                return;
+            }
         }
     }
     RepoInfo ri;

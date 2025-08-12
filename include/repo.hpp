@@ -17,7 +17,8 @@ enum RepoStatus {
     RS_SKIPPED,       ///< Repository was skipped
     RS_HEAD_PROBLEM,  ///< HEAD/branch mismatch detected
     RS_DIRTY,         ///< Uncommitted changes prevented pull
-    RS_REMOTE_AHEAD   ///< Remote contains newer commits
+    RS_REMOTE_AHEAD,  ///< Remote contains newer commits
+    RS_NOT_GIT        ///< Path is not a git repository
 };
 
 /**
