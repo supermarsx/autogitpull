@@ -118,6 +118,7 @@ struct Options {
     int syslog_facility = 0;
     std::chrono::seconds pull_timeout{0};
     bool skip_timeout = true;
+    bool skip_accessible_errors = false;
     bool exit_on_timeout = false;
     bool cli_print_skipped = false;
     bool show_help = false;
