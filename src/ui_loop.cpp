@@ -97,6 +97,10 @@ std::string status_label(RepoStatus status) {
         return "HEAD/BR";
     case RS_DIRTY:
         return "Dirty";
+    case RS_TIMEOUT:
+        return "TimedOut";
+    case RS_RATE_LIMIT:
+        return "RateLimit";
     case RS_REMOTE_AHEAD:
         return "RemoteUp";
     }

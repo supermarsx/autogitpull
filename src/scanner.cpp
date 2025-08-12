@@ -235,19 +235,19 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
         ri.status = RS_DIRTY;
         ri.message = "Local changes present";
     } else if (code == git::TRY_PULL_TIMEOUT) {
-        ri.status = RS_ERROR;
+        ri.status = RS_TIMEOUT;
         ri.message = "Pull timed out";
         if (was_accessible)
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::seconds(5));
         if (logger_initialized())
             log_error(p.string() + " pull timed out");
         if (cli_mode && !silent)
             std::cout << "Timed out " << p.filename().string() << std::endl;
     } else if (code == git::TRY_PULL_RATE_LIMIT) {
-        ri.status = RS_ERROR;
+        ri.status = RS_RATE_LIMIT;
         ri.message = "Rate limited";
         if (was_accessible)
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::seconds(5));
         if (logger_initialized())
             log_error(p.string() + " rate limited");
         if (cli_mode && !silent)
@@ -303,15 +303,27 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
     ri.auth_failed = false;
     bool prev_pulled = false;
     bool was_accessible = false;
+    RepoStatus prev_status = RS_PENDING;
     {
         std::lock_guard<std::mutex> lk(mtx);
         auto it = repo_infos.find(p);
         if (it != repo_infos.end()) {
             prev_pulled = it->second.pulled;
             ri.pulled = it->second.pulled;
+            prev_status = it->second.status;
             if (it->second.status != RS_ERROR && it->second.status != RS_SKIPPED)
                 was_accessible = true;
         }
+    }
+    std::chrono::seconds effective_timeout = pull_timeout;
+    if (prev_status == RS_RATE_LIMIT) {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    } else if (prev_status == RS_TIMEOUT) {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        if (effective_timeout.count() > 0)
+            effective_timeout += std::chrono::seconds(5);
+        else
+            effective_timeout = std::chrono::seconds(5);
     }
     {
         std::lock_guard<std::mutex> lk(action_mtx);
@@ -345,7 +357,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
             execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
                          include_private, down_limit, up_limit, disk_limit, force_pull,
                          was_accessible, skip_timeout, skip_accessible_errors, cli_mode, silent,
-                         pull_timeout);
+                         effective_timeout);
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;

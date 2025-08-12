@@ -194,6 +194,14 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             color = red;
             status_s = "Dirty    ";
             break;
+        case RS_TIMEOUT:
+            color = red;
+            status_s = "TimedOut ";
+            break;
+        case RS_RATE_LIMIT:
+            color = red;
+            status_s = "RateLimit";
+            break;
         case RS_REMOTE_AHEAD:
             color = magenta;
             status_s = "RemoteUp";
