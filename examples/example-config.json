@@ -6,15 +6,24 @@
         "refresh-rate": 250,
         "recursive": false,
         "max-depth": 0,
-        "ignore": "",
         "single-run": false,
         "single-repo": false,
         "rescan-new": false,
         "wait-empty": false,
         "dont-skip-timeouts": false,
+        "retry-skipped": false,
+        "skip-accessible-errors": false,
         "keep-first-valid": false,
         "updated-since": 0,
         "help": false
+    },
+    "Ignores": {
+        "ignore": "",
+        "add-ignore": false,
+        "remove-ignore": false,
+        "clear-ignores": false,
+        "find-ignores": false,
+        "depth": 2
     },
     "Process": {
         "cli": false,
@@ -42,6 +51,7 @@
     },
     "Display": {
         "show-skipped": false,
+        "show-notgit": false,
         "show-version": false,
         "version": false,
         "show-runtime": false,
@@ -67,12 +77,7 @@
         "hard-reset": false,
         "confirm-reset": false,
         "confirm-alert": false,
-        "sudo-su": false,
-        "add-ignore": false,
-        "remove-ignore": false,
-        "clear-ignores": false,
-        "find-ignores": false,
-        "depth": 2
+        "sudo-su": false
     },
     "Daemon": {
         "install-daemon": false,

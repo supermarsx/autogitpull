@@ -231,6 +231,12 @@ TEST_CASE("parse_options dont skip timeouts") {
     REQUIRE_FALSE(opts.skip_timeout);
 }
 
+TEST_CASE("parse_options retry skipped") {
+    const char* argv[] = {"prog", "path", "--retry-skipped"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.retry_skipped);
+}
+
 TEST_CASE("parse_options pull timeout") {
     const char* argv[] = {"prog", "path", "--pull-timeout", "60"};
     Options opts = parse_options(4, const_cast<char**>(argv));

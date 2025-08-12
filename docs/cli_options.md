@@ -5,19 +5,14 @@
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--add-ignore` | false (disabled) | Add path to .autogitpull.ignore |
 | `--check-only` | false (disabled) | Only check for updates |
-| `--clear-ignores` | false (disabled) | Delete all ignore entries |
 | `--confirm-alert` | false (disabled) | Confirm unsafe options |
 | `--confirm-reset` | false (disabled) | Confirm --hard-reset |
-| `--depth` | 2 | Depth for --find-ignores/--clear-ignores |
 | `--discard-dirty` | false (disabled) | Alias for --force-pull |
-| `--find-ignores` | false (disabled) | List ignore entries |
 | `--force-pull` | false (disabled) | Discard local changes when pulling |
 | `--hard-reset` | false (disabled) | Delete all logs and configs |
 | `--list-instances` | false (disabled) | List running instance names and PIDs |
 | `--no-hash-check` | false (feature enabled) | Always pull without hash check |
-| `--remove-ignore` | false (disabled) | Remove path from ignore file |
 | `--sudo-su` | false (disabled) | Suppress confirmation alerts |
 
 ## Basics
@@ -26,7 +21,6 @@
 |--------|---------|-------------|
 | `--dont-skip-timeouts` | false | Retry repositories that timeout |
 | `--help` | false (disabled) | Show this message |
-| `--ignore` |  | Directory to ignore (repeatable) |
 | `--include-private` | false (disabled) | Include private repositories |
 | `--interval` | 30 | Delay between scans |
 | `--keep-first-valid` | false (disabled) | Keep valid repos from first scan |
@@ -34,9 +28,11 @@
 | `--recursive` | false (disabled) | Scan subdirectories recursively |
 | `--refresh-rate` | 250 | TUI refresh rate |
 | `--rescan-new` | false (disabled) | Rescan for new repos every N minutes (default 5) |
+| `--retry-skipped` | false (disabled) | Retry repositories skipped previously |
 | `--root` |  | Root folder of repositories |
 | `--single-repo` | false (disabled) | Only monitor the specified root repo |
 | `--single-run` | false (disabled) | Run a single scan cycle and exit |
+| `--skip-accessible-errors` | false (disabled) | Skip repos with errors even if previously accessible |
 | `--updated-since` | 0 | Only sync repos updated recently |
 | `--wait-empty` | false (disabled) | Keep retrying when no repos are found (optional limit) |
 
@@ -98,13 +94,24 @@
 | `--show-commit-author` | false (disabled) | Display last commit author |
 | `--show-commit-date` | false (disabled) | Display last commit time |
 | `--show-commit-date` | false (disabled) | Display last commit time |
+| `--show-notgit` | false (disabled) | Show non-git directories |
 | `--show-pull-author` | false (disabled) | Show author when pull succeeds |
 | `--show-repo-count` | false (disabled) | Display number of repositories |
 | `--show-runtime` | false (disabled) | Display elapsed runtime |
 | `--show-skipped` | false (disabled) | Show skipped repositories |
-| `--show-notgit` | false (disabled) | Show non-git directories |
 | `--show-version` | false (disabled) | Display program version in TUI |
 | `--version` | false (disabled) | Print program version and exit |
+
+## Ignores
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--add-ignore` | false (disabled) | Add path to .autogitpull.ignore |
+| `--clear-ignores` | false (disabled) | Delete all ignore entries |
+| `--depth` | 2 | Depth for --find-ignores/--clear-ignores |
+| `--find-ignores` | false (disabled) | List ignore entries |
+| `--ignore` |  | Directory to ignore (repeatable) |
+| `--remove-ignore` | false (disabled) | Remove path from ignore file |
 
 ## Kill
 

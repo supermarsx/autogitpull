@@ -380,7 +380,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t concurrency, double cpu_percent_limit, size_t mem_limit, size_t down_limit,
                 size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
                 bool skip_timeout, bool skip_accessible_errors, std::chrono::seconds updated_since,
-                bool show_pull_author, std::chrono::seconds pull_timeout,
+                bool show_pull_author, std::chrono::seconds pull_timeout, bool retry_skipped,
                 const std::map<std::filesystem::path, RepoOptions>& overrides) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
@@ -389,18 +389,20 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 
     {
         std::lock_guard<std::mutex> lk(mtx);
-        // Retain repo_infos so statuses persist between scans, but reset any
-        // skipped repositories so they show up as Pending before the next scan
-        // begins. Otherwise they disappear from the status list until their
-        // status is updated.
-        for (auto& [p, info] : repo_infos) {
-            if (info.status == RS_SKIPPED) {
-                info.status = RS_PENDING;
-                info.message = "Pending...";
+        if (retry_skipped) {
+            // Retain repo_infos so statuses persist between scans, but reset any
+            // skipped repositories so they show up as Pending before the next scan
+            // begins. Otherwise they disappear from the status list until their
+            // status is updated.
+            for (auto& [p, info] : repo_infos) {
+                if (info.status == RS_SKIPPED) {
+                    info.status = RS_PENDING;
+                    info.message = "Pending...";
+                }
             }
+            std::set<fs::path> empty_set;
+            skip_repos.swap(empty_set);
         }
-        std::set<fs::path> empty_set;
-        skip_repos.swap(empty_set);
     }
 
     if (concurrency == 0)
