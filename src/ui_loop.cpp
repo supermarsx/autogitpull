@@ -467,38 +467,38 @@ int run_event_loop(const Options& opts) {
             if (opts.single_run)
                 running = false;
         }
-        if (opts.rescan_new && rescan_countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
-            auto new_repos =
-                build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
-            if (opts.keep_first_valid) {
-                for (const auto& p : first_validated) {
-                    if (std::find(new_repos.begin(), new_repos.end(), p) == new_repos.end())
-                        new_repos.push_back(p);
-                }
-            }
-            if (opts.sort_mode == Options::ALPHA)
-                std::sort(new_repos.begin(), new_repos.end());
-            else if (opts.sort_mode == Options::REVERSE)
-                std::sort(new_repos.rbegin(), new_repos.rend());
-            {
-                std::lock_guard<std::mutex> lk(mtx);
-                for (const auto& p : new_repos) {
-                    if (!repo_infos.count(p))
-                        repo_infos[p] =
-                            RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
-                }
-            }
-            for (const auto& p : new_repos) {
-                if (std::find(all_repos.begin(), all_repos.end(), p) == all_repos.end())
-                    all_repos.push_back(p);
-            }
-            if (opts.sort_mode == Options::ALPHA)
-                std::sort(all_repos.begin(), all_repos.end());
-            else if (opts.sort_mode == Options::REVERSE)
-                std::sort(all_repos.rbegin(), all_repos.rend());
-            rescan_countdown_ms = opts.rescan_interval;
-        }
         if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
+            if (opts.rescan_new && rescan_countdown_ms <= std::chrono::milliseconds(0)) {
+                auto new_repos = build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs,
+                                                 opts.max_depth);
+                if (opts.keep_first_valid) {
+                    for (const auto& p : first_validated) {
+                        if (std::find(new_repos.begin(), new_repos.end(), p) == new_repos.end())
+                            new_repos.push_back(p);
+                    }
+                }
+                if (opts.sort_mode == Options::ALPHA)
+                    std::sort(new_repos.begin(), new_repos.end());
+                else if (opts.sort_mode == Options::REVERSE)
+                    std::sort(new_repos.rbegin(), new_repos.rend());
+                {
+                    std::lock_guard<std::mutex> lk(mtx);
+                    for (const auto& p : new_repos) {
+                        if (!repo_infos.count(p))
+                            repo_infos[p] =
+                                RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
+                    }
+                }
+                for (const auto& p : new_repos) {
+                    if (std::find(all_repos.begin(), all_repos.end(), p) == all_repos.end())
+                        all_repos.push_back(p);
+                }
+                if (opts.sort_mode == Options::ALPHA)
+                    std::sort(all_repos.begin(), all_repos.end());
+                else if (opts.sort_mode == Options::REVERSE)
+                    std::sort(all_repos.rbegin(), all_repos.rend());
+                rescan_countdown_ms = opts.rescan_interval;
+            }
             {
                 std::lock_guard<std::mutex> lk(mtx);
                 for (auto& [p, info] : repo_infos) {
@@ -552,6 +552,7 @@ int run_event_loop(const Options& opts) {
                     user_message = "Scanning now";
                 } else if (c == 'n') {
                     rescan_countdown_ms = std::chrono::milliseconds(0);
+                    countdown_ms = std::chrono::milliseconds(0);
                     user_message = "Rescanning repos";
                 } else if (c == 'p') {
                     interval += 10;
@@ -593,6 +594,7 @@ int run_event_loop(const Options& opts) {
                     user_message = "Scanning now";
                 } else if (c == 'n') {
                     rescan_countdown_ms = std::chrono::milliseconds(0);
+                    countdown_ms = std::chrono::milliseconds(0);
                     user_message = "Rescanning repos";
                 } else if (c == 'p') {
                     interval += 10;
