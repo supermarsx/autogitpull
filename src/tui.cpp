@@ -42,8 +42,8 @@ void enable_win_ansi() {}
 
 void draw_tui(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int interval, int seconds_left,
-              bool scanning, const std::string& action, bool show_skipped, bool show_version,
-              bool track_cpu, bool track_mem, bool track_threads, bool track_net,
+              bool scanning, const std::string& action, bool show_skipped, bool show_notgit,
+              bool show_version, bool track_cpu, bool track_mem, bool track_threads, bool track_net,
               bool show_affinity, bool track_vmem, bool show_commit_date, bool show_commit_author,
               bool session_dates_only, bool no_colors, const std::string& custom_color,
               const std::string& status_msg, int runtime_sec, bool show_datetime_line,
@@ -74,7 +74,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         for (const auto& p : all_repos) {
             auto it = repo_infos.find(p);
             RepoStatus st = it != repo_infos.end() ? it->second.status : RS_PENDING;
-            if (st != RS_SKIPPED)
+            if (st != RS_SKIPPED && st != RS_NOT_GIT)
                 ++active;
         }
         out << "Repos: " << active << "/" << all_repos.size() << "\n";
@@ -146,7 +146,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             ri.path = p;
             ri.auth_failed = false;
         }
-        if (ri.status == RS_SKIPPED && !show_skipped)
+        if ((ri.status == RS_SKIPPED && !show_skipped) || (ri.status == RS_NOT_GIT && !show_notgit))
             continue;
         std::string color = gray, status_s = "Pending ";
         switch (ri.status) {
@@ -181,6 +181,10 @@ void draw_tui(const std::vector<fs::path>& all_repos,
         case RS_SKIPPED:
             color = gray;
             status_s = "Skipped  ";
+            break;
+        case RS_NOT_GIT:
+            color = gray;
+            status_s = "NotGit  ";
             break;
         case RS_HEAD_PROBLEM:
             color = red;

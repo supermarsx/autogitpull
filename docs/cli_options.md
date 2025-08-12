@@ -102,6 +102,7 @@
 | `--show-repo-count` | false (disabled) | Display number of repositories |
 | `--show-runtime` | false (disabled) | Display elapsed runtime |
 | `--show-skipped` | false (disabled) | Show skipped repositories |
+| `--show-notgit` | false (disabled) | Show non-git directories |
 | `--show-version` | false (disabled) | Display program version in TUI |
 | `--version` | false (disabled) | Print program version and exit |
 

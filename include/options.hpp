@@ -12,6 +12,7 @@ struct Options {
     std::filesystem::path root;
     bool include_private = false;
     bool show_skipped = false;
+    bool show_notgit = false;
     bool show_version = false;
     bool remove_lock = false;
     bool ignore_lock = false;

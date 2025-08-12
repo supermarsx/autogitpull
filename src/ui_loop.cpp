@@ -91,6 +91,8 @@ std::string status_label(RepoStatus status) {
         return "Error";
     case RS_SKIPPED:
         return "Skipped";
+    case RS_NOT_GIT:
+        return "NotGit";
     case RS_HEAD_PROBLEM:
         return "HEAD/BR";
     case RS_DIRTY:
@@ -102,14 +104,14 @@ std::string status_label(RepoStatus status) {
 }
 void draw_cli(const std::vector<fs::path>& all_repos,
               const std::map<fs::path, RepoInfo>& repo_infos, int seconds_left, bool scanning,
-              const std::string& action, bool show_skipped, int runtime_sec, bool show_repo_count,
-              bool session_dates_only, bool censor_names, char censor_char) {
+              const std::string& action, bool show_skipped, bool show_notgit, int runtime_sec,
+              bool show_repo_count, bool session_dates_only, bool censor_names, char censor_char) {
     if (show_repo_count) {
         size_t active = 0;
         for (const auto& p : all_repos) {
             auto it = repo_infos.find(p);
             RepoStatus st = it != repo_infos.end() ? it->second.status : RS_PENDING;
-            if (st != RS_SKIPPED)
+            if (st != RS_SKIPPED && st != RS_NOT_GIT)
                 ++active;
         }
         std::cout << "Repos: " << active << "/" << all_repos.size() << "\n";
@@ -130,7 +132,7 @@ void draw_cli(const std::vector<fs::path>& all_repos,
             ri = it->second;
         else
             ri = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
-        if (ri.status == RS_SKIPPED && !show_skipped)
+        if ((ri.status == RS_SKIPPED && !show_skipped) || (ri.status == RS_NOT_GIT && !show_notgit))
             continue;
         std::string name = p.filename().string();
         if (censor_names)
@@ -215,11 +217,11 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
                       int runtime_sec) {
     if (!opts.silent && !opts.cli) {
         draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, opts.show_skipped,
-                 opts.show_version, opts.cpu_tracker, opts.mem_tracker, opts.thread_tracker,
-                 opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem, opts.show_commit_date,
-                 opts.show_commit_author, opts.session_dates_only, opts.no_colors,
-                 opts.custom_color, message, runtime_sec, opts.show_datetime_line, opts.show_header,
-                 opts.show_repo_count, opts.censor_names, opts.censor_char);
+                 opts.show_notgit, opts.show_version, opts.cpu_tracker, opts.mem_tracker,
+                 opts.thread_tracker, opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem,
+                 opts.show_commit_date, opts.show_commit_author, opts.session_dates_only,
+                 opts.no_colors, opts.custom_color, message, runtime_sec, opts.show_datetime_line,
+                 opts.show_header, opts.show_repo_count, opts.censor_names, opts.censor_char);
     }
 }
 int run_event_loop(const Options& opts) {
@@ -450,7 +452,8 @@ int run_event_loop(const Options& opts) {
             if (first_cycle) {
                 if (opts.keep_first_valid) {
                     for (const auto& [p, info] : repo_infos) {
-                        if (info.status != RS_SKIPPED && info.status != RS_ERROR)
+                        if (info.status != RS_SKIPPED && info.status != RS_ERROR &&
+                            info.status != RS_NOT_GIT)
                             first_validated.insert(p);
                     }
                 }

@@ -96,6 +96,7 @@ Options parse_options(int argc, char* argv[]) {
 
     const std::set<std::string> known{"--include-private",
                                       "--show-skipped",
+                                      "--show-notgit",
                                       "--show-version",
                                       "--version",
                                       "--root",
@@ -550,6 +551,7 @@ Options parse_options(int argc, char* argv[]) {
     }
     opts.include_private = parser.has_flag("--include-private") || cfg_flag("--include-private");
     opts.show_skipped = parser.has_flag("--show-skipped") || cfg_flag("--show-skipped");
+    opts.show_notgit = parser.has_flag("--show-notgit") || cfg_flag("--show-notgit");
     opts.show_version = parser.has_flag("--show-version") || cfg_flag("--show-version");
     opts.remove_lock = parser.has_flag("--remove-lock") || cfg_flag("--remove-lock");
     opts.ignore_lock = parser.has_flag("--ignore-lock") || cfg_flag("--ignore-lock");

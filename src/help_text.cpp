@@ -55,6 +55,7 @@ void print_help(const char* prog) {
         {"--config-yaml", "-y", "<file>", "Load options from YAML file", "Config"},
         {"--config-json", "-j", "<file>", "Load options from JSON file", "Config"},
         {"--show-skipped", "-k", "", "Show skipped repositories", "Display"},
+        {"--show-notgit", "", "", "Show non-git directories", "Display"},
         {"--show-version", "-v", "", "Display program version in TUI", "Display"},
         {"--version", "-V", "", "Print program version and exit", "Display"},
         {"--show-runtime", "", "", "Display elapsed runtime", "Display"},
