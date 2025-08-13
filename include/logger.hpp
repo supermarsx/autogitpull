@@ -4,9 +4,11 @@
 
 enum class LogLevel { DEBUG = 0, INFO, WARNING, ERR };
 
-void init_logger(const std::string& path, LogLevel level = LogLevel::INFO, size_t max_size = 0);
+void init_logger(const std::string& path, LogLevel level = LogLevel::INFO, size_t max_size = 0,
+                 size_t max_files = 1);
 void set_log_level(LogLevel level);
 void set_json_logging(bool enable);
+void set_log_rotation(size_t max_files);
 bool logger_initialized();
 void log_event(LogLevel level, const std::string& message);
 void log_event(LogLevel level, const std::string& message, const std::string& data);
