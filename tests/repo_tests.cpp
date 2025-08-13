@@ -200,3 +200,26 @@ TEST_CASE("try_pull handles dirty repos") {
     fs::remove_all(src);
     fs::remove_all(repo);
 }
+
+TEST_CASE("scan_repos resets statuses to pending") {
+    std::map<fs::path, RepoInfo> infos;
+    fs::path p = fs::temp_directory_path() / "pending_status_repo";
+    RepoInfo ri;
+    ri.path = p;
+    ri.status = RS_PULL_OK;
+    ri.message = "done";
+    infos[p] = ri;
+    std::set<fs::path> skip;
+    std::mutex mtx;
+    std::atomic<bool> scanning(true);
+    std::atomic<bool> running(true);
+    std::string act;
+    std::mutex act_mtx;
+
+    scan_repos({}, infos, skip, mtx, scanning, running, act, act_mtx, false, fs::path(),
+               true, true, 1, 0, 0, 0, 0, 0, true, false, false, false, false,
+               std::chrono::seconds(0), false, std::chrono::seconds(0), false, {});
+
+    REQUIRE(infos[p].status == RS_PENDING);
+    REQUIRE(infos[p].progress == 0);
+}

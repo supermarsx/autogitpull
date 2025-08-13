@@ -409,17 +409,16 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
 
     {
         std::lock_guard<std::mutex> lk(mtx);
-        if (retry_skipped) {
-            // Retain repo_infos so statuses persist between scans, but reset any
-            // skipped repositories so they show up as Pending before the next scan
-            // begins. Otherwise they disappear from the status list until their
-            // status is updated.
-            for (auto& [p, info] : repo_infos) {
-                if (info.status == RS_SKIPPED) {
-                    info.status = RS_PENDING;
-                    info.message = "Pending...";
-                }
+        for (auto& [p, info] : repo_infos) {
+            if (!retry_skipped && skip_repos.count(p))
+                continue;
+            if (info.status != RS_NOT_GIT) {
+                info.status = RS_PENDING;
+                info.message = "Pending...";
+                info.progress = 0;
             }
+        }
+        if (retry_skipped) {
             std::set<fs::path> empty_set;
             skip_repos.swap(empty_set);
         }
