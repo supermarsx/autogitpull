@@ -1,5 +1,7 @@
 #include "test_common.hpp"
+#include <chrono>
 #include <unordered_set>
+#include <vector>
 
 TEST_CASE("get_local_hash surfaces error for missing repo") {
     git::GitInitGuard guard;
@@ -62,8 +64,8 @@ TEST_CASE("clone_repo clones a public repository") {
     fs::path dest = fs::temp_directory_path() / "clone_repo_test";
     fs::remove_all(dest);
     bool auth_failed = false;
-    bool ok = git::clone_repo(dest, "https://github.com/octocat/Hello-World.git", false,
-                              &auth_failed);
+    bool ok = git::clone_repo(dest, "https://github.com/octocat/Hello-World.git", nullptr,
+                              false, &auth_failed);
     if (!ok) {
         const git_error* e = git_error_last();
         WARN("clone_repo failed: " << (e && e->message ? e->message : "unknown"));
@@ -71,6 +73,30 @@ TEST_CASE("clone_repo clones a public repository") {
     }
     REQUIRE_FALSE(auth_failed);
     REQUIRE(git::is_git_repo(dest));
+    fs::remove_all(dest);
+}
+
+TEST_CASE("clone_repo reports progress and respects limits") {
+    git::GitInitGuard guard;
+    fs::path dest = fs::temp_directory_path() / "clone_repo_progress";
+    fs::remove_all(dest);
+    std::vector<int> updates;
+    std::function<void(int)> cb = [&](int pct) { updates.push_back(pct); };
+    auto start = std::chrono::steady_clock::now();
+    bool auth_failed = false;
+    bool ok = git::clone_repo(dest, "https://github.com/octocat/Hello-World.git", &cb,
+                              false, &auth_failed, 1, 1, 1);
+    auto elapsed = std::chrono::steady_clock::now() - start;
+    if (!ok) {
+        const git_error* e = git_error_last();
+        WARN("clone_repo failed: " << (e && e->message ? e->message : "unknown"));
+        return;
+    }
+    REQUIRE_FALSE(auth_failed);
+    REQUIRE_FALSE(updates.empty());
+    REQUIRE(updates.back() == 100);
+    REQUIRE(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >=
+            500);
     fs::remove_all(dest);
 }
 

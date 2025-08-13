@@ -122,13 +122,19 @@ bool has_uncommitted_changes(const fs::path& repo);
  *
  * @param dest           Destination path for the new repository.
  * @param url            Remote repository URL.
+ * @param progress_cb    Optional callback reporting fetch progress in percent.
  * @param use_credentials Whether to attempt authentication using environment
  *                        variables.
  * @param auth_failed    Optional output flag set when authentication fails.
+ * @param down_limit_kbps Optional download rate limit in KiB/s.
+ * @param up_limit_kbps Optional upload rate limit in KiB/s.
+ * @param disk_limit_kbps Optional disk I/O rate limit in KiB/s.
  * @return `true` on success, `false` otherwise.
  */
-bool clone_repo(const fs::path& dest, const std::string& url, bool use_credentials = false,
-                bool* auth_failed = nullptr);
+bool clone_repo(const fs::path& dest, const std::string& url,
+                const std::function<void(int)>* progress_cb = nullptr, bool use_credentials = false,
+                bool* auth_failed = nullptr, size_t down_limit_kbps = 0, size_t up_limit_kbps = 0,
+                size_t disk_limit_kbps = 0);
 
 /**
  * @brief Perform a fast-forward pull from the specified remote.
