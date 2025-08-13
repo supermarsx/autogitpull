@@ -4,7 +4,50 @@
 #define HAVE_YAMLCPP 1
 #endif
 #include <fstream>
+#include <string>
+#include <sstream>
 #include <nlohmann/json.hpp>
+#ifdef HAVE_YAMLCPP
+static std::string yaml_node_to_string(const YAML::Node& node) {
+    if (node.IsScalar()) {
+        try {
+            bool b = node.as<bool>();
+            return b ? "true" : "false";
+        } catch (...) {
+        }
+        try {
+            long long i = node.as<long long>();
+            return std::to_string(i);
+        } catch (...) {
+        }
+        try {
+            double d = node.as<double>();
+            std::ostringstream oss;
+            oss << d;
+            return oss.str();
+        } catch (...) {
+        }
+        return node.as<std::string>();
+    } else if (node.IsNull()) {
+        return "";
+    } else if (node.IsDefined() && !node.IsSequence() && !node.IsMap()) {
+        try {
+            long long i = node.as<long long>();
+            return std::to_string(i);
+        } catch (...) {
+        }
+        try {
+            double d = node.as<double>();
+            std::ostringstream oss;
+            oss << d;
+            return oss.str();
+        } catch (...) {
+        }
+        return node.as<std::string>();
+    }
+    return "";
+}
+#endif
 
 bool load_yaml_config(const std::string& path, std::map<std::string, std::string>& opts,
                       std::map<std::string, std::map<std::string, std::string>>& repo_opts,
@@ -35,12 +78,11 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
                             continue;
                         std::string subk = "--" + it2->first.as<std::string>();
                         const YAML::Node& val = it2->second;
-                        if (val.IsScalar())
-                            m[subk] = val.as<std::string>();
+                        if (val.IsScalar() ||
+                            (val.IsDefined() && !val.IsSequence() && !val.IsMap()))
+                            m[subk] = yaml_node_to_string(val);
                         else if (val.IsNull())
                             m[subk] = "";
-                        else if (val.IsDefined() && !val.IsSequence() && !val.IsMap())
-                            m[subk] = val.as<std::string>();
                     }
                 } else {
                     for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
@@ -48,20 +90,19 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
                             continue;
                         std::string key = "--" + it2->first.as<std::string>();
                         const YAML::Node& val = it2->second;
-                        if (val.IsScalar())
-                            opts[key] = val.as<std::string>();
+                        if (val.IsScalar() ||
+                            (val.IsDefined() && !val.IsSequence() && !val.IsMap()))
+                            opts[key] = yaml_node_to_string(val);
                         else if (val.IsNull())
                             opts[key] = "";
-                        else if (val.IsDefined() && !val.IsSequence() && !val.IsMap())
-                            opts[key] = val.as<std::string>();
                     }
                 }
             } else if (node.IsScalar()) {
-                opts["--" + key_name] = node.as<std::string>();
+                opts["--" + key_name] = yaml_node_to_string(node);
             } else if (node.IsNull()) {
                 opts["--" + key_name] = "";
             } else if (node.IsDefined() && !node.IsSequence() && !node.IsMap()) {
-                opts["--" + key_name] = node.as<std::string>();
+                opts["--" + key_name] = yaml_node_to_string(node);
             }
         }
         return true;
@@ -111,7 +152,9 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
                         } else if (v.is_number_unsigned()) {
                             m[key] = std::to_string(v.get<unsigned long long>());
                         } else if (v.is_number_float()) {
-                            m[key] = std::to_string(v.get<double>());
+                            std::ostringstream oss;
+                            oss << v.get<double>();
+                            m[key] = oss.str();
                         } else if (v.is_null()) {
                             m[key] = "";
                         }
@@ -129,7 +172,9 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
                         } else if (v.is_number_unsigned()) {
                             opts[key] = std::to_string(v.get<unsigned long long>());
                         } else if (v.is_number_float()) {
-                            opts[key] = std::to_string(v.get<double>());
+                            std::ostringstream oss;
+                            oss << v.get<double>();
+                            opts[key] = oss.str();
                         } else if (v.is_null()) {
                             opts[key] = "";
                         }
@@ -146,7 +191,9 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
                 } else if (val.is_number_unsigned()) {
                     opts[key] = std::to_string(val.get<unsigned long long>());
                 } else if (val.is_number_float()) {
-                    opts[key] = std::to_string(val.get<double>());
+                    std::ostringstream oss;
+                    oss << val.get<double>();
+                    opts[key] = oss.str();
                 } else if (val.is_null()) {
                     opts[key] = "";
                 }
