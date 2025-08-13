@@ -117,6 +117,19 @@ bool remote_accessible(const fs::path& repo);
 bool has_uncommitted_changes(const fs::path& repo);
 
 /**
+ * @brief Clone a repository from a remote URL.
+ *
+ * @param dest           Destination path for the new repository.
+ * @param url            Remote repository URL.
+ * @param use_credentials Whether to attempt authentication using environment
+ *                        variables.
+ * @param auth_failed    Optional output flag set when authentication fails.
+ * @return `true` on success, `false` otherwise.
+ */
+bool clone_repo(const fs::path& dest, const std::string& url, bool use_credentials = false,
+                bool* auth_failed = nullptr);
+
+/**
  * @brief Perform a fast-forward pull from the `origin` remote.
  *
  * `try_pull` fetches the current branch from `origin` and resets the local

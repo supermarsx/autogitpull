@@ -224,6 +224,66 @@ bool has_uncommitted_changes(const fs::path& repo) {
     return git_status_list_entrycount(list.get()) > 0;
 }
 
+bool clone_repo(const fs::path& dest, const std::string& url, bool use_credentials,
+                bool* auth_failed) {
+    git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
+    git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+    ProgressData progress{nullptr, std::chrono::steady_clock::now(), 0, 0, 0};
+    callbacks.payload = &progress;
+    callbacks.transfer_progress = [](const git_transfer_progress* stats, void* payload) -> int {
+        if (!payload)
+            return 0;
+        auto* pd = static_cast<ProgressData*>(payload);
+        if (pd->cb) {
+            int pct = 0;
+            if (stats->total_objects > 0)
+                pct = static_cast<int>(100 * stats->received_objects / stats->total_objects);
+            (*pd->cb)(pct);
+        }
+        double expected_ms = 0.0;
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::steady_clock::now() - pd->start)
+                           .count();
+        if (pd->down_limit > 0) {
+            double ms = (double)stats->received_bytes / (pd->down_limit * 1024.0) * 1000.0;
+            if (ms > expected_ms)
+                expected_ms = ms;
+        }
+        if (pd->up_limit > 0) {
+            auto net = procutil::get_network_usage();
+            double ms = (double)net.upload_bytes / (pd->up_limit * 1024.0) * 1000.0;
+            if (ms > expected_ms)
+                expected_ms = ms;
+        }
+        if (pd->disk_limit > 0) {
+            auto du = procutil::get_disk_usage();
+            double ms =
+                (double)(du.read_bytes + du.write_bytes) / (pd->disk_limit * 1024.0) * 1000.0;
+            if (ms > expected_ms)
+                expected_ms = ms;
+        }
+        if (expected_ms > elapsed) {
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(static_cast<int>(expected_ms - elapsed)));
+        }
+        return 0;
+    };
+    if (use_credentials)
+        callbacks.credentials = credential_cb;
+    opts.fetch_opts.callbacks = callbacks;
+    git_repository* raw_repo = nullptr;
+    int err = git_clone(&raw_repo, url.c_str(), dest.string().c_str(), &opts);
+    if (err != 0) {
+        const git_error* e = git_error_last();
+        if (auth_failed && e && e->message &&
+            std::string(e->message).find("auth") != std::string::npos)
+            *auth_failed = true;
+        return false;
+    }
+    repo_ptr repo(raw_repo);
+    return true;
+}
+
 int try_pull(const fs::path& repo, string& out_pull_log,
              const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed,
              size_t down_limit_kbps, size_t up_limit_kbps, size_t disk_limit_kbps,

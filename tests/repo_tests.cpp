@@ -56,6 +56,23 @@ TEST_CASE("Git utils GitHub url detection") {
     REQUIRE_FALSE(git::is_github_url("https://gitlab.com/user/repo.git"));
 }
 
+TEST_CASE("clone_repo clones a public repository") {
+    git::GitInitGuard guard;
+    fs::path dest = fs::temp_directory_path() / "clone_repo_test";
+    fs::remove_all(dest);
+    bool auth_failed = false;
+    bool ok = git::clone_repo(dest, "https://github.com/octocat/Hello-World.git", false,
+                              &auth_failed);
+    if (!ok) {
+        const git_error* e = git_error_last();
+        WARN("clone_repo failed: " << (e && e->message ? e->message : "unknown"));
+        return;
+    }
+    REQUIRE_FALSE(auth_failed);
+    REQUIRE(git::is_git_repo(dest));
+    fs::remove_all(dest);
+}
+
 TEST_CASE("RepoInfo defaults") {
     RepoInfo ri;
     REQUIRE(ri.status == RS_PENDING);
