@@ -19,53 +19,57 @@
 
 namespace fs = std::filesystem;
 
-std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
+std::vector<fs::path> build_repo_list(const std::vector<fs::path>& roots, bool recursive,
                                       const std::vector<fs::path>& ignore, size_t max_depth) {
     std::vector<fs::path> result;
-    if (recursive) {
-        std::error_code ec;
-        fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied,
-                                            ec);
-        fs::recursive_directory_iterator end;
-        for (; it != end; it.increment(ec)) {
-            if (ec) {
-                ec.clear();
-                continue;
-            }
-            if (max_depth > 0 && it.depth() >= static_cast<int>(max_depth)) {
-                it.disable_recursion_pending();
-                continue;
-            }
-            if (!it->is_directory(ec)) {
-                if (ec)
+    for (const auto& root : roots) {
+        if (root.empty())
+            continue;
+        if (recursive) {
+            std::error_code ec;
+            fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied,
+                                                ec);
+            fs::recursive_directory_iterator end;
+            for (; it != end; it.increment(ec)) {
+                if (ec) {
                     ec.clear();
-                continue;
+                    continue;
+                }
+                if (max_depth > 0 && it.depth() >= static_cast<int>(max_depth)) {
+                    it.disable_recursion_pending();
+                    continue;
+                }
+                if (!it->is_directory(ec)) {
+                    if (ec)
+                        ec.clear();
+                    continue;
+                }
+                fs::path p = it->path();
+                if (std::find(ignore.begin(), ignore.end(), p) != ignore.end()) {
+                    it.disable_recursion_pending();
+                    continue;
+                }
+                result.push_back(p);
             }
-            fs::path p = it->path();
-            if (std::find(ignore.begin(), ignore.end(), p) != ignore.end()) {
-                it.disable_recursion_pending();
-                continue;
-            }
-            result.push_back(p);
-        }
-    } else {
-        std::error_code ec;
-        fs::directory_iterator it(root, fs::directory_options::skip_permission_denied, ec);
-        fs::directory_iterator end;
-        for (; it != end; it.increment(ec)) {
-            if (ec) {
-                ec.clear();
-                continue;
-            }
-            if (!it->is_directory(ec)) {
-                if (ec)
+        } else {
+            std::error_code ec;
+            fs::directory_iterator it(root, fs::directory_options::skip_permission_denied, ec);
+            fs::directory_iterator end;
+            for (; it != end; it.increment(ec)) {
+                if (ec) {
                     ec.clear();
-                continue;
+                    continue;
+                }
+                if (!it->is_directory(ec)) {
+                    if (ec)
+                        ec.clear();
+                    continue;
+                }
+                fs::path p = it->path();
+                if (std::find(ignore.begin(), ignore.end(), p) != ignore.end())
+                    continue;
+                result.push_back(p);
             }
-            fs::path p = it->path();
-            if (std::find(ignore.begin(), ignore.end(), p) != ignore.end())
-                continue;
-            result.push_back(p);
         }
     }
     return result;

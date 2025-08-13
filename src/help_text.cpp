@@ -22,6 +22,7 @@ void print_help(const char* prog) {
         {"--refresh-rate", "-r", "<ms|s|m>", "TUI refresh rate", "Basics"},
         {"--recursive", "-e", "", "Scan subdirectories recursively", "Basics"},
         {"--max-depth", "-D", "<n>", "Limit recursive scan depth", "Basics"},
+        {"--include-dir", "", "<dir>", "Additional directory to scan (repeatable)", "Basics"},
         {"--ignore", "-I", "<dir>", "Directory to ignore (repeatable)", "Ignores"},
         {"--single-run", "-u", "", "Run a single scan cycle and exit", "Basics"},
         {"--single-repo", "-S", "", "Only monitor the specified root repo", "Basics"},

@@ -21,6 +21,7 @@
 |--------|---------|-------------|
 | `--dont-skip-timeouts` | false | Retry repositories that timeout |
 | `--help` | false (disabled) | Show this message |
+| `--include-dir` |  | Additional directory to scan (repeatable) |
 | `--include-private` | false (disabled) | Include private repositories |
 | `--interval` | 30 | Delay between scans |
 | `--keep-first-valid` | false (disabled) | Keep valid repos from first scan |

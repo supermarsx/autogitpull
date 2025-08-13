@@ -5,6 +5,7 @@ Basics:
   refresh-rate: 250
   recursive: False
   max-depth: 0
+  include-dir: 
   single-run: False
   single-repo: False
   rescan-new: False

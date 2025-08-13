@@ -6,6 +6,7 @@
         "refresh-rate": 250,
         "recursive": false,
         "max-depth": 0,
+        "include-dir": "",
         "single-run": false,
         "single-repo": false,
         "rescan-new": false,
