@@ -30,9 +30,16 @@ SRC = \
     src/history_utils.cpp \
     src/process_monitor.cpp \
     src/help_text.cpp \
-    src/cli_commands.cpp \
-    src/linux_daemon.cpp \
-    src/windows_service.cpp
+    src/cli_commands.cpp
+
+# Platform-specific sources
+ifeq ($(OS),Windows_NT)
+SRC += src/windows_service.cpp src/windows_commands.cpp
+else ifeq ($(UNAME_S),Darwin)
+SRC += src/macos_daemon.cpp src/linux_commands.cpp
+else
+SRC += src/linux_daemon.cpp src/linux_commands.cpp
+endif
 
 ifeq ($(OS),Windows_NT)
 SRC += src/lock_utils_windows.cpp
