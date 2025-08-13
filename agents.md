@@ -7,7 +7,7 @@
 ## 0. Scope & Principles
 
 - **Safety-first:** Default behavior must never destroy user work. Do not introduce merges/rebases/commits/pushes. Destructive paths (`--force-pull`, `--hard-reset`) always require explicit confirmations.
-- **Git CLI, not libgit2 (MVP):** Implement sync via external `git` subprocesses with argv-only exec. Adding libgit2 is roadmap-only.
+- **libgit2, not Git CLI:** Implement sync using libgit2 APIs; avoid spawning external `git` subprocesses.
 - **Transparency:** Prefer structured logs, deterministic TUI/CLI output, and clear error codes.
 - **Cross‑platform:** Linux, macOS, Windows are first-class.
 
@@ -17,7 +17,7 @@
 
 - **Build system:** CMake ≥ 3.20 (single source of truth). A Makefile may wrap CMake but must not diverge.
 - **Compilers:** GCC/Clang/MSVC capable of **C++17 or later** (C++20 preferred when available).
-- **Runtime dependency:** `git` CLI present on `PATH`.
+- **Runtime dependency:** `libgit2` available to the build system.
 - **Host tools (mandatory):** `clang-format`, `cpplint`.
 - **Host tools (recommended):** `clang-tidy`, `ccache`.
 - **Windows:** Visual Studio 2022 or newer; Developer PowerShell.
@@ -86,7 +86,7 @@ make tidy     # optional; clang-tidy via CMake preset or script
 
 ### 5.1 Unit Tests
 
-- Coverage: scanner (walk/ignore/max-depth), config loader (YAML/JSON + precedence; auto‑reload), rate limiters/trackers, git orchestrator (mocked `git`), timeout handling.
+- Coverage: scanner (walk/ignore/max-depth), config loader (YAML/JSON + precedence; auto‑reload), rate limiters/trackers, git orchestrator (libgit2 interactions mocked), timeout handling.
 - Framework: Catch2 + CTest. Each test must be deterministic and hermetic.
 
 ### 5.2 Integration Tests
@@ -131,7 +131,7 @@ ctest --test-dir build -j
 ## 7. Security & Privacy Requirements
 
 - Never implement custom secret storage; rely on Git credential helpers. Never log credentials; strip `https://user:pass@host` forms.
-- Treat repo paths as untrusted; no shell interpolation; exec `git` with argv vector.
+- Treat repo paths as untrusted; avoid shell interpolation; interact solely through libgit2 (no `git` subprocesses).
 - Resolve symlinks safely; avoid traversal outside configured roots.
 - MCP server **disabled by default**. If enabled, default to stdio, readonly, loopback‑only; network transports require auth; destructive tools require gating + confirmation string.
 - File permissions: logs created `0600` on Unix; prefer app‑private directories on Windows.
@@ -191,7 +191,7 @@ ctest --test-dir build -j
 
 ## 12. Feature Flags & Roadmap Boundaries
 
-- Do not add libgit2 or submodule recursion in MVP paths.
+- Do not add Git CLI fallback or submodule recursion in MVP paths.
 - Submodule flag (`--submodules`) is reserved; do not expose until implemented end‑to‑end.
 - MCP server is optional; default off; keep destructive tools gated behind runtime flags and confirmation.
 
@@ -221,7 +221,7 @@ ctest --test-dir build -j
 ## 16. Directory Commentary (reference)
 
 - `src/autogitpull.cpp` – CLI entry and main loop.
-- `src/git_utils.cpp` – wrappers over Git **CLI** invocations (argv‑only exec; no shell).
+- `src/git_utils.cpp` – git operations implemented via libgit2.
 - `src/tui.cpp` – interactive dashboard.
 - `src/config_utils.cpp` – YAML/JSON parsing + precedence logic.
 - `src/logger.cpp` – sinks (file/syslog), rotation, redaction.

@@ -11,6 +11,7 @@
 **Goals.**
 
 - Scan a root directory (optionally recursive) for git repositories and continuously keep them in sync with upstream via `git pull`.
+- Perform all Git operations through libgit2 rather than invoking the external `git` CLI.
 - Offer both an interactive TUI dashboard and a plain CLI log mode.
 - Provide robust scheduling, resource limiting (CPU/memory/network/disk), and background persistence with attach/reattach.
 - Be safe by default (skip dirty repos), with explicit overrides (`force pull`) guarded by confirmation options.
@@ -38,7 +39,7 @@
 
 - **Scanner.** Walks the root and `include_dir`s, filters ignored paths, detects Git working trees, optionally recursive with depth limit.
 
-- **Repo Worker.** For each repo, resolves remotes/branches, performs `git fetch`/`git pull` (or configurable reset path), honors timeouts and resource caps, records per‑repo metrics and logs.
+- **Repo Worker.** For each repo, resolves remotes/branches and performs fetch/pull via libgit2 (or configurable reset path), honoring timeouts and resource caps, recording per‑repo metrics and logs.
 
 - **Scheduler.** Drives scan cycles on a configurable `interval`; supports `single-run` and `updated-since` filtering; can rescan the filesystem for new repos (`rescan-new`).
 
@@ -419,7 +420,7 @@ WantedBy=multi-user.target
 
 - Submodule management flag.
 
-- Optional libgit2 backend for finer control and fewer external process calls.
+- Optional Git CLI fallback for environments where libgit2 is unavailable.
 
 - Plugin hook for post‑pull actions (read‑only, e.g., notify or indexer touch).
 
@@ -431,7 +432,7 @@ WantedBy=multi-user.target
 
 - Submodule management flag.
 
-- Optional libgit2 backend for finer control and fewer external process calls.
+- Optional Git CLI fallback for environments where libgit2 is unavailable.
 
 - Plugin hook for post‑pull actions (read‑only, e.g., notify or indexer touch).
 
