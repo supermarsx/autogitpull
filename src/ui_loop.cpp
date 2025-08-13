@@ -189,6 +189,7 @@ static void setup_environment(const Options& opts) {
 
 // Initialize logging if requested
 static void setup_logging(const Options& opts) {
+    set_json_logging(opts.json_log);
     if (!opts.log_file.empty()) {
         init_logger(opts.log_file, opts.log_level, opts.max_log_size);
         if (logger_initialized())

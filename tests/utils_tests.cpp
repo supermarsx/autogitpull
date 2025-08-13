@@ -245,6 +245,25 @@ TEST_CASE("Logger rotates when exceeding max size") {
     fs::remove(log);
 }
 
+TEST_CASE("Logger outputs JSON when enabled") {
+    fs::path log = fs::temp_directory_path() / "autogitpull_json.log";
+    fs::remove(log);
+    init_logger(log.string());
+    set_json_logging(true);
+    log_info("json entry", "{\"k\":\"v\"}");
+    shutdown_logger();
+    set_json_logging(false);
+    std::ifstream ifs(log);
+    REQUIRE(ifs.good());
+    std::string line;
+    std::getline(ifs, line);
+    REQUIRE(line.find("\"timestamp\"") != std::string::npos);
+    REQUIRE(line.find("\"level\":\"INFO\"") != std::string::npos);
+    REQUIRE(line.find("\"msg\":\"json entry\"") != std::string::npos);
+    REQUIRE(line.find("\"data\":{\"k\":\"v\"}") != std::string::npos);
+    fs::remove(log);
+}
+
 TEST_CASE("--log-file without value creates file") {
     const char* argv[] = {"prog", "--log-file"};
     ArgParser parser(2, const_cast<char**>(argv), {"--log-file"});
