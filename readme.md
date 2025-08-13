@@ -23,7 +23,7 @@ and shows progress either in an interactive TUI or with plain console output.
 
 ## Usage
 
-`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-notgit] [--show-version] [--version] [--interval <seconds>] [--refresh-rate <ms|s|m>] [--cpu-poll <N[s|m|h|d|w|M]>] [--mem-poll <N[s|m|h|d|w|M]>] [--thread-poll <N[s|m|h|d|w|M]>] [--log-dir <path>] [--log-file <path>] [--max-log-size <bytes>] [--include-dir <dir>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n.n>] [--cpu-cores <mask>] [--mem-limit <M/G>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/MB>] [--upload-limit <KB/MB>] [--disk-limit <KB/MB>] [--total-traffic-limit <KB/MB/GB>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--hard-reset] [--confirm-reset] [--confirm-alert] [--sudo-su] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist[=name]] [--help]`
+`autogitpull <root-folder> [--include-private] [--show-skipped] [--show-notgit] [--show-version] [--version] [--interval <N[s|m|h|d|w|M|Y]>] [--refresh-rate <ms|s|m>] [--cpu-poll <N[s|m|h|d|w|M|Y]>] [--mem-poll <N[s|m|h|d|w|M|Y]>] [--thread-poll <N[s|m|h|d|w|M|Y]>] [--log-dir <path>] [--log-file <path>] [--max-log-size <bytes>] [--include-dir <dir>] [--ignore <dir>] [--recursive] [--max-depth <n>] [--log-level <level>] [--verbose] [--concurrency <n>] [--threads <n>] [--single-thread] [--max-threads <n>] [--cpu-percent <n.n>] [--cpu-cores <mask>] [--mem-limit <M/G>] [--check-only] [--no-hash-check] [--no-cpu-tracker] [--no-mem-tracker] [--no-thread-tracker] [--net-tracker] [--download-limit <KB/MB>] [--upload-limit <KB/MB>] [--disk-limit <KB/MB>] [--total-traffic-limit <KB/MB/GB>] [--cli] [--single-run] [--silent] [--force-pull] [--remove-lock] [--hard-reset] [--confirm-reset] [--confirm-alert] [--sudo-su] [--debug-memory] [--dump-state] [--dump-large <n>] [--attach <name>] [--background <name>] [--reattach <name>] [--persist[=name]] [--help]`
 
 ### TLDR usage tips
 
@@ -43,7 +43,7 @@ The full catalogue of flags with their default values is documented in
 #### Basics
 - `--include-private` (`-p`) – Include private repositories.
 - `--root` (`-o`) `<path>` – Root folder of repositories.
-- `--interval` (`-i`) `<sec>` – Delay between scans.
+- `--interval` (`-i`) `<N[s|m|h|d|w|M|Y]>` – Delay between scans.
 - `--refresh-rate` (`-r`) `<ms|s|m>` – TUI refresh rate.
 - `--recursive` (`-e`) – Scan subdirectories recursively.
 - `--max-depth` (`-D`) `<n>` – Limit recursive scan depth.
@@ -55,7 +55,7 @@ The full catalogue of flags with their default values is documented in
 - `--wait-empty` (`-W`) `[n]` – Keep retrying when no repos are found, up to an optional limit.
 - `--dont-skip-timeouts` – Retry repositories that timeout.
 - `--keep-first-valid` – Keep valid repos from the first scan even if missing.
-- `--updated-since` `<N[m|h|d|w|M]>` – Only sync repos updated recently.
+- `--updated-since` `<N[m|h|d|w|M|Y]>` – Only sync repos updated recently.
 - `--help` (`-h`) – Show this message.
 
 #### Display
@@ -94,8 +94,8 @@ The full catalogue of flags with their default values is documented in
 - `--reattach` (`-B`) `<name>` – Reattach to background process.
 - `--persist` (`-P`) `[name]` – Keep running after exit; optional run name.
 - `--respawn-limit` `<n[,min]>` – Respawn limit within minutes.
-- `--max-runtime` `<sec>` – Exit after given runtime.
-- `--pull-timeout` (`-O`) `<sec>` – Network operation timeout.
+- `--max-runtime` `<N[s|m|h|d|w|M|Y]>` – Exit after given runtime.
+- `--pull-timeout` (`-O`) `<N[s|m|h|d|w|M|Y]>` – Network operation timeout.
 - `--exit-on-timeout` – Terminate worker if a poll exceeds the timeout.
 - `--print-skipped` – Print skipped repositories once.
 - `--keep-first` – Keep repositories validated on the first scan.
@@ -128,9 +128,9 @@ The full catalogue of flags with their default values is documented in
 - `--total-traffic-limit` `<KB/MB/GB>` – Stop after transferring this much data.
 
 #### Tracking
-- `--cpu-poll` `<N[s|m|h|d|w|M]>` – CPU polling interval.
-- `--mem-poll` `<N[s|m|h|d|w|M]>` – Memory polling interval.
-- `--thread-poll` `<N[s|m|h|d|w|M]>` – Thread count interval.
+- `--cpu-poll` `<N[s|m|h|d|w|M|Y]>` – CPU polling interval.
+- `--mem-poll` `<N[s|m|h|d|w|M|Y]>` – Memory polling interval.
+- `--thread-poll` `<N[s|m|h|d|w|M|Y]>` – Thread count interval.
 - `--no-cpu-tracker` (`-X`) – Disable CPU usage tracker.
 - `--no-mem-tracker` – Disable memory usage tracker.
 - `--no-thread-tracker` – Disable thread tracker.

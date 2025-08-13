@@ -421,10 +421,10 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty())
             val = cfg_opt("--max-runtime");
         bool ok = false;
-        int sec = parse_int(val, 1, INT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(val, ok);
+        if (!ok || dur.count() < 1 || dur.count() > INT_MAX)
             throw std::runtime_error("Invalid value for --max-runtime");
-        opts.runtime_limit = std::chrono::seconds(sec);
+        opts.runtime_limit = dur;
     }
     bool persist_flag = parser.has_flag("--persist") || cfg_flag("--persist");
     std::string persist_val;
@@ -742,14 +742,16 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Invalid value for --dump-large");
     }
     if (cfg_opts.count("--interval")) {
-        opts.interval = parse_int(cfg_opt("--interval"), 1, INT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(cfg_opt("--interval"), ok);
+        if (!ok || dur.count() < 1 || dur.count() > INT_MAX)
             throw std::runtime_error("Invalid value for --interval");
+        opts.interval = static_cast<int>(dur.count());
     }
     if (parser.has_flag("--interval")) {
-        opts.interval = parse_int(parser, "--interval", 1, INT_MAX, ok);
-        if (!ok)
+        auto dur = parse_duration(parser, "--interval", ok);
+        if (!ok || dur.count() < 1 || dur.count() > INT_MAX)
             throw std::runtime_error("Invalid value for --interval");
+        opts.interval = static_cast<int>(dur.count());
     }
     if (cfg_opts.count("--refresh-rate")) {
         opts.refresh_ms = parse_time_ms(cfg_opt("--refresh-rate"), ok);
@@ -861,10 +863,10 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty())
             val = cfg_opt("--pull-timeout");
         bool ok2 = false;
-        int sec = parse_int(val, 1, INT_MAX, ok2);
-        if (!ok2)
+        auto dur = parse_duration(val, ok2);
+        if (!ok2 || dur.count() < 1 || dur.count() > INT_MAX)
             throw std::runtime_error("Invalid value for --pull-timeout");
-        opts.pull_timeout = std::chrono::seconds(sec);
+        opts.pull_timeout = dur;
     }
     opts.skip_timeout =
         !(parser.has_flag("--dont-skip-timeouts") || cfg_flag("--dont-skip-timeouts"));
@@ -948,16 +950,16 @@ Options parse_options(int argc, char* argv[]) {
             ro.cpu_limit = pct;
         }
         if (values.count("--max-runtime")) {
-            int sec = parse_int(ropt("--max-runtime"), 1, INT_MAX, ok);
-            if (!ok)
+            auto dur = parse_duration(ropt("--max-runtime"), ok);
+            if (!ok || dur.count() < 1 || dur.count() > INT_MAX)
                 throw std::runtime_error("Invalid per-repo max-runtime");
-            ro.max_runtime = std::chrono::seconds(sec);
+            ro.max_runtime = dur;
         }
         if (values.count("--pull-timeout")) {
-            int sec = parse_int(ropt("--pull-timeout"), 1, INT_MAX, ok);
-            if (!ok)
+            auto dur = parse_duration(ropt("--pull-timeout"), ok);
+            if (!ok || dur.count() < 1 || dur.count() > INT_MAX)
                 throw std::runtime_error("Invalid per-repo pull-timeout");
-            ro.pull_timeout = std::chrono::seconds(sec);
+            ro.pull_timeout = dur;
         }
         opts.repo_settings[fs::path(repo)] = ro;
     }
