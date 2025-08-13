@@ -43,6 +43,7 @@ void print_help(const char* prog) {
         {"--reattach", "-B", "<name>", "Reattach to background process", "Process"},
         {"--persist", "-P", "[name]", "Keep running after exit (optional name)", "Process"},
         {"--respawn-limit", "", "<n[,min]>", "Respawn limit within minutes", "Process"},
+        {"--respawn-delay", "", "<ms|s|m>", "Delay between worker respawns", "Process"},
         {"--max-runtime", "", "<N[s|m|h|d|w|M|Y]>", "Exit after given runtime", "Process"},
         {"--pull-timeout", "-O", "<N[s|m|h|d|w|M|Y]>", "Network operation timeout", "Process"},
         {"--exit-on-timeout", "", "", "Terminate worker on poll timeout", "Process"},

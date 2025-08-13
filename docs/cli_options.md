@@ -167,6 +167,7 @@
 | `--pull-timeout` | 0 | Network operation timeout (s, m, h, d, w, M, Y) |
 | `--reattach` | false (disabled) | Reattach to background process |
 | `--respawn-limit` | 0 | Respawn limit within minutes |
+| `--respawn-delay` | 1s | Delay between worker respawns (ms, s, m, h, d, w, M, Y) |
 | `--silent` | false (disabled) | Disable console output |
 
 ## Resource limits

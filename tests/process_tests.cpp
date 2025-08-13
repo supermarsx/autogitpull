@@ -52,3 +52,43 @@ TEST_CASE("process monitor respawns up to limit") {
     REQUIRE(g_monitor_count == 2);
     set_monitor_worker(nullptr);
 }
+
+TEST_CASE("process monitor uses custom respawn delay") {
+    g_monitor_count = 0;
+    auto worker_fn = [](Options) {
+        ++g_monitor_count;
+        return 0;
+    };
+    set_monitor_worker(worker_fn);
+    Options opts;
+    opts.persist = true;
+    opts.respawn_max = 2;
+    opts.respawn_window = std::chrono::minutes(1);
+    opts.respawn_delay = std::chrono::milliseconds(50);
+    auto start = std::chrono::steady_clock::now();
+    run_with_monitor(opts);
+    auto elapsed = std::chrono::steady_clock::now() - start;
+    REQUIRE(g_monitor_count == 2);
+    REQUIRE(elapsed >= std::chrono::milliseconds(100));
+    set_monitor_worker(nullptr);
+}
+
+TEST_CASE("process monitor exponential backoff on failures") {
+    g_monitor_count = 0;
+    auto worker_fn = [](Options) {
+        ++g_monitor_count;
+        return 1;
+    };
+    set_monitor_worker(worker_fn);
+    Options opts;
+    opts.persist = true;
+    opts.respawn_max = 3;
+    opts.respawn_window = std::chrono::minutes(1);
+    opts.respawn_delay = std::chrono::milliseconds(10);
+    auto start = std::chrono::steady_clock::now();
+    run_with_monitor(opts);
+    auto elapsed = std::chrono::steady_clock::now() - start;
+    REQUIRE(g_monitor_count == 3);
+    REQUIRE(elapsed >= std::chrono::milliseconds(70));
+    set_monitor_worker(nullptr);
+}
