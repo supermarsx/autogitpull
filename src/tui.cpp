@@ -206,6 +206,10 @@ void draw_tui(const std::vector<fs::path>& all_repos,
             color = magenta;
             status_s = "RemoteUp";
             break;
+        case RS_TEMPFAIL:
+            color = red;
+            status_s = "TempFail";
+            break;
         }
         std::string name = p.filename().string();
         if (censor_names)

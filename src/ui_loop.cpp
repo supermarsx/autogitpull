@@ -103,6 +103,8 @@ std::string status_label(RepoStatus status) {
         return "RateLimit";
     case RS_REMOTE_AHEAD:
         return "RemoteUp";
+    case RS_TEMPFAIL:
+        return "TempFail";
     }
     return "";
 }

@@ -72,7 +72,7 @@ std::vector<fs::path> build_repo_list(const fs::path& root, bool recursive,
 }
 
 static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& skip_repos,
-                          bool include_private) {
+                          bool include_private, bool prev_pulled) {
     if (!fs::exists(p)) {
         ri.status = RS_ERROR;
         ri.message = "Missing";
@@ -109,10 +109,17 @@ static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& s
             return false;
         }
         if (!git::remote_accessible(p)) {
-            ri.status = RS_SKIPPED;
-            ri.message = "Private or inaccessible repo";
-            if (logger_initialized())
-                log_debug(p.string() + " skipped: private or inaccessible");
+            if (prev_pulled) {
+                ri.status = RS_TEMPFAIL;
+                ri.message = "Temporarily inaccessible";
+                if (logger_initialized())
+                    log_warning(p.string() + " temporarily inaccessible");
+            } else {
+                ri.status = RS_SKIPPED;
+                ri.message = "Private or inaccessible repo";
+                if (logger_initialized())
+                    log_debug(p.string() + " skipped: private or inaccessible");
+            }
             return false;
         }
     }
@@ -330,7 +337,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         action = "Checking " + p.filename().string();
     }
     try {
-        if (!validate_repo(p, ri, skip_repos, include_private)) {
+        if (!validate_repo(p, ri, skip_repos, include_private, prev_pulled)) {
             std::lock_guard<std::mutex> lk(mtx);
             repo_infos[p] = ri;
             return;
