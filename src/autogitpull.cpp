@@ -25,8 +25,8 @@ int main(int argc, char* argv[]) {
             }
             append_history(opts.history_file, cmd);
         }
-        if (opts.pull_timeout.count() > 0)
-            git::set_libgit_timeout(static_cast<unsigned int>(opts.pull_timeout.count()));
+        if (opts.limits.pull_timeout.count() > 0)
+            git::set_libgit_timeout(static_cast<unsigned int>(opts.limits.pull_timeout.count()));
         if (opts.show_help) {
             print_help(argv[0]);
             return 0;

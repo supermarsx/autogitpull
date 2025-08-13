@@ -17,16 +17,17 @@ void set_monitor_worker(int (*func)(Options)) {
 }
 
 int run_with_monitor(const Options& opts) {
-    if (!opts.persist)
+    if (!opts.service.persist)
         return g_worker(opts);
     std::deque<std::chrono::steady_clock::time_point> starts;
     int fail_count = 0;
     while (true) {
         auto now = std::chrono::steady_clock::now();
         starts.push_back(now);
-        while (!starts.empty() && now - starts.front() > opts.respawn_window)
+        while (!starts.empty() && now - starts.front() > opts.service.respawn_window)
             starts.pop_front();
-        if (opts.respawn_max > 0 && static_cast<int>(starts.size()) > opts.respawn_max) {
+        if (opts.service.respawn_max > 0 &&
+            static_cast<int>(starts.size()) > opts.service.respawn_max) {
             log_error("Respawn limit reached");
             break;
         }
@@ -41,7 +42,7 @@ int run_with_monitor(const Options& opts) {
             rc = 1;
         }
         log_info("Worker exited with code " + std::to_string(rc));
-        auto delay = opts.respawn_delay * (1LL << fail_count);
+        auto delay = opts.service.respawn_delay * (1LL << fail_count);
         std::this_thread::sleep_for(delay);
         if (rc != 0)
             ++fail_count;

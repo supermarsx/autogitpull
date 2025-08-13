@@ -8,8 +8,8 @@
 
 TEST_CASE("poll_timed_out terminates worker") {
     Options opts;
-    opts.exit_on_timeout = true;
-    opts.pull_timeout = std::chrono::seconds(1);
+    opts.limits.exit_on_timeout = true;
+    opts.limits.pull_timeout = std::chrono::seconds(1);
     auto start = std::chrono::steady_clock::now();
     std::atomic<bool> running{true};
 

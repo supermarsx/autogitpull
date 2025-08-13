@@ -66,7 +66,8 @@ size_t dumpThreshold = 0;
 
 bool poll_timed_out(const Options& opts, std::chrono::steady_clock::time_point start,
                     std::chrono::steady_clock::time_point now) {
-    return opts.exit_on_timeout && opts.pull_timeout.count() > 0 && now - start > opts.pull_timeout;
+    return opts.limits.exit_on_timeout && opts.limits.pull_timeout.count() > 0 &&
+           now - start > opts.limits.pull_timeout;
 }
 
 void handle_signal(int) {
@@ -179,25 +180,25 @@ void draw_cli(const std::vector<fs::path>& all_repos,
 
 // Apply process and tracking related settings
 static void setup_environment(const Options& opts) {
-    if (opts.cpu_core_mask != 0)
-        procutil::set_cpu_affinity(opts.cpu_core_mask);
-    procutil::set_cpu_poll_interval(opts.cpu_poll_sec);
-    procutil::set_memory_poll_interval(opts.mem_poll_sec);
-    procutil::set_thread_poll_interval(opts.thread_poll_sec);
+    if (opts.limits.cpu_core_mask != 0)
+        procutil::set_cpu_affinity(opts.limits.cpu_core_mask);
+    procutil::set_cpu_poll_interval(opts.limits.cpu_poll_sec);
+    procutil::set_memory_poll_interval(opts.limits.mem_poll_sec);
+    procutil::set_thread_poll_interval(opts.limits.thread_poll_sec);
     if (opts.net_tracker)
         procutil::init_network_usage();
 }
 
 // Initialize logging if requested
 static void setup_logging(const Options& opts) {
-    set_json_logging(opts.json_log);
-    if (!opts.log_file.empty()) {
-        init_logger(opts.log_file, opts.log_level, opts.max_log_size);
+    set_json_logging(opts.logging.json_log);
+    if (!opts.logging.log_file.empty()) {
+        init_logger(opts.logging.log_file, opts.logging.log_level, opts.logging.max_log_size);
         if (logger_initialized())
             log_info("Program started");
     }
-    if (opts.use_syslog)
-        init_syslog(opts.syslog_facility);
+    if (opts.logging.use_syslog)
+        init_syslog(opts.logging.syslog_facility);
 }
 
 // Build repository list and populate info table
@@ -240,8 +241,8 @@ int run_event_loop(Options opts) {
     dumpState = opts.dump_state;
     dumpThreshold = opts.dump_threshold;
 #ifndef _WIN32
-    if (opts.reattach) {
-        int fd = procutil::connect_status_socket(opts.attach_name);
+    if (opts.service.reattach) {
+        int fd = procutil::connect_status_socket(opts.service.attach_name);
         if (fd < 0) {
             std::cerr << "Failed to connect to background" << std::endl;
             return 1;
@@ -255,8 +256,8 @@ int run_event_loop(Options opts) {
         close(fd);
         return 0;
     }
-    if (opts.root.empty() && !opts.attach_name.empty()) {
-        int fd = procutil::connect_status_socket(opts.attach_name);
+    if (opts.root.empty() && !opts.service.attach_name.empty()) {
+        int fd = procutil::connect_status_socket(opts.service.attach_name);
         if (fd < 0) {
             std::cerr << "Failed to connect to daemon" << std::endl;
             return 1;
@@ -271,7 +272,7 @@ int run_event_loop(Options opts) {
         return 0;
     }
 #endif
-    if (opts.run_background) {
+    if (opts.service.run_background) {
         if (!procutil::daemonize()) {
             std::cerr << "Failed to daemonize" << std::endl;
             return 1;
@@ -307,8 +308,8 @@ int run_event_loop(Options opts) {
     procutil::get_thread_count();
     setup_logging(opts);
     int interval = opts.interval;
-    if (!opts.log_dir.empty())
-        fs::create_directories(opts.log_dir);
+    if (!opts.logging.log_dir.empty())
+        fs::create_directories(opts.logging.log_dir);
     std::vector<fs::path> all_repos;
     std::map<fs::path, RepoInfo> repo_infos;
     std::set<fs::path> first_validated;
@@ -348,9 +349,9 @@ int run_event_loop(Options opts) {
     if (opts.cli && !opts.silent) {
         std::cout << "Interval: " << interval << "s"
                   << " Refresh: " << opts.refresh_ms.count() << "ms";
-        if (opts.pull_timeout.count() > 0)
-            std::cout << " Timeout: " << opts.pull_timeout.count() << "s";
-        std::cout << " SkipTimeouts: " << (opts.skip_timeout ? "yes" : "no");
+        if (opts.limits.pull_timeout.count() > 0)
+            std::cout << " Timeout: " << opts.limits.pull_timeout.count() << "s";
+        std::cout << " SkipTimeouts: " << (opts.limits.skip_timeout ? "yes" : "no");
         if (opts.keep_first_valid)
             std::cout << " KeepFirst: yes";
         if (opts.runtime_limit.count() > 0)
@@ -415,14 +416,14 @@ int run_event_loop(Options opts) {
         term_guard.setup();
     auto start_time = std::chrono::steady_clock::now();
     auto last_loop = start_time;
-    size_t concurrency = opts.concurrency;
-    if (opts.max_threads > 0 && concurrency > opts.max_threads)
-        concurrency = opts.max_threads;
+    size_t concurrency = opts.limits.concurrency;
+    if (opts.limits.max_threads > 0 && concurrency > opts.limits.max_threads)
+        concurrency = opts.limits.max_threads;
 #ifndef _WIN32
     int status_fd = -1;
     std::vector<int> status_clients;
-    if (!opts.attach_name.empty()) {
-        status_fd = procutil::create_status_socket(opts.attach_name);
+    if (!opts.service.attach_name.empty()) {
+        status_fd = procutil::create_status_socket(opts.service.attach_name);
         if (status_fd >= 0) {
             int fl = fcntl(status_fd, F_GETFL, 0);
             fcntl(status_fd, F_SETFL, fl | O_NONBLOCK);
@@ -442,9 +443,9 @@ int run_event_loop(Options opts) {
                     for (auto& s : args)
                         argv.push_back(s.data());
                     Options new_opts = parse_options(static_cast<int>(argv.size()), argv.data());
-                    if (new_opts.pull_timeout.count() > 0)
+                    if (new_opts.limits.pull_timeout.count() > 0)
                         git::set_libgit_timeout(
-                            static_cast<unsigned int>(new_opts.pull_timeout.count()));
+                            static_cast<unsigned int>(new_opts.limits.pull_timeout.count()));
                     {
                         std::lock_guard<std::mutex> lk(mtx);
                         opts = new_opts;
@@ -456,9 +457,9 @@ int run_event_loop(Options opts) {
                         first_cycle = true;
                     }
                     interval = opts.interval;
-                    concurrency = opts.concurrency;
-                    if (opts.max_threads > 0 && concurrency > opts.max_threads)
-                        concurrency = opts.max_threads;
+                    concurrency = opts.limits.concurrency;
+                    if (opts.limits.max_threads > 0 && concurrency > opts.limits.max_threads)
+                        concurrency = opts.limits.max_threads;
                     rescan_countdown_ms =
                         opts.rescan_new ? opts.rescan_interval : std::chrono::milliseconds(0);
                     setup_environment(opts);
@@ -479,7 +480,7 @@ int run_event_loop(Options opts) {
         }
         if (now - last_loop > std::chrono::minutes(10)) {
             log_info("Detected long pause; resuming");
-            if (opts.kill_on_sleep) {
+            if (opts.service.kill_on_sleep) {
                 log_info("Exiting due to system sleep");
                 break;
             }
@@ -579,11 +580,12 @@ int run_event_loop(Options opts) {
                 scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
                 std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
                 std::ref(action_mtx), opts.include_private, opts.remote_name,
-                std::cref(opts.log_dir), opts.check_only, opts.hash_check, concurrency,
-                opts.cpu_percent_limit, opts.mem_limit, opts.download_limit, opts.upload_limit,
-                opts.disk_limit, opts.silent, opts.cli, opts.force_pull, opts.skip_timeout,
-                opts.skip_accessible_errors, opts.updated_since, opts.show_pull_author,
-                opts.pull_timeout, opts.retry_skipped, opts.repo_settings);
+                std::cref(opts.logging.log_dir), opts.check_only, opts.hash_check, concurrency,
+                opts.limits.cpu_percent_limit, opts.limits.mem_limit, opts.limits.download_limit,
+                opts.limits.upload_limit, opts.limits.disk_limit, opts.silent, opts.cli,
+                opts.force_pull, opts.limits.skip_timeout, opts.skip_accessible_errors,
+                opts.updated_since, opts.show_pull_author, opts.limits.pull_timeout,
+                opts.retry_skipped, opts.repo_settings);
             countdown_ms = std::chrono::seconds(interval);
         }
 #ifndef _WIN32
@@ -729,7 +731,7 @@ int run_event_loop(Options opts) {
     if (status_fd >= 0) {
         for (int c : status_clients)
             close(c);
-        procutil::remove_status_socket(opts.attach_name, status_fd);
+        procutil::remove_status_socket(opts.service.attach_name, status_fd);
     }
 #endif
     return 0;

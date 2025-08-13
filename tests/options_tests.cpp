@@ -13,9 +13,9 @@ TEST_CASE("parse_service_options start service flag") {
     auto cfg_opt = [](const std::string&) -> std::string { return ""; };
     std::map<std::string, std::string> cfg_opts;
     parse_service_options(opts, parser, cfg_flag, cfg_opt, cfg_opts);
-    REQUIRE(opts.start_service);
-    REQUIRE(opts.service_name == std::string("svc"));
-    REQUIRE(opts.start_service_name == std::string("svc"));
+    REQUIRE(opts.service.start_service);
+    REQUIRE(opts.service.service_name == std::string("svc"));
+    REQUIRE(opts.service.start_service_name == std::string("svc"));
 }
 
 TEST_CASE("parse_service_options missing attach or background names") {
@@ -57,10 +57,10 @@ TEST_CASE("parse_options service flags") {
     const char* argv[] = {"prog", "path",     "--install-service", "--service-config",
                           "cfg",  "--persist"};
     Options opts = parse_options(6, const_cast<char**>(argv));
-    REQUIRE(opts.install_service);
-    REQUIRE(opts.service_config == std::string("cfg"));
-    REQUIRE(opts.persist);
-    REQUIRE(opts.attach_name == std::string("path"));
+    REQUIRE(opts.service.install_service);
+    REQUIRE(opts.service.service_config == std::string("cfg"));
+    REQUIRE(opts.service.persist);
+    REQUIRE(opts.service.attach_name == std::string("path"));
     const char* argv2[] = {"prog", "path", "--uninstall-service"};
     Options opts2 = parse_options(3, const_cast<char**>(argv2));
     REQUIRE(opts2.uninstall_service);
@@ -69,101 +69,101 @@ TEST_CASE("parse_options service flags") {
 TEST_CASE("parse_options service control flags") {
     const char* argv[] = {"prog", "path", "--start-service", "--stop-service", "--restart-service"};
     Options opts = parse_options(5, const_cast<char**>(argv));
-    REQUIRE(opts.start_service);
-    REQUIRE(opts.stop_service);
-    REQUIRE(opts.restart_service);
-    REQUIRE(opts.start_service_name == std::string("autogitpull"));
-    REQUIRE(opts.stop_service_name == std::string("autogitpull"));
-    REQUIRE(opts.restart_service_name == std::string("autogitpull"));
+    REQUIRE(opts.service.start_service);
+    REQUIRE(opts.service.stop_service);
+    REQUIRE(opts.service.restart_service);
+    REQUIRE(opts.service.start_service_name == std::string("autogitpull"));
+    REQUIRE(opts.service.stop_service_name == std::string("autogitpull"));
+    REQUIRE(opts.service.restart_service_name == std::string("autogitpull"));
 }
 
 TEST_CASE("parse_options daemon control flags") {
     const char* argv[] = {"prog", "path", "--start-daemon", "--stop-daemon", "--restart-daemon"};
     Options opts = parse_options(5, const_cast<char**>(argv));
-    REQUIRE(opts.start_daemon);
-    REQUIRE(opts.stop_daemon);
-    REQUIRE(opts.restart_daemon);
-    REQUIRE(opts.start_daemon_name == std::string("autogitpull"));
-    REQUIRE(opts.stop_daemon_name == std::string("autogitpull"));
-    REQUIRE(opts.restart_daemon_name == std::string("autogitpull"));
+    REQUIRE(opts.service.start_daemon);
+    REQUIRE(opts.service.stop_daemon);
+    REQUIRE(opts.service.restart_daemon);
+    REQUIRE(opts.service.start_daemon_name == std::string("autogitpull"));
+    REQUIRE(opts.service.stop_daemon_name == std::string("autogitpull"));
+    REQUIRE(opts.service.restart_daemon_name == std::string("autogitpull"));
 }
 
 TEST_CASE("parse_options service name flags") {
     const char* argv[] = {"prog", "path", "--service-name", "svc"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.service_name == std::string("svc"));
+    REQUIRE(opts.service.service_name == std::string("svc"));
 }
 
 TEST_CASE("parse_options start service name override") {
     const char* argv[] = {"prog", "path", "--start-service", "svc"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.start_service);
-    REQUIRE(opts.start_service_name == std::string("svc"));
+    REQUIRE(opts.service.start_service);
+    REQUIRE(opts.service.start_service_name == std::string("svc"));
 }
 
 TEST_CASE("parse_options start service default name") {
     const char* argv[] = {"prog", "path", "--service-name", "svc", "--start-service"};
     Options opts = parse_options(5, const_cast<char**>(argv));
-    REQUIRE(opts.start_service);
-    REQUIRE(opts.start_service_name == std::string("svc"));
+    REQUIRE(opts.service.start_service);
+    REQUIRE(opts.service.start_service_name == std::string("svc"));
 }
 
 TEST_CASE("parse_options daemon name flag") {
     const char* argv[] = {"prog", "path", "--daemon-name", "dname"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.daemon_name == std::string("dname"));
+    REQUIRE(opts.service.daemon_name == std::string("dname"));
 }
 
 TEST_CASE("parse_options install daemon name override") {
     const char* argv[] = {"prog", "path", "--install-daemon", "dname"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.install_daemon);
-    REQUIRE(opts.daemon_name == std::string("dname"));
+    REQUIRE(opts.service.install_daemon);
+    REQUIRE(opts.service.daemon_name == std::string("dname"));
 }
 
 TEST_CASE("parse_options install service name override") {
     const char* argv[] = {"prog", "path", "--install-service", "svc"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.install_service);
-    REQUIRE(opts.service_name == std::string("svc"));
+    REQUIRE(opts.service.install_service);
+    REQUIRE(opts.service.service_name == std::string("svc"));
 }
 
 TEST_CASE("parse_options start daemon name override") {
     const char* argv[] = {"prog", "path", "--start-daemon", "dname"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.start_daemon);
-    REQUIRE(opts.start_daemon_name == std::string("dname"));
+    REQUIRE(opts.service.start_daemon);
+    REQUIRE(opts.service.start_daemon_name == std::string("dname"));
 }
 
 TEST_CASE("parse_options start daemon default name") {
     const char* argv[] = {"prog", "path", "--daemon-name", "dname", "--start-daemon"};
     Options opts = parse_options(5, const_cast<char**>(argv));
-    REQUIRE(opts.start_daemon);
-    REQUIRE(opts.start_daemon_name == std::string("dname"));
+    REQUIRE(opts.service.start_daemon);
+    REQUIRE(opts.service.start_daemon_name == std::string("dname"));
 }
 
 TEST_CASE("parse_options show service flag") {
     const char* argv[] = {"prog", "path", "--show-service"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.show_service);
+    REQUIRE(opts.service.show_service);
 }
 
 TEST_CASE("parse_options service status flag") {
     const char* argv[] = {"prog", "path", "--service-status"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.service_status);
+    REQUIRE(opts.service.service_status);
 }
 
 TEST_CASE("parse_options daemon status flag") {
     const char* argv[] = {"prog", "path", "--daemon-status"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.daemon_status);
+    REQUIRE(opts.service.daemon_status);
 }
 
 TEST_CASE("parse_options list services flags") {
     const char* argv[] = {"prog", "path", "--list-services"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.list_services);
+    REQUIRE(opts.service.list_services);
     const char* argv2[] = {"prog", "path", "--list-daemons"};
     Options opts2 = parse_options(3, const_cast<char**>(argv2));
     REQUIRE(opts2.list_services);
@@ -172,21 +172,21 @@ TEST_CASE("parse_options list services flags") {
 TEST_CASE("parse_options attach option") {
     const char* argv[] = {"prog", "--attach", "foo"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.attach_name == std::string("foo"));
+    REQUIRE(opts.service.attach_name == std::string("foo"));
 }
 
 TEST_CASE("parse_options background option") {
     const char* argv[] = {"prog", "path", "--background", "foo"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.run_background);
-    REQUIRE(opts.attach_name == std::string("foo"));
+    REQUIRE(opts.service.run_background);
+    REQUIRE(opts.service.attach_name == std::string("foo"));
 }
 
 TEST_CASE("parse_options reattach option") {
     const char* argv[] = {"prog", "--reattach", "foo"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.reattach);
-    REQUIRE(opts.attach_name == std::string("foo"));
+    REQUIRE(opts.service.reattach);
+    REQUIRE(opts.service.attach_name == std::string("foo"));
 }
 
 TEST_CASE("parse_options include dir option") {
@@ -201,8 +201,8 @@ TEST_CASE("parse_options include dir option") {
 TEST_CASE("parse_options persist name option") {
     const char* argv[] = {"prog", "path", "--persist=myrun"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.persist);
-    REQUIRE(opts.attach_name == std::string("myrun"));
+    REQUIRE(opts.service.persist);
+    REQUIRE(opts.service.attach_name == std::string("myrun"));
 }
 
 TEST_CASE("parse_options runtime options") {
@@ -221,7 +221,7 @@ TEST_CASE("parse_options interval units") {
 TEST_CASE("parse_options kill-all option") {
     const char* argv[] = {"prog", "path", "--kill-all"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.kill_all);
+    REQUIRE(opts.service.kill_all);
 }
 
 TEST_CASE("parse_options hard reset flags") {
@@ -234,7 +234,7 @@ TEST_CASE("parse_options hard reset flags") {
 TEST_CASE("parse_options kill-on-sleep option") {
     const char* argv[] = {"prog", "path", "--kill-on-sleep"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.kill_on_sleep);
+    REQUIRE(opts.service.kill_on_sleep);
 }
 
 TEST_CASE("parse_options rescan-new option default") {
@@ -260,7 +260,7 @@ TEST_CASE("parse_options refresh rate units") {
 TEST_CASE("parse_options respawn delay units") {
     const char* argv[] = {"prog", "path", "--respawn-delay", "2s"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.respawn_delay == std::chrono::seconds(2));
+    REQUIRE(opts.service.respawn_delay == std::chrono::seconds(2));
 }
 
 TEST_CASE("parse_options poll duration units") {
@@ -293,8 +293,8 @@ TEST_CASE("parse_options commit options") {
     REQUIRE(opts.no_colors);
     REQUIRE(opts.custom_color == "\033[31m");
     REQUIRE(opts.sort_mode == Options::ALPHA);
-    REQUIRE(opts.use_syslog);
-    REQUIRE(opts.syslog_facility == 5);
+    REQUIRE(opts.logging.use_syslog);
+    REQUIRE(opts.logging.syslog_facility == 5);
 }
 
 TEST_CASE("parse_options single repo") {
@@ -323,14 +323,14 @@ TEST_CASE("parse_options tracker flags") {
 TEST_CASE("parse_options limit flags") {
     const char* argv[] = {"prog", "path", "--mem-limit", "100MB", "--upload-limit", "1MB"};
     Options opts = parse_options(6, const_cast<char**>(argv));
-    REQUIRE(opts.mem_limit == 100);
-    REQUIRE(opts.upload_limit == 1024);
+    REQUIRE(opts.limits.mem_limit == 100);
+    REQUIRE(opts.limits.upload_limit == 1024);
 }
 
 TEST_CASE("parse_options dont skip timeouts") {
     const char* argv[] = {"prog", "path", "--dont-skip-timeouts"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE_FALSE(opts.skip_timeout);
+    REQUIRE_FALSE(opts.limits.skip_timeout);
 }
 
 TEST_CASE("parse_options retry skipped") {
@@ -342,13 +342,13 @@ TEST_CASE("parse_options retry skipped") {
 TEST_CASE("parse_options pull timeout") {
     const char* argv[] = {"prog", "path", "--pull-timeout", "2m"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.pull_timeout == std::chrono::minutes(2));
+    REQUIRE(opts.limits.pull_timeout == std::chrono::minutes(2));
 }
 
 TEST_CASE("parse_options exit on timeout") {
     const char* argv[] = {"prog", "path", "--exit-on-timeout"};
     Options opts = parse_options(3, const_cast<char**>(argv));
-    REQUIRE(opts.exit_on_timeout);
+    REQUIRE(opts.limits.exit_on_timeout);
 }
 
 TEST_CASE("parse_options keep first valid") {
@@ -511,7 +511,7 @@ TEST_CASE("parse_options censor char") {
 TEST_CASE("parse_options max log size") {
     const char* argv[] = {"prog", "path", "--max-log-size", "100KB"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.max_log_size == 100 * 1024);
+    REQUIRE(opts.logging.max_log_size == 100 * 1024);
 }
 
 TEST_CASE("parse_options alert flags") {

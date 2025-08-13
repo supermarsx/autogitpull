@@ -5,8 +5,8 @@
 
 namespace cli::platform {
 
-std::string service_name(const Options& opts) { return opts.service_name; }
-std::string daemon_name(const Options& opts) { return opts.service_name; }
+std::string service_name(const Options& opts) { return opts.service.service_name; }
+std::string daemon_name(const Options& opts) { return opts.service.service_name; }
 
 bool service_exists(const std::string& name) { return winservice::service_exists(name); }
 
