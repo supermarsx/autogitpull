@@ -1,4 +1,5 @@
 #include "linux_daemon.hpp"
+#include "system_utils.hpp"
 #ifndef _WIN32
 #include <unistd.h>
 #include <signal.h>
@@ -154,38 +155,36 @@ std::vector<std::pair<std::string, ServiceStatus>> list_installed_services() {
 
 int create_status_socket(const std::string& name) {
     std::string path = "/tmp/" + name + ".sock";
-    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (fd < 0)
+    UniqueFd fd(socket(AF_UNIX, SOCK_STREAM, 0));
+    if (!fd)
         return -1;
     sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
     std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
     unlink(path.c_str());
-    if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0 || listen(fd, 5) != 0) {
-        close(fd);
+    if (bind(fd.get(), reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0 ||
+        listen(fd.get(), 5) != 0) {
         return -1;
     }
-    return fd;
+    return fd.release();
 }
 
 int connect_status_socket(const std::string& name) {
     std::string path = "/tmp/" + name + ".sock";
-    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (fd < 0)
+    UniqueFd fd(socket(AF_UNIX, SOCK_STREAM, 0));
+    if (!fd)
         return -1;
     sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
     std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
-    if (connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
-        close(fd);
+    if (connect(fd.get(), reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
         return -1;
     }
-    return fd;
+    return fd.release();
 }
 
 void remove_status_socket(const std::string& name, int fd) {
-    if (fd >= 0)
-        close(fd);
+    UniqueFd guard(fd);
     std::string path = "/tmp/" + name + ".sock";
     unlink(path.c_str());
 }

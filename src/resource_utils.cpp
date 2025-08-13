@@ -21,12 +21,14 @@
 #ifndef STATUS_INFO_LENGTH_MISMATCH
 #define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004)
 #endif
+
 #elif defined(__APPLE__)
 #include <mach/mach.h>
 #include <unistd.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #endif
+#include "system_utils.hpp"
 
 namespace procutil {
 
@@ -389,20 +391,19 @@ std::size_t get_thread_count() {
     std::size_t count = query_thread_count_ntapi();
     if (count == 0) {
         DWORD pid = GetCurrentProcessId();
-        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-        if (snap == INVALID_HANDLE_VALUE) {
+        UniqueHandle snap(CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0));
+        if (!snap) {
             last_thread_count = 0;
         } else {
             THREADENTRY32 te;
             te.dwSize = sizeof(te);
             count = 0;
-            if (Thread32First(snap, &te)) {
+            if (Thread32First(snap.get(), &te)) {
                 do {
                     if (te.th32OwnerProcessID == pid)
                         ++count;
-                } while (Thread32Next(snap, &te));
+                } while (Thread32Next(snap.get(), &te));
             }
-            CloseHandle(snap);
             last_thread_count = count;
         }
     } else {
