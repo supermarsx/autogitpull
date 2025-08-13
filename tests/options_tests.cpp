@@ -240,6 +240,20 @@ TEST_CASE("parse_options short flags") {
     REQUIRE(opts.rescan_interval == std::chrono::minutes(5));
 }
 
+TEST_CASE("parse_options tracker flags") {
+    const char* argv[] = {"prog", "path", "--no-mem-tracker", "--net-tracker"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE_FALSE(opts.mem_tracker);
+    REQUIRE(opts.net_tracker);
+}
+
+TEST_CASE("parse_options limit flags") {
+    const char* argv[] = {"prog", "path", "--mem-limit", "100MB", "--upload-limit", "1MB"};
+    Options opts = parse_options(6, const_cast<char**>(argv));
+    REQUIRE(opts.mem_limit == 100);
+    REQUIRE(opts.upload_limit == 1024);
+}
+
 TEST_CASE("parse_options dont skip timeouts") {
     const char* argv[] = {"prog", "path", "--dont-skip-timeouts"};
     Options opts = parse_options(3, const_cast<char**>(argv));
