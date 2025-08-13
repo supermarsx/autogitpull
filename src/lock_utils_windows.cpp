@@ -6,20 +6,20 @@
 #include <fstream>
 #include <set>
 #include <system_error>
+#include "system_utils.hpp"
 
 namespace procutil {
 
 bool acquire_lock_file(const std::filesystem::path& path) {
-    HANDLE h = CreateFileW(path.wstring().c_str(), GENERIC_WRITE, 0, NULL, CREATE_NEW,
-                           FILE_ATTRIBUTE_NORMAL, NULL);
-    if (h == INVALID_HANDLE_VALUE)
+    UniqueHandle h(CreateFileW(path.wstring().c_str(), GENERIC_WRITE, 0, NULL, CREATE_NEW,
+                               FILE_ATTRIBUTE_NORMAL, NULL));
+    if (!h)
         return false;
     DWORD pid = GetCurrentProcessId();
     char buf[32];
     int len = snprintf(buf, sizeof(buf), "%lu\n", static_cast<unsigned long>(pid));
     DWORD written = 0;
-    WriteFile(h, buf, len, &written, NULL);
-    CloseHandle(h);
+    WriteFile(h.get(), buf, len, &written, NULL);
     return true;
 }
 
@@ -38,22 +38,19 @@ bool read_lock_pid(const std::filesystem::path& path, unsigned long& pid) {
 }
 
 bool process_running(unsigned long pid) {
-    HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(pid));
+    UniqueHandle h(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(pid)));
     if (!h)
         return false;
     DWORD exit_code = 0;
-    bool running = GetExitCodeProcess(h, &exit_code) && exit_code == STILL_ACTIVE;
-    CloseHandle(h);
+    bool running = GetExitCodeProcess(h.get(), &exit_code) && exit_code == STILL_ACTIVE;
     return running;
 }
 
 bool terminate_process(unsigned long pid) {
-    HANDLE h = OpenProcess(PROCESS_TERMINATE, FALSE, static_cast<DWORD>(pid));
+    UniqueHandle h(OpenProcess(PROCESS_TERMINATE, FALSE, static_cast<DWORD>(pid)));
     if (!h)
         return false;
-    bool ok = TerminateProcess(h, 0);
-    CloseHandle(h);
-    return ok;
+    return TerminateProcess(h.get(), 0) != 0;
 }
 
 LockFileGuard::LockFileGuard(const std::filesystem::path& p) : path(p) {
@@ -86,24 +83,23 @@ std::vector<std::pair<std::string, unsigned long>> find_running_instances() {
         do {
             std::string pipe = ffd.cFileName;
             std::string full = "\\\\.\\pipe\\" + pipe;
-            HANDLE h = CreateFileA(full.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr,
-                                   OPEN_EXISTING, 0, nullptr);
-            if (h != INVALID_HANDLE_VALUE) {
+            UniqueHandle h(CreateFileA(full.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+                                       OPEN_EXISTING, 0, nullptr));
+            if (h) {
                 ULONG pid = 0;
-                if (GetNamedPipeServerProcessId(h, &pid))
+                if (GetNamedPipeServerProcessId(h.get(), &pid))
                     add_inst(pipe.substr(std::strlen("autogitpull-")),
                              static_cast<unsigned long>(pid));
-                CloseHandle(h);
             }
         } while (FindNextFileA(hFind, &ffd) != 0);
         FindClose(hFind);
     }
 
-    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (snap != INVALID_HANDLE_VALUE) {
+    UniqueHandle snap(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    if (snap) {
         PROCESSENTRY32 pe;
         pe.dwSize = sizeof(pe);
-        if (Process32First(snap, &pe)) {
+        if (Process32First(snap.get(), &pe)) {
             do {
 #ifdef UNICODE
                 std::wstring name = pe.szExeFile;
@@ -113,9 +109,8 @@ std::vector<std::pair<std::string, unsigned long>> find_running_instances() {
                 if (name == "autogitpull.exe" || name == "autogitpull")
 #endif
                     add_inst("autogitpull", static_cast<unsigned long>(pe.th32ProcessID));
-            } while (Process32Next(snap, &pe));
+            } while (Process32Next(snap.get(), &pe));
         }
-        CloseHandle(snap);
     }
 
     return out;

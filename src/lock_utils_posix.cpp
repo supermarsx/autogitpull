@@ -15,17 +15,17 @@
 #include <fstream>
 #include <set>
 #include <system_error>
+#include "system_utils.hpp"
 
 namespace procutil {
 
 bool acquire_lock_file(const std::filesystem::path& path) {
-    int fd = open(path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0644);
-    if (fd == -1)
+    UniqueFd fd(open(path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0644));
+    if (!fd)
         return false;
     char buf[32];
     int len = snprintf(buf, sizeof(buf), "%ld\n", static_cast<long>(getpid()));
-    write(fd, buf, len);
-    close(fd);
+    write(fd.get(), buf, len);
     return true;
 }
 
@@ -75,18 +75,17 @@ std::vector<std::pair<std::string, unsigned long>> find_running_instances() {
         }
 #ifdef __linux__
         if (entry.path().extension() == ".sock") {
-            int fd = socket(AF_UNIX, SOCK_STREAM, 0);
-            if (fd >= 0) {
+            UniqueFd fd(socket(AF_UNIX, SOCK_STREAM, 0));
+            if (fd) {
                 sockaddr_un addr{};
                 addr.sun_family = AF_UNIX;
                 std::strncpy(addr.sun_path, entry.path().c_str(), sizeof(addr.sun_path) - 1);
-                if (connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0) {
+                if (connect(fd.get(), reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0) {
                     ucred cred{};
                     socklen_t len = sizeof(cred);
-                    if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0)
+                    if (getsockopt(fd.get(), SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0)
                         add_inst(entry.path().stem().string(), cred.pid);
                 }
-                close(fd);
             }
         }
 #endif
