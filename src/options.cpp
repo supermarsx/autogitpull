@@ -341,6 +341,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--thread-poll",
                                       "--log-dir",
                                       "--log-file",
+                                      "--ssh-public-key",
+                                      "--ssh-private-key",
                                       "--max-log-size",
                                       "--concurrency",
                                       "--check-only",
@@ -822,6 +824,22 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty())
             val = cfg_opt("--log-file");
         opts.log_file = val;
+    }
+    if (parser.has_flag("--ssh-public-key") || cfg_opts.count("--ssh-public-key")) {
+        std::string val = parser.get_option("--ssh-public-key");
+        if (val.empty())
+            val = cfg_opt("--ssh-public-key");
+        if (val.empty())
+            throw std::runtime_error("--ssh-public-key requires a path");
+        opts.ssh_public_key = val;
+    }
+    if (parser.has_flag("--ssh-private-key") || cfg_opts.count("--ssh-private-key")) {
+        std::string val = parser.get_option("--ssh-private-key");
+        if (val.empty())
+            val = cfg_opt("--ssh-private-key");
+        if (val.empty())
+            throw std::runtime_error("--ssh-private-key requires a path");
+        opts.ssh_private_key = val;
     }
     if (parser.has_flag("--max-log-size") || cfg_opts.count("--max-log-size")) {
         std::string val = parser.get_option("--max-log-size");
