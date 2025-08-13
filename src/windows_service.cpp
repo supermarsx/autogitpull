@@ -2,6 +2,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <io.h>
 #include <atomic>
 #include <vector>
 #include <string>
@@ -207,18 +208,29 @@ std::vector<std::pair<std::string, ServiceStatus>> list_installed_services() {
 }
 
 int create_status_socket(const std::string& name) {
-    (void)name;
-    return -1;
+    std::string pipe_name = "\\\\.\\pipe\\autogitpull-" + name;
+    HANDLE h =
+        CreateNamedPipeA(pipe_name.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
+                         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES,
+                         4096, 4096, 0, nullptr);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+    return _open_osfhandle(reinterpret_cast<intptr_t>(h), 0);
 }
 
 int connect_status_socket(const std::string& name) {
-    (void)name;
-    return -1;
+    std::string pipe_name = "\\\\.\\pipe\\autogitpull-" + name;
+    HANDLE h = CreateFileA(pipe_name.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+                           OPEN_EXISTING, 0, nullptr);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+    return _open_osfhandle(reinterpret_cast<intptr_t>(h), 0);
 }
 
 void remove_status_socket(const std::string& name, int fd) {
     (void)name;
-    (void)fd;
+    if (fd >= 0)
+        _close(fd);
 }
 
 } // namespace winservice

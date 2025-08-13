@@ -132,6 +132,27 @@ std::vector<std::pair<std::string, unsigned long>> find_running_instances() {
 #endif
     }
 
+#ifdef _WIN32
+    WIN32_FIND_DATAA ffd;
+    HANDLE hFind = FindFirstFileA("\\\\.\\pipe\\autogitpull-*", &ffd);
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            std::string pipe = ffd.cFileName;
+            std::string full = "\\\\.\\pipe\\" + pipe;
+            HANDLE h = CreateFileA(full.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+                                   OPEN_EXISTING, 0, nullptr);
+            if (h != INVALID_HANDLE_VALUE) {
+                ULONG pid = 0;
+                if (GetNamedPipeServerProcessId(h, &pid))
+                    add_inst(pipe.substr(std::strlen("autogitpull-")),
+                             static_cast<unsigned long>(pid));
+                CloseHandle(h);
+            }
+        } while (FindNextFileA(hFind, &ffd) != 0);
+        FindClose(hFind);
+    }
+#endif
+
 #ifdef __linux__
     fs::path proc_dir("/proc");
     for (const auto& entry : fs::directory_iterator(proc_dir)) {

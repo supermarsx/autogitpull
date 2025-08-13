@@ -1,4 +1,7 @@
 #include "test_common.hpp"
+#include <catch2/catch_approx.hpp>
+
+using Catch::Approx;
 
 TEST_CASE("Resource helpers") {
     procutil::set_thread_poll_interval(1);
