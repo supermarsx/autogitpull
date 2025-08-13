@@ -31,15 +31,14 @@ add_library(autogitpull_lib STATIC
     src/options.cpp
     src/parse_utils.cpp
     src/history_utils.cpp
-    src/lock_utils.cpp
     src/process_monitor.cpp
     src/cli_commands.cpp)
 if(WIN32)
-    target_sources(autogitpull_lib PRIVATE src/windows_service.cpp src/windows_commands.cpp)
+    target_sources(autogitpull_lib PRIVATE src/windows_service.cpp src/windows_commands.cpp src/lock_utils_windows.cpp)
 elseif(APPLE)
-    target_sources(autogitpull_lib PRIVATE src/macos_daemon.cpp src/linux_commands.cpp)
+    target_sources(autogitpull_lib PRIVATE src/macos_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 else()
-    target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp src/linux_commands.cpp)
+    target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 endif()
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread)
@@ -94,15 +93,14 @@ add_executable(memory_leak_test
     src/ignore_utils.cpp
     src/parse_utils.cpp
     src/history_utils.cpp
-    src/lock_utils.cpp
     src/tui.cpp
     src/cli_commands.cpp)
 if(WIN32)
-    target_sources(memory_leak_test PRIVATE src/windows_service.cpp src/windows_commands.cpp)
+    target_sources(memory_leak_test PRIVATE src/windows_service.cpp src/windows_commands.cpp src/lock_utils_windows.cpp)
 elseif(APPLE)
-    target_sources(memory_leak_test PRIVATE src/macos_daemon.cpp src/linux_commands.cpp)
+    target_sources(memory_leak_test PRIVATE src/macos_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 else()
-    target_sources(memory_leak_test PRIVATE src/linux_daemon.cpp src/linux_commands.cpp)
+    target_sources(memory_leak_test PRIVATE src/linux_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 endif()
 target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)

@@ -28,15 +28,20 @@ SRC = \
     src/options.cpp \
     src/parse_utils.cpp \
     src/history_utils.cpp \
-    src/lock_utils.cpp \
     src/process_monitor.cpp \
     src/help_text.cpp \
     src/cli_commands.cpp \
     src/linux_daemon.cpp \
     src/windows_service.cpp
 
+ifeq ($(OS),Windows_NT)
+SRC += src/lock_utils_windows.cpp
+else
+SRC += src/lock_utils_posix.cpp
+endif
+
 OBJ = $(SRC:.cpp=.o)
-FORMAT_FILES = $(SRC) include/*.hpp
+FORMAT_FILES = $(SRC) src/lock_utils_posix.cpp src/lock_utils_windows.cpp include/*.hpp
 
 all: autogitpull
 

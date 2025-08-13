@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
-#include "windows_service.hpp"
-#include "lock_utils.hpp"
 
 #ifdef _WIN32
+#include "windows_service.hpp"
+#include "lock_utils.hpp"
 #include <windows.h>
 #include <io.h>
 #include <thread>
