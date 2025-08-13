@@ -235,14 +235,50 @@ TEST_CASE("Logger appends messages") {
 TEST_CASE("Logger rotates when exceeding max size") {
     fs::path log = fs::temp_directory_path() / "autogitpull_logger_rotate.log";
     fs::remove(log);
-    init_logger(log.string(), LogLevel::INFO, 200);
+    fs::path log1 = log;
+    log1 += ".1";
+    fs::remove(log1);
+    init_logger(log.string(), LogLevel::INFO, 200, 1);
     REQUIRE(logger_initialized());
     for (int i = 0; i < 50; ++i)
         log_info("entry " + std::to_string(i));
     shutdown_logger();
     std::error_code ec;
     REQUIRE(std::filesystem::file_size(log, ec) <= 200);
+    REQUIRE(std::filesystem::exists(log1));
     fs::remove(log);
+    fs::remove(log1);
+}
+
+TEST_CASE("Logger respects max rotated files") {
+    fs::path log = fs::temp_directory_path() / "autogitpull_logger_depth.log";
+    fs::path log1 = log;
+    log1 += ".1";
+    fs::path log2 = log;
+    log2 += ".2";
+    fs::path log3 = log;
+    log3 += ".3";
+    fs::path log4 = log;
+    log4 += ".4";
+    fs::remove(log);
+    fs::remove(log1);
+    fs::remove(log2);
+    fs::remove(log3);
+    fs::remove(log4);
+    init_logger(log.string(), LogLevel::INFO, 100, 3);
+    REQUIRE(logger_initialized());
+    for (int i = 0; i < 200; ++i)
+        log_info("entry " + std::to_string(i));
+    shutdown_logger();
+    REQUIRE(std::filesystem::exists(log));
+    REQUIRE(std::filesystem::exists(log1));
+    REQUIRE(std::filesystem::exists(log2));
+    REQUIRE(std::filesystem::exists(log3));
+    REQUIRE_FALSE(std::filesystem::exists(log4));
+    fs::remove(log);
+    fs::remove(log1);
+    fs::remove(log2);
+    fs::remove(log3);
 }
 
 TEST_CASE("Logger outputs JSON when enabled") {

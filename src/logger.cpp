@@ -13,13 +13,14 @@ static std::mutex g_log_mtx;
 static LogLevel g_min_level = LogLevel::INFO;
 static std::string g_log_path; // NOLINT(runtime/string)
 static size_t g_max_size = 0;
+static size_t g_max_files = 1;
 static bool g_json_log = false;
 #ifdef __linux__
 static bool g_syslog = false;
 static int g_facility = LOG_USER;
 #endif
 
-void init_logger(const std::string& path, LogLevel level, size_t max_size) {
+void init_logger(const std::string& path, LogLevel level, size_t max_size, size_t max_files) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     if (g_log_ofs.is_open()) {
         g_log_ofs.flush();
@@ -29,6 +30,7 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size) {
     }
     g_log_path = path;
     g_max_size = max_size;
+    g_max_files = max_files;
     g_log_ofs.open(path, std::ios::app);
     if (!g_log_ofs.is_open()) {
         std::cerr << "Failed to open log file: " << path << std::endl;
@@ -56,6 +58,11 @@ void set_log_level(LogLevel level) {
 void set_json_logging(bool enable) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     g_json_log = enable;
+}
+
+void set_log_rotation(size_t max_files) {
+    std::lock_guard<std::mutex> lk(g_log_mtx);
+    g_max_files = max_files;
 }
 
 bool logger_initialized() {
@@ -115,6 +122,20 @@ static void log(LogLevel level, const std::string& label, const std::string& msg
         std::error_code ec;
         if (std::filesystem::file_size(g_log_path, ec) > g_max_size && !ec) {
             g_log_ofs.close();
+            if (g_max_files > 0) {
+                namespace fs = std::filesystem;
+                for (size_t i = g_max_files; i > 0; --i) {
+                    fs::path src = g_log_path + "." + std::to_string(i);
+                    if (i == g_max_files) {
+                        fs::remove(src, ec);
+                    } else {
+                        fs::path dst = g_log_path + "." + std::to_string(i + 1);
+                        fs::rename(src, dst, ec);
+                    }
+                }
+                fs::path first = g_log_path + ".1";
+                fs::rename(g_log_path, first, ec);
+            }
             g_log_ofs.open(g_log_path, std::ios::trunc);
         }
     }
