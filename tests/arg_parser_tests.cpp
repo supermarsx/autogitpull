@@ -223,4 +223,12 @@ TEST_CASE("parse_duration units") {
     REQUIRE(ok);
     REQUIRE(parse_duration("1h", ok) == std::chrono::hours(1));
     REQUIRE(ok);
+    REQUIRE(parse_duration("3d", ok) == std::chrono::hours(72));
+    REQUIRE(ok);
+    REQUIRE(parse_duration("2w", ok) == std::chrono::hours(24 * 14));
+    REQUIRE(ok);
+    REQUIRE(parse_duration("1M", ok) == std::chrono::hours(24 * 30));
+    REQUIRE(ok);
+    REQUIRE(parse_duration("1Y", ok) == std::chrono::hours(24 * 365));
+    REQUIRE(ok);
 }

@@ -139,10 +139,16 @@ TEST_CASE("parse_options persist name option") {
 }
 
 TEST_CASE("parse_options runtime options") {
-    const char* argv[] = {"prog", "path", "--show-runtime", "--max-runtime", "5"};
+    const char* argv[] = {"prog", "path", "--show-runtime", "--max-runtime", "1h"};
     Options opts = parse_options(5, const_cast<char**>(argv));
     REQUIRE(opts.show_runtime);
-    REQUIRE(opts.runtime_limit == std::chrono::seconds(5));
+    REQUIRE(opts.runtime_limit == std::chrono::hours(1));
+}
+
+TEST_CASE("parse_options interval units") {
+    const char* argv[] = {"prog", "path", "--interval", "2m"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.interval == 120);
 }
 
 TEST_CASE("parse_options kill-all option") {
@@ -247,9 +253,9 @@ TEST_CASE("parse_options retry skipped") {
 }
 
 TEST_CASE("parse_options pull timeout") {
-    const char* argv[] = {"prog", "path", "--pull-timeout", "60"};
+    const char* argv[] = {"prog", "path", "--pull-timeout", "2m"};
     Options opts = parse_options(4, const_cast<char**>(argv));
-    REQUIRE(opts.pull_timeout == std::chrono::seconds(60));
+    REQUIRE(opts.pull_timeout == std::chrono::minutes(2));
 }
 
 TEST_CASE("parse_options exit on timeout") {

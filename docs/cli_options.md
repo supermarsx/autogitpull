@@ -23,7 +23,7 @@
 | `--help` | false (disabled) | Show this message |
 | `--include-dir` |  | Additional directory to scan (repeatable) |
 | `--include-private` | false (disabled) | Include private repositories |
-| `--interval` | 30 | Delay between scans |
+| `--interval` | 30 | Delay between scans (s, m, h, d, w, M, Y) |
 | `--keep-first-valid` | false (disabled) | Keep valid repos from first scan |
 | `--max-depth` | 0 | Limit recursive scan depth |
 | `--recursive` | false (disabled) | Scan subdirectories recursively |
@@ -34,7 +34,7 @@
 | `--single-repo` | false (disabled) | Only monitor the specified root repo |
 | `--single-run` | false (disabled) | Run a single scan cycle and exit |
 | `--skip-accessible-errors` | false (disabled) | Skip repos with errors even if previously accessible |
-| `--updated-since` | 0 | Only sync repos updated recently |
+| `--updated-since` | 0 | Only sync repos updated recently (m, h, d, w, M, Y) |
 | `--wait-empty` | false (disabled) | Keep retrying when no repos are found (optional limit) |
 
 ## Concurrency
@@ -153,11 +153,11 @@
 | `--exit-on-timeout` | false (disabled) | Terminate worker on poll timeout |
 | `--exit-on-timeout` | false (disabled) | Terminate worker on poll timeout |
 | `--keep-first` | false (disabled) | Keep repos validated on first scan |
-| `--max-runtime` | 0 | Exit after given runtime |
+| `--max-runtime` | 0 | Exit after given runtime (s, m, h, d, w, M, Y) |
 | `--persist` | false (disabled) | Keep running after exit (optional name) |
 | `--print-skipped` | false (disabled) | Print skipped repositories once |
-| `--pull-timeout` | 0 | Network operation timeout |
-| `--pull-timeout` | 0 | Network operation timeout |
+| `--pull-timeout` | 0 | Network operation timeout (s, m, h, d, w, M, Y) |
+| `--pull-timeout` | 0 | Network operation timeout (s, m, h, d, w, M, Y) |
 | `--reattach` | false (disabled) | Reattach to background process |
 | `--respawn-limit` | 0 | Respawn limit within minutes |
 | `--silent` | false (disabled) | Disable console output |
@@ -196,11 +196,11 @@
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--cpu-poll` | 5 | CPU usage polling interval |
-| `--mem-poll` | 5 | Memory usage polling interval |
+| `--cpu-poll` | 5 | CPU usage polling interval (s, m, h, d, w, M, Y) |
+| `--mem-poll` | 5 | Memory usage polling interval (s, m, h, d, w, M, Y) |
 | `--net-tracker` | false (disabled) | Track network usage |
 | `--no-cpu-tracker` | false (feature enabled) | Disable CPU usage tracker |
 | `--no-mem-tracker` | false (feature enabled) | Disable memory usage tracker |
 | `--no-thread-tracker` | false (feature enabled) | Disable thread tracker |
-| `--thread-poll` | 5 | Thread count polling interval |
+| `--thread-poll` | 5 | Thread count polling interval (s, m, h, d, w, M, Y) |
 | `--vmem` | false (disabled) | Show virtual memory usage |

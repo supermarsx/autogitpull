@@ -125,7 +125,8 @@ std::chrono::seconds parse_duration(const std::string& value, bool& ok) {
         return std::chrono::seconds(0);
     char unit = value.back();
     std::string num = value;
-    if (unit == 's' || unit == 'm' || unit == 'h' || unit == 'd' || unit == 'w' || unit == 'M') {
+    if (unit == 's' || unit == 'm' || unit == 'h' || unit == 'd' || unit == 'w' || unit == 'M' ||
+        unit == 'Y') {
         num.pop_back();
     } else if (std::isdigit(static_cast<unsigned char>(unit))) {
         unit = 's';
@@ -152,6 +153,8 @@ std::chrono::seconds parse_duration(const std::string& value, bool& ok) {
         return std::chrono::hours(24 * 7 * n);
     case 'M':
         return std::chrono::hours(24 * 30 * n);
+    case 'Y':
+        return std::chrono::hours(24 * 365 * n);
     default:
         return std::chrono::seconds(n);
     }
