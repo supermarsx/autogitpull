@@ -62,38 +62,63 @@ static string oid_to_hex(const git_oid& oid) {
     return string(buf);
 }
 
-string get_local_hash(const fs::path& repo) {
+static void set_error(std::string* error) {
+    if (!error)
+        return;
+    const git_error* e = git_error_last();
+    if (e && e->message)
+        *error = e->message;
+    else
+        *error = "Unknown libgit2 error";
+}
+
+optional<string> get_local_hash(const fs::path& repo, string* error) {
     git_repository* raw = nullptr;
-    if (git_repository_open(&raw, repo.string().c_str()) != 0)
-        return "";
+    if (git_repository_open(&raw, repo.string().c_str()) != 0) {
+        set_error(error);
+        return nullopt;
+    }
     repo_ptr r(raw);
     git_oid oid;
-    if (git_reference_name_to_id(&oid, r.get(), "HEAD") != 0)
-        return "";
+    if (git_reference_name_to_id(&oid, r.get(), "HEAD") != 0) {
+        set_error(error);
+        return nullopt;
+    }
     return oid_to_hex(oid);
 }
 
-string get_current_branch(const fs::path& repo) {
+optional<string> get_current_branch(const fs::path& repo, string* error) {
     git_repository* raw = nullptr;
-    if (git_repository_open(&raw, repo.string().c_str()) != 0)
-        return "";
+    if (git_repository_open(&raw, repo.string().c_str()) != 0) {
+        set_error(error);
+        return nullopt;
+    }
     repo_ptr r(raw);
     git_reference* head = nullptr;
-    if (git_repository_head(&head, r.get()) != 0)
-        return "";
+    if (git_repository_head(&head, r.get()) != 0) {
+        set_error(error);
+        return nullopt;
+    }
     reference_ptr ref(head);
     const char* name = git_reference_shorthand(ref.get());
     string branch = name ? name : "";
+    if (branch.empty()) {
+        set_error(error);
+        return nullopt;
+    }
     return branch;
 }
 
 static git_repository* open_and_fetch_origin(const fs::path& repo, bool use_credentials,
-                                             bool* auth_failed) {
+                                             bool* auth_failed, string* error) {
     git_repository* raw_repo = nullptr;
-    if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
+    if (git_repository_open(&raw_repo, repo.string().c_str()) != 0) {
+        set_error(error);
         return nullptr;
+    }
     git_remote* raw_remote = nullptr;
     if (git_remote_lookup(&raw_remote, raw_repo, "origin") != 0) {
+        set_error(error);
         git_repository_free(raw_repo);
         return nullptr;
     }
@@ -107,26 +132,29 @@ static git_repository* open_and_fetch_origin(const fs::path& repo, bool use_cred
         if (auth_failed && e && e->message &&
             std::string(e->message).find("auth") != std::string::npos)
             *auth_failed = true;
+        set_error(error);
     }
     return raw_repo;
 }
 
-string get_remote_hash(const fs::path& repo, const string& branch, bool use_credentials,
-                       bool* auth_failed) {
-    git_repository* raw_repo = open_and_fetch_origin(repo, use_credentials, auth_failed);
+optional<string> get_remote_hash(const fs::path& repo, const string& branch, bool use_credentials,
+                                 bool* auth_failed, string* error) {
+    git_repository* raw_repo = open_and_fetch_origin(repo, use_credentials, auth_failed, error);
     if (!raw_repo)
-        return "";
+        return nullopt;
     repo_ptr r(raw_repo);
     git_oid oid;
     string refname = string("refs/remotes/origin/") + branch;
-    if (git_reference_name_to_id(&oid, r.get(), refname.c_str()) != 0)
-        return "";
+    if (git_reference_name_to_id(&oid, r.get(), refname.c_str()) != 0) {
+        set_error(error);
+        return nullopt;
+    }
     return oid_to_hex(oid);
 }
 
 std::time_t get_remote_commit_time(const fs::path& repo, const std::string& branch,
                                    bool use_credentials, bool* auth_failed) {
-    git_repository* raw_repo = open_and_fetch_origin(repo, use_credentials, auth_failed);
+    git_repository* raw_repo = open_and_fetch_origin(repo, use_credentials, auth_failed, nullptr);
     if (!raw_repo)
         return 0;
     repo_ptr r(raw_repo);
@@ -142,17 +170,25 @@ std::time_t get_remote_commit_time(const fs::path& repo, const std::string& bran
     return static_cast<std::time_t>(t);
 }
 
-string get_origin_url(const fs::path& repo) {
+optional<string> get_origin_url(const fs::path& repo, string* error) {
     git_repository* raw_repo = nullptr;
-    if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
-        return "";
+    if (git_repository_open(&raw_repo, repo.string().c_str()) != 0) {
+        set_error(error);
+        return nullopt;
+    }
     repo_ptr r(raw_repo);
     git_remote* raw_remote = nullptr;
-    if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0)
-        return "";
+    if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0) {
+        set_error(error);
+        return nullopt;
+    }
     remote_ptr remote(raw_remote);
     const char* url = git_remote_url(remote.get());
-    return url ? url : "";
+    if (!url) {
+        set_error(error);
+        return nullopt;
+    }
+    return string(url);
 }
 
 bool is_github_url(const string& url) { return url.find("github.com") != string::npos; }
@@ -208,7 +244,17 @@ int try_pull(const fs::path& repo, string& out_pull_log,
         return 2;
     }
     repo_ptr r(raw_repo);
-    string branch = get_current_branch(repo);
+    string branch;
+    {
+        string err;
+        auto br = get_current_branch(repo, &err);
+        if (!br) {
+            out_pull_log = err;
+            finalize();
+            return 2;
+        }
+        branch = *br;
+    }
     git_remote* raw_remote = nullptr;
     if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0) {
         out_pull_log = "No origin remote";

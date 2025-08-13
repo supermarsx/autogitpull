@@ -1,5 +1,33 @@
 #include "test_common.hpp"
 
+TEST_CASE("get_local_hash surfaces error for missing repo") {
+    git::GitInitGuard guard;
+    fs::path repo = fs::temp_directory_path() / "nonexistent_repo";
+    fs::remove_all(repo);
+    std::string err;
+    auto hash = git::get_local_hash(repo, &err);
+    REQUIRE_FALSE(hash);
+    REQUIRE(!err.empty());
+}
+
+TEST_CASE("get_remote_hash surfaces error for missing remote") {
+    git::GitInitGuard guard;
+    fs::path repo = fs::temp_directory_path() / "missing_remote_repo";
+    fs::remove_all(repo);
+    fs::create_directory(repo);
+    REQUIRE(std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
+    std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    std::ofstream(repo / "file.txt") << "hello";
+    std::system(("git -C " + repo.string() + " add file.txt").c_str());
+    std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
+    std::string err;
+    auto hash = git::get_remote_hash(repo, "master", false, nullptr, &err);
+    REQUIRE_FALSE(hash);
+    REQUIRE(!err.empty());
+    fs::remove_all(repo);
+}
+
 TEST_CASE("Git utils local repo") {
     git::GitInitGuard guard;
     fs::path repo = fs::temp_directory_path() / "git_utils_test_repo";
@@ -16,9 +44,9 @@ TEST_CASE("Git utils local repo") {
     std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
 
     REQUIRE(git::is_git_repo(repo));
-    std::string branch = git::get_current_branch(repo);
+    std::string branch = git::get_current_branch(repo).value_or("");
     REQUIRE(!branch.empty());
-    std::string hash = git::get_local_hash(repo);
+    std::string hash = git::get_local_hash(repo).value_or("");
     REQUIRE(hash.size() == 40);
     fs::remove_all(repo);
 }
@@ -199,8 +227,8 @@ TEST_CASE("try_pull handles dirty repos") {
     int ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, 0, false);
     REQUIRE(ret == 3);
     REQUIRE(fs::exists(repo / "file.txt"));
-    std::string after = git::get_local_hash(repo);
-    REQUIRE(after != git::get_local_hash(src));
+    std::string after = git::get_local_hash(repo).value_or("");
+    REQUIRE(after != git::get_local_hash(src).value_or(""));
 
     ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, 0, true);
     REQUIRE(ret == 0);
@@ -210,7 +238,8 @@ TEST_CASE("try_pull handles dirty repos") {
         std::getline(ifs, contents);
         REQUIRE(contents == "helloupdate");
     }
-    REQUIRE(git::get_local_hash(repo) == git::get_local_hash(src));
+    REQUIRE(git::get_local_hash(repo).value_or("") ==
+            git::get_local_hash(src).value_or(""));
 
     fs::remove_all(remote);
     fs::remove_all(src);

@@ -31,7 +31,7 @@ static void setup_repo(fs::path& repo, fs::path& remote, std::string& hash, std:
     std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
     REQUIRE(std::system(
                 ("git -C " + repo.string() + " push origin master > /dev/null 2>&1").c_str()) == 0);
-    hash = git::get_local_hash(repo);
+    hash = git::get_local_hash(repo).value_or("");
     std::string t = run_cmd("git -C " + repo.string() + " log -1 --format=%ct");
     ctime = static_cast<std::time_t>(std::stoll(t));
 }
@@ -44,13 +44,17 @@ TEST_CASE("get_remote_hash handles authentication options") {
     setup_repo(repo, remote, hash, ctime);
 
     bool auth_failed = false;
-    REQUIRE(git::get_remote_hash(repo, "master", false, &auth_failed) == hash);
+    auto r1 = git::get_remote_hash(repo, "master", false, &auth_failed);
+    REQUIRE(r1);
+    REQUIRE(*r1 == hash);
     REQUIRE_FALSE(auth_failed);
 
     setenv("GIT_USERNAME", "user", 1);
     setenv("GIT_PASSWORD", "pass", 1);
     auth_failed = false;
-    REQUIRE(git::get_remote_hash(repo, "master", true, &auth_failed) == hash);
+    auto r2 = git::get_remote_hash(repo, "master", true, &auth_failed);
+    REQUIRE(r2);
+    REQUIRE(*r2 == hash);
     REQUIRE_FALSE(auth_failed);
     unsetenv("GIT_USERNAME");
     unsetenv("GIT_PASSWORD");

@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 
 namespace git {
 namespace fs = std::filesystem;
@@ -53,18 +54,20 @@ bool is_git_repo(const fs::path& p);
 /**
  * @brief Get the commit hash pointed to by `HEAD`.
  *
- * @param repo Path to a Git repository.
- * @return 40 character hexadecimal commit hash, or empty string on error.
+ * @param repo  Path to a Git repository.
+ * @param error Optional output string receiving a libgit2 error message.
+ * @return 40 character hexadecimal commit hash or `std::nullopt` on error.
  */
-std::string get_local_hash(const fs::path& repo);
+std::optional<std::string> get_local_hash(const fs::path& repo, std::string* error = nullptr);
 
 /**
  * @brief Retrieve the currently checked out branch name.
  *
- * @param repo Path to a Git repository.
- * @return Branch name or empty string if it cannot be determined.
+ * @param repo  Path to a Git repository.
+ * @param error Optional output string receiving a libgit2 error message.
+ * @return Branch name or `std::nullopt` if it cannot be determined.
  */
-std::string get_current_branch(const fs::path& repo);
+std::optional<std::string> get_current_branch(const fs::path& repo, std::string* error = nullptr);
 
 /**
  * @brief Fetch `origin` and return the hash of the specified remote branch.
@@ -75,18 +78,22 @@ std::string get_current_branch(const fs::path& repo);
  *                        variables `GIT_USERNAME`/`GIT_PASSWORD`.
  * @param auth_failed    Optional output flag set to `true` when authentication
  *                        fails.
- * @return Commit hash of the remote branch, or empty string on failure.
+ * @param error          Optional output string receiving a libgit2 error message.
+ * @return Commit hash of the remote branch or `std::nullopt` on failure.
  */
-std::string get_remote_hash(const fs::path& repo, const std::string& branch,
-                            bool use_credentials = false, bool* auth_failed = nullptr);
+std::optional<std::string> get_remote_hash(const fs::path& repo, const std::string& branch,
+                                           bool use_credentials = false,
+                                           bool* auth_failed = nullptr,
+                                           std::string* error = nullptr);
 
 /**
  * @brief Obtain the URL of the `origin` remote.
  *
- * @param repo Path to a Git repository.
- * @return Remote URL as a string, or empty string on failure.
+ * @param repo  Path to a Git repository.
+ * @param error Optional output string receiving a libgit2 error message.
+ * @return Remote URL as a string or `std::nullopt` on failure.
  */
-std::string get_origin_url(const fs::path& repo);
+std::optional<std::string> get_origin_url(const fs::path& repo, std::string* error = nullptr);
 
 /**
  * @brief Check if a URL points to GitHub.
