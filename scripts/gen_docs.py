@@ -24,6 +24,7 @@ FLAG_MAP = {
     '--refresh-rate':'refresh_ms',
     '--recursive':'recursive_scan',
     '--ignore':'ignore_dirs',
+    '--include-dir':'include_dirs',
     '--attach':'attach_name',
     '--background':'run_background',
     '--respawn-limit':'respawn_max',

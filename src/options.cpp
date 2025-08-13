@@ -138,6 +138,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--config-yaml",
                                       "--config-json",
                                       "--ignore",
+                                      "--include-dir",
                                       "--force-pull",
                                       "--exclude",
                                       "--discard-dirty",
@@ -893,6 +894,8 @@ Options parse_options(int argc, char* argv[]) {
         if (opts.attach_name.empty())
             opts.attach_name = name;
     }
+    for (const auto& val : parser.get_all_options("--include-dir"))
+        opts.include_dirs.push_back(val);
     for (const auto& val : parser.get_all_options("--ignore"))
         opts.ignore_dirs.push_back(val);
 

@@ -43,7 +43,7 @@ TEST_CASE("build_repo_list ignores directories") {
     fs::create_directories(root / "c");
 
     std::vector<fs::path> ignore{root / "b", root / "c"};
-    std::vector<fs::path> repos = build_repo_list(root, false, ignore, 0);
+    std::vector<fs::path> repos = build_repo_list({root}, false, ignore, 0);
     REQUIRE(std::find(repos.begin(), repos.end(), root / "a") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "b") == repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "c") == repos.end());
@@ -57,7 +57,7 @@ TEST_CASE("build_repo_list skips files") {
     fs::create_directories(root / "repo");
     std::ofstream(root / "file.txt") << "ignore";
 
-    std::vector<fs::path> repos = build_repo_list(root, false, {}, 0);
+    std::vector<fs::path> repos = build_repo_list({root}, false, {}, 0);
     REQUIRE(std::find(repos.begin(), repos.end(), root / "repo") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "file.txt") == repos.end());
 
@@ -96,12 +96,28 @@ TEST_CASE("build_repo_list respects max depth") {
     fs::remove_all(root);
     fs::create_directories(root / "a/b/c");
 
-    std::vector<fs::path> repos = build_repo_list(root, true, {}, 2);
+    std::vector<fs::path> repos = build_repo_list({root}, true, {}, 2);
     REQUIRE(std::find(repos.begin(), repos.end(), root / "a") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "a/b") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "a/b/c") == repos.end());
 
     fs::remove_all(root);
+}
+
+TEST_CASE("build_repo_list scans multiple roots") {
+    fs::path r1 = fs::temp_directory_path() / "multi_root1";
+    fs::path r2 = fs::temp_directory_path() / "multi_root2";
+    fs::remove_all(r1);
+    fs::remove_all(r2);
+    fs::create_directories(r1 / "a");
+    fs::create_directories(r2 / "b");
+
+    std::vector<fs::path> repos = build_repo_list({r1, r2}, false, {}, 0);
+    REQUIRE(std::find(repos.begin(), repos.end(), r1 / "a") != repos.end());
+    REQUIRE(std::find(repos.begin(), repos.end(), r2 / "b") != repos.end());
+
+    fs::remove_all(r1);
+    fs::remove_all(r2);
 }
 
 TEST_CASE("scan_repos respects concurrency limit") {

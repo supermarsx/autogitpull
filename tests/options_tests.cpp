@@ -122,6 +122,15 @@ TEST_CASE("parse_options reattach option") {
     REQUIRE(opts.attach_name == std::string("foo"));
 }
 
+TEST_CASE("parse_options include dir option") {
+    const char* argv[] = {"prog", "path", "--include-dir", "a", "--include-dir", "b"};
+    Options opts = parse_options(6, const_cast<char**>(argv));
+    REQUIRE(opts.root == std::filesystem::path("path"));
+    REQUIRE(opts.include_dirs.size() == 2);
+    REQUIRE(opts.include_dirs[0] == std::filesystem::path("a"));
+    REQUIRE(opts.include_dirs[1] == std::filesystem::path("b"));
+}
+
 TEST_CASE("parse_options persist name option") {
     const char* argv[] = {"prog", "path", "--persist=myrun"};
     Options opts = parse_options(3, const_cast<char**>(argv));

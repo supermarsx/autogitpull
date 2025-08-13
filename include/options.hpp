@@ -57,6 +57,7 @@ struct Options {
     bool show_header = true;
     bool no_colors = false;
     std::string custom_color;
+    std::vector<std::filesystem::path> include_dirs;
     std::vector<std::filesystem::path> ignore_dirs;
     bool enable_history = false;
     std::string history_file = ".autogitpull.config";

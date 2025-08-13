@@ -204,8 +204,9 @@ static void prepare_repos(const Options& opts, std::vector<fs::path>& all_repos,
     if (opts.single_repo) {
         all_repos = {opts.root};
     } else {
-        all_repos =
-            build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+        std::vector<fs::path> roots{opts.root};
+        roots.insert(roots.end(), opts.include_dirs.begin(), opts.include_dirs.end());
+        all_repos = build_repo_list(roots, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
         if (opts.sort_mode == Options::ALPHA)
             std::sort(all_repos.begin(), all_repos.end());
         else if (opts.sort_mode == Options::REVERSE)
@@ -478,8 +479,10 @@ int run_event_loop(const Options& opts) {
         }
         if (running && countdown_ms <= std::chrono::milliseconds(0) && !scanning) {
             if (opts.rescan_new && rescan_countdown_ms <= std::chrono::milliseconds(0)) {
-                auto new_repos = build_repo_list(opts.root, opts.recursive_scan, opts.ignore_dirs,
-                                                 opts.max_depth);
+                std::vector<fs::path> roots{opts.root};
+                roots.insert(roots.end(), opts.include_dirs.begin(), opts.include_dirs.end());
+                auto new_repos =
+                    build_repo_list(roots, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
                 if (opts.keep_first_valid) {
                     for (const auto& p : first_validated) {
                         if (std::find(new_repos.begin(), new_repos.end(), p) == new_repos.end())
