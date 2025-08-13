@@ -86,6 +86,11 @@ The full catalogue of flags with their default values is documented in
 - `--config-yaml` (`-y`) `<file>` – Load options from YAML file.
 - `--config-json` (`-j`) `<file>` – Load options from JSON file.
 
+#### Authentication
+- `--credential-file` `<file>` – Read username and password from file.
+- `--ssh-public-key` `<file>` – Path to SSH public key.
+- `--ssh-private-key` `<file>` – Path to SSH private key.
+
 #### Process
 - `--cli` (`-c`) – Use console output.
 - `--silent` (`-s`) – Disable console output.
