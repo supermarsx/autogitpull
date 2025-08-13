@@ -56,6 +56,7 @@ set "LIBGIT2_LIB=%ROOT_DIR%\libs\libgit2\libgit2_install\lib"
 set "YAMLCPP_INC=%ROOT_DIR%\libs\yaml-cpp\yaml-cpp_install\include"
 set "YAMLCPP_LIB=%ROOT_DIR%\libs\yaml-cpp\yaml-cpp_install\lib"
 set "JSON_INC=%ROOT_DIR%\libs\nlohmann-json\single_include"
+set "LIBSSH2_LIB=%ROOT_DIR%\libs\libssh2\libssh2_install\lib"
 
 rem --------------------------------------------------------------------
 rem Build / fetch third‑party libs if missing                             
@@ -64,10 +65,6 @@ echo.
 echo ============================================================
 echo  [2/4] Checking third‑party dependencies
 echo ============================================================
-if not exist "%LIBGIT2_LIB%\libgit2.a" (
-    call "%ROOT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
-) else echo libgit2 detected.
-
 if not exist "%YAMLCPP_LIB%\libyaml-cpp.a" (
     call "%ROOT_DIR%\scripts\install_yamlcpp_mingw.bat" || exit /b 1
 ) else echo yaml‑cpp detected.
@@ -75,6 +72,18 @@ if not exist "%YAMLCPP_LIB%\libyaml-cpp.a" (
 if not exist "%JSON_INC%\nlohmann\json.hpp" (
     call "%ROOT_DIR%\scripts\install_nlohmann_json.bat" || exit /b 1
 ) else echo nlohmann‑json detected.
+
+if not exist "%LIBSSH2_LIB%\libssh2.a" (
+    call "%ROOT_DIR%\scripts\install_libssh2_mingw.bat" || exit /b 1
+    if exist "%LIBGIT2_LIB%\libgit2.a" (
+        echo Rebuilding libgit2 for SSH support...
+        del "%LIBGIT2_LIB%\libgit2.a" >nul 2>nul
+    )
+)
+
+if not exist "%LIBGIT2_LIB%\libgit2.a" (
+    call "%ROOT_DIR%\scripts\install_libgit2_mingw.bat" || exit /b 1
+) else echo libgit2 detected.
 
 rem --------------------------------------------------------------------
 rem Output & intermediate directories                                    
@@ -131,7 +140,15 @@ if not defined CXXFLAGS (
     set "CXXFLAGS=-std=c++20 -O2 -pipe -static -static-libgcc -static-libstdc++ -DYAML_CPP_STATIC_DEFINE"
 )
 set "INCLUDE_FLAGS=-I%LIBGIT2_INC% -I%YAMLCPP_INC% -I%JSON_INC% -I%ROOT_DIR%\include"
-set "LDFLAGS=%LIBGIT2_LIB%\libgit2.a %YAMLCPP_LIB%\libyaml-cpp.a -lssh2 -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32"
+set "LDFLAGS=%LIBGIT2_LIB%\libgit2.a %YAMLCPP_LIB%\libyaml-cpp.a"
+
+if exist "%LIBSSH2_LIB%\libssh2.a" (
+    set "LDFLAGS=%LDFLAGS% %LIBSSH2_LIB%\libssh2.a"
+) else (
+    echo libssh2 not found, skipping SSH support.
+)
+
+set "LDFLAGS=%LDFLAGS% -lz -lws2_32 -lwinhttp -lole32 -lrpcrt4 -lcrypt32 -lpsapi -ladvapi32"
 
 rem --------------------------------------------------------------------
 rem Build                                                                 
