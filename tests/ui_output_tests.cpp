@@ -32,7 +32,7 @@ TEST_CASE("render_header reports repo count") {
     infos[repos[1]] = RepoInfo{repos[1], RS_SKIPPED, "", "", "", "", "", "", 0, false};
     infos[repos[2]] = RepoInfo{repos[2], RS_NOT_GIT, "", "", "", "", "", "", 0, false};
     infos[repos[3]] = RepoInfo{repos[3], RS_PENDING, "", "", "", "", "", "", 0, false};
-    TuiColors colors = make_tui_colors(true, "");
+    TuiColors colors = make_tui_colors(true, "", TuiTheme{});
     std::string out = render_header(repos, infos, 5, 1, false, "Idle", false, true, "", -1, false, colors);
     REQUIRE(out.find("Repos: 2/4\n") != std::string::npos);
 }
@@ -40,8 +40,24 @@ TEST_CASE("render_header reports repo count") {
 TEST_CASE("render_repo_entry censors names") {
     fs::path repo = "/foo/bar";
     RepoInfo ri{repo, RS_UP_TO_DATE, "", "", "", "", "", "", 0, false};
-    TuiColors colors = make_tui_colors(true, "");
+    TuiColors colors = make_tui_colors(true, "", TuiTheme{});
     std::string out = render_repo_entry(repo, ri, true, true, false, false, false, true, '#', colors);
     REQUIRE(out.find("bar") == std::string::npos);
     REQUIRE(out.find("###") != std::string::npos);
+}
+
+TEST_CASE("theme file overrides colors") {
+    fs::path theme_path = fs::path(__FILE__).parent_path() / ".." / "examples" / "themes" /
+                          "light.json";
+    TuiTheme theme;
+    std::string err;
+    REQUIRE(load_theme(theme_path.string(), theme, err));
+    TuiColors colors = make_tui_colors(false, "", theme);
+    REQUIRE(colors.green == "\033[92m");
+}
+
+TEST_CASE("no color option clears codes") {
+    TuiColors colors = make_tui_colors(true, "", TuiTheme{});
+    REQUIRE(colors.green.empty());
+    REQUIRE(colors.reset.empty());
 }

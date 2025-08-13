@@ -226,3 +226,71 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
         return false;
     }
 }
+
+static void assign_theme_field(const std::string& key, const std::string& val, TuiTheme& theme) {
+    if (key == "reset")
+        theme.reset = val;
+    else if (key == "green")
+        theme.green = val;
+    else if (key == "yellow")
+        theme.yellow = val;
+    else if (key == "red")
+        theme.red = val;
+    else if (key == "cyan")
+        theme.cyan = val;
+    else if (key == "gray")
+        theme.gray = val;
+    else if (key == "bold")
+        theme.bold = val;
+    else if (key == "magenta")
+        theme.magenta = val;
+}
+
+bool load_theme(const std::string& path, TuiTheme& theme, std::string& error) {
+    std::string ext;
+    auto pos = path.find_last_of('.');
+    if (pos != std::string::npos)
+        ext = path.substr(pos + 1);
+    for (auto& c : ext)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    try {
+        std::ifstream ifs(path);
+        if (!ifs) {
+            error = "Failed to open file";
+            return false;
+        }
+        if (ext == "json") {
+            nlohmann::json root;
+            ifs >> root;
+            if (!root.is_object()) {
+                error = "Root JSON value is not an object";
+                return false;
+            }
+            for (auto it = root.begin(); it != root.end(); ++it) {
+                if (it.value().is_string())
+                    assign_theme_field(it.key(), it.value().get<std::string>(), theme);
+            }
+            return true;
+        }
+#ifdef HAVE_YAMLCPP
+        YAML::Node root = YAML::Load(ifs);
+        if (!root.IsMap()) {
+            error = "Root YAML node is not a map";
+            return false;
+        }
+        for (auto it = root.begin(); it != root.end(); ++it) {
+            if (it->first.IsScalar() && it->second.IsScalar()) {
+                assign_theme_field(it->first.as<std::string>(), it->second.as<std::string>(),
+                                   theme);
+            }
+        }
+        return true;
+#else
+        error = "YAML support not available";
+        return false;
+#endif
+    } catch (const std::exception& e) {
+        error = e.what();
+        return false;
+    }
+}
