@@ -1,0 +1,83 @@
+#include <cstdio>
+#include <array>
+#include "test_common.hpp"
+
+static std::string run_cmd(const std::string& cmd) {
+    std::array<char, 128> buffer{};
+    std::string result;
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe)
+        return result;
+    while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe))
+        result += buffer.data();
+    pclose(pipe);
+    if (!result.empty() && result.back() == '\n')
+        result.pop_back();
+    return result;
+}
+
+static void setup_repo(fs::path& repo, fs::path& remote, std::string& hash, std::time_t& ctime) {
+    remote = fs::temp_directory_path() / "fetch_remote.git";
+    repo = fs::temp_directory_path() / "fetch_local";
+    fs::remove_all(remote);
+    fs::remove_all(repo);
+    REQUIRE(std::system(("git init --bare " + remote.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1")
+                            .c_str()) == 0);
+    std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
+    std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    std::ofstream(repo / "file.txt") << "hello";
+    std::system(("git -C " + repo.string() + " add file.txt").c_str());
+    std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
+    REQUIRE(std::system(
+                ("git -C " + repo.string() + " push origin master > /dev/null 2>&1").c_str()) == 0);
+    hash = git::get_local_hash(repo);
+    std::string t = run_cmd("git -C " + repo.string() + " log -1 --format=%ct");
+    ctime = static_cast<std::time_t>(std::stoll(t));
+}
+
+TEST_CASE("get_remote_hash handles authentication options") {
+    git::GitInitGuard guard;
+    fs::path repo, remote;
+    std::string hash;
+    std::time_t ctime;
+    setup_repo(repo, remote, hash, ctime);
+
+    bool auth_failed = false;
+    REQUIRE(git::get_remote_hash(repo, "master", false, &auth_failed) == hash);
+    REQUIRE_FALSE(auth_failed);
+
+    setenv("GIT_USERNAME", "user", 1);
+    setenv("GIT_PASSWORD", "pass", 1);
+    auth_failed = false;
+    REQUIRE(git::get_remote_hash(repo, "master", true, &auth_failed) == hash);
+    REQUIRE_FALSE(auth_failed);
+    unsetenv("GIT_USERNAME");
+    unsetenv("GIT_PASSWORD");
+
+    fs::remove_all(repo);
+    fs::remove_all(remote);
+}
+
+TEST_CASE("get_remote_commit_time handles authentication options") {
+    git::GitInitGuard guard;
+    fs::path repo, remote;
+    std::string hash;
+    std::time_t ctime;
+    setup_repo(repo, remote, hash, ctime);
+
+    bool auth_failed = false;
+    REQUIRE(git::get_remote_commit_time(repo, "master", false, &auth_failed) == ctime);
+    REQUIRE_FALSE(auth_failed);
+
+    setenv("GIT_USERNAME", "user", 1);
+    setenv("GIT_PASSWORD", "pass", 1);
+    auth_failed = false;
+    REQUIRE(git::get_remote_commit_time(repo, "master", true, &auth_failed) == ctime);
+    REQUIRE_FALSE(auth_failed);
+    unsetenv("GIT_USERNAME");
+    unsetenv("GIT_PASSWORD");
+
+    fs::remove_all(repo);
+    fs::remove_all(remote);
+}

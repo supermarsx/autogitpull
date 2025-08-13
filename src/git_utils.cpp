@@ -87,16 +87,16 @@ string get_current_branch(const fs::path& repo) {
     return branch;
 }
 
-string get_remote_hash(const fs::path& repo, const string& branch, bool use_credentials,
-                       bool* auth_failed) {
+static git_repository* open_and_fetch_origin(const fs::path& repo, bool use_credentials,
+                                             bool* auth_failed) {
     git_repository* raw_repo = nullptr;
-
     if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
-        return "";
-    repo_ptr r(raw_repo);
+        return nullptr;
     git_remote* raw_remote = nullptr;
-    if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0)
-        return "";
+    if (git_remote_lookup(&raw_remote, raw_repo, "origin") != 0) {
+        git_repository_free(raw_repo);
+        return nullptr;
+    }
     remote_ptr remote(raw_remote);
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
     if (use_credentials)
@@ -108,6 +108,15 @@ string get_remote_hash(const fs::path& repo, const string& branch, bool use_cred
             std::string(e->message).find("auth") != std::string::npos)
             *auth_failed = true;
     }
+    return raw_repo;
+}
+
+string get_remote_hash(const fs::path& repo, const string& branch, bool use_credentials,
+                       bool* auth_failed) {
+    git_repository* raw_repo = open_and_fetch_origin(repo, use_credentials, auth_failed);
+    if (!raw_repo)
+        return "";
+    repo_ptr r(raw_repo);
     git_oid oid;
     string refname = string("refs/remotes/origin/") + branch;
     if (git_reference_name_to_id(&oid, r.get(), refname.c_str()) != 0)
@@ -117,24 +126,10 @@ string get_remote_hash(const fs::path& repo, const string& branch, bool use_cred
 
 std::time_t get_remote_commit_time(const fs::path& repo, const std::string& branch,
                                    bool use_credentials, bool* auth_failed) {
-    git_repository* raw_repo = nullptr;
-    if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
+    git_repository* raw_repo = open_and_fetch_origin(repo, use_credentials, auth_failed);
+    if (!raw_repo)
         return 0;
     repo_ptr r(raw_repo);
-    git_remote* raw_remote = nullptr;
-    if (git_remote_lookup(&raw_remote, r.get(), "origin") != 0)
-        return 0;
-    remote_ptr remote(raw_remote);
-    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
-    if (use_credentials)
-        fetch_opts.callbacks.credentials = credential_cb;
-    int err = git_remote_fetch(remote.get(), nullptr, &fetch_opts, nullptr);
-    if (err != 0) {
-        const git_error* e = git_error_last();
-        if (auth_failed && e && e->message &&
-            std::string(e->message).find("auth") != std::string::npos)
-            *auth_failed = true;
-    }
     git_oid oid;
     std::string refname = std::string("refs/remotes/origin/") + branch;
     if (git_reference_name_to_id(&oid, r.get(), refname.c_str()) != 0)
