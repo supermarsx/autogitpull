@@ -44,6 +44,7 @@ struct ProgressData {
 
 int credential_cb(git_credential** out, const char* url, const char* username_from_url,
                   unsigned int allowed_types, void* payload) {
+    GitInitGuard guard;
     const Options* opts = static_cast<const Options*>(payload);
     const char* env_user = getenv("GIT_USERNAME");
     const char* env_pass = getenv("GIT_PASSWORD");
@@ -61,12 +62,12 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
                                        "") == 0)
             return 0;
     }
-    if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && user) {
-        if (git_credential_ssh_key_from_agent(out, user) == 0)
-            return 0;
-    }
     if ((allowed_types & GIT_CREDENTIAL_USERNAME) && user) {
         if (git_credential_username_new(out, user) == 0)
+            return 0;
+    }
+    if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && user) {
+        if (git_credential_ssh_key_from_agent(out, user) == 0)
             return 0;
     }
     if (allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) {
@@ -242,7 +243,8 @@ bool remote_accessible(const fs::path& repo, const string& remote) {
     if (git_remote_lookup(&raw_remote, r.get(), remote.c_str()) != 0)
         return false;
     remote_ptr remote_handle(raw_remote);
-    int err = git_remote_connect(remote_handle.get(), GIT_DIRECTION_FETCH, nullptr, nullptr, nullptr);
+    int err =
+        git_remote_connect(remote_handle.get(), GIT_DIRECTION_FETCH, nullptr, nullptr, nullptr);
     bool ok = err == 0;
     if (ok)
         git_remote_disconnect(remote_handle.get());
