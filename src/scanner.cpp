@@ -76,7 +76,7 @@ std::vector<fs::path> build_repo_list(const std::vector<fs::path>& roots, bool r
 }
 
 static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& skip_repos,
-                          bool include_private, bool prev_pulled) {
+                          bool include_private, bool prev_pulled, const std::string& remote) {
     if (!fs::exists(p)) {
         ri.status = RS_ERROR;
         ri.message = "Missing";
@@ -103,16 +103,16 @@ static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& s
     ri.commit = git::get_local_hash(p).value_or("");
     if (ri.commit.size() > 7)
         ri.commit = ri.commit.substr(0, 7);
-    std::string origin = git::get_origin_url(p).value_or("");
+    std::string remote_url = git::get_remote_url(p, remote).value_or("");
     if (!include_private) {
-        if (!git::is_github_url(origin)) {
+        if (!git::is_github_url(remote_url)) {
             ri.status = RS_SKIPPED;
             ri.message = "Non-GitHub repo (skipped)";
             if (logger_initialized())
                 log_debug(p.string() + " skipped: non-GitHub repo");
             return false;
         }
-        if (!git::remote_accessible(p)) {
+        if (!git::remote_accessible(p, remote)) {
             if (prev_pulled) {
                 ri.status = RS_TEMPFAIL;
                 ri.message = "Temporarily inaccessible";
@@ -140,14 +140,15 @@ static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& s
 // Determine whether a pull is required and set RepoInfo accordingly
 static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_only, bool hash_check,
                                   bool include_private, std::set<fs::path>& skip_repos,
-                                  bool was_accessible, bool skip_accessible_errors) {
+                                  bool was_accessible, bool skip_accessible_errors,
+                                  const std::string& remote) {
     if (hash_check) {
         std::string local = git::get_local_hash(p).value_or("");
         bool auth_fail = false;
-        std::string remote =
-            git::get_remote_hash(p, ri.branch, include_private, &auth_fail).value_or("");
+        std::string remote_hash =
+            git::get_remote_hash(p, remote, ri.branch, include_private, &auth_fail).value_or("");
         ri.auth_failed = auth_fail;
-        if (local.empty() || remote.empty()) {
+        if (local.empty() || remote_hash.empty()) {
             ri.status = RS_ERROR;
             ri.message = "Error getting hashes or remote";
             if (!was_accessible || skip_accessible_errors)
@@ -156,7 +157,7 @@ static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_on
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             return false;
         }
-        if (local == remote) {
+        if (local == remote_hash) {
             ri.status = RS_UP_TO_DATE;
             ri.message = "Up to date";
             ri.commit = local.substr(0, 7);
@@ -185,9 +186,10 @@ static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_on
 static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, RepoInfo>& repo_infos,
                          std::set<fs::path>& skip_repos, std::mutex& mtx, std::string& action,
                          std::mutex& action_mtx, const fs::path& log_dir, bool include_private,
-                         size_t down_limit, size_t up_limit, size_t disk_limit, bool force_pull,
-                         bool was_accessible, bool skip_timeout, bool skip_accessible_errors,
-                         bool cli_mode, bool silent, std::chrono::seconds pull_timeout) {
+                         const std::string& remote, size_t down_limit, size_t up_limit,
+                         size_t disk_limit, bool force_pull, bool was_accessible, bool skip_timeout,
+                         bool skip_accessible_errors, bool cli_mode, bool silent,
+                         std::chrono::seconds pull_timeout) {
     (void)skip_timeout;
     {
         std::lock_guard<std::mutex> lk(action_mtx);
@@ -206,7 +208,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
     bool pull_auth_fail = false;
     if (pull_timeout.count() > 0)
         git::set_libgit_timeout(static_cast<unsigned int>(pull_timeout.count()));
-    int code = git::try_pull(p, pull_log, &progress_cb, include_private, &pull_auth_fail,
+    int code = git::try_pull(p, remote, pull_log, &progress_cb, include_private, &pull_auth_fail,
                              down_limit, up_limit, disk_limit, force_pull);
     ri.auth_failed = pull_auth_fail;
     ri.last_pull_log = pull_log;
@@ -285,11 +287,11 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
 void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& running,
                   std::string& action, std::mutex& action_mtx, bool include_private,
-                  const fs::path& log_dir, bool check_only, bool hash_check, size_t down_limit,
-                  size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
-                  bool skip_timeout, bool skip_accessible_errors,
-                  std::chrono::seconds updated_since, bool show_pull_author,
-                  std::chrono::seconds pull_timeout) {
+                  const std::string& remote, const fs::path& log_dir, bool check_only,
+                  bool hash_check, size_t down_limit, size_t up_limit, size_t disk_limit,
+                  bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
+                  bool skip_accessible_errors, std::chrono::seconds updated_since,
+                  bool show_pull_author, std::chrono::seconds pull_timeout) {
     if (!running)
         return;
     if (logger_initialized())
@@ -342,7 +344,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         action = "Checking " + p.filename().string();
     }
     try {
-        if (!validate_repo(p, ri, skip_repos, include_private, prev_pulled)) {
+        if (!validate_repo(p, ri, skip_repos, include_private, prev_pulled, remote)) {
             std::lock_guard<std::mutex> lk(mtx);
             repo_infos[p] = ri;
             return;
@@ -350,7 +352,8 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         ri.commit_author = git::get_last_commit_author(p);
         ri.commit_date = git::get_last_commit_date(p);
         if (updated_since.count() > 0) {
-            std::time_t ct = git::get_remote_commit_time(p, ri.branch, include_private, nullptr);
+            std::time_t ct =
+                git::get_remote_commit_time(p, remote, ri.branch, include_private, nullptr);
             if (ct == 0)
                 ct = git::get_last_commit_time(p);
             std::time_t now = std::time(nullptr);
@@ -363,11 +366,12 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
             }
         }
 
-        bool do_pull = determine_pull_action(p, ri, check_only, hash_check, include_private,
-                                             skip_repos, was_accessible, skip_accessible_errors);
+        bool do_pull =
+            determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos,
+                                  was_accessible, skip_accessible_errors, remote);
         if (do_pull) {
             execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
-                         include_private, down_limit, up_limit, disk_limit, force_pull,
+                         include_private, remote, down_limit, up_limit, disk_limit, force_pull,
                          was_accessible, skip_timeout, skip_accessible_errors, cli_mode, silent,
                          effective_timeout);
         }
@@ -408,10 +412,11 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
 void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoInfo>& repo_infos,
                 std::set<fs::path>& skip_repos, std::mutex& mtx, std::atomic<bool>& scanning_flag,
                 std::atomic<bool>& running, std::string& action, std::mutex& action_mtx,
-                bool include_private, const fs::path& log_dir, bool check_only, bool hash_check,
-                size_t concurrency, double cpu_percent_limit, size_t mem_limit, size_t down_limit,
-                size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
-                bool skip_timeout, bool skip_accessible_errors, std::chrono::seconds updated_since,
+                bool include_private, const std::string& remote, const fs::path& log_dir,
+                bool check_only, bool hash_check, size_t concurrency, double cpu_percent_limit,
+                size_t mem_limit, size_t down_limit, size_t up_limit, size_t disk_limit,
+                bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
+                bool skip_accessible_errors, std::chrono::seconds updated_since,
                 bool show_pull_author, std::chrono::seconds pull_timeout, bool retry_skipped,
                 const std::map<std::filesystem::path, RepoOptions>& repo_settings) {
     git::GitInitGuard guard;
@@ -474,7 +479,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool fp = ro.force_pull.value_or(force_pull);
                 std::chrono::seconds pt = ro.pull_timeout.value_or(pull_timeout);
                 process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
-                             include_private, log_dir, co, hash_check, dl, ul, disk, silent,
+                             include_private, remote, log_dir, co, hash_check, dl, ul, disk, silent,
                              cli_mode, fp, skip_timeout, skip_accessible_errors, updated_since,
                              show_pull_author, pt);
                 if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {

@@ -44,7 +44,7 @@ TEST_CASE("get_remote_hash handles authentication options") {
     setup_repo(repo, remote, hash, ctime);
 
     bool auth_failed = false;
-    auto r1 = git::get_remote_hash(repo, "master", false, &auth_failed);
+    auto r1 = git::get_remote_hash(repo, "origin", "master", false, &auth_failed);
     REQUIRE(r1);
     REQUIRE(*r1 == hash);
     REQUIRE_FALSE(auth_failed);
@@ -52,7 +52,7 @@ TEST_CASE("get_remote_hash handles authentication options") {
     setenv("GIT_USERNAME", "user", 1);
     setenv("GIT_PASSWORD", "pass", 1);
     auth_failed = false;
-    auto r2 = git::get_remote_hash(repo, "master", true, &auth_failed);
+    auto r2 = git::get_remote_hash(repo, "origin", "master", true, &auth_failed);
     REQUIRE(r2);
     REQUIRE(*r2 == hash);
     REQUIRE_FALSE(auth_failed);
@@ -71,13 +71,15 @@ TEST_CASE("get_remote_commit_time handles authentication options") {
     setup_repo(repo, remote, hash, ctime);
 
     bool auth_failed = false;
-    REQUIRE(git::get_remote_commit_time(repo, "master", false, &auth_failed) == ctime);
+    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", false, &auth_failed) ==
+            ctime);
     REQUIRE_FALSE(auth_failed);
 
     setenv("GIT_USERNAME", "user", 1);
     setenv("GIT_PASSWORD", "pass", 1);
     auth_failed = false;
-    REQUIRE(git::get_remote_commit_time(repo, "master", true, &auth_failed) == ctime);
+    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", true, &auth_failed) ==
+            ctime);
     REQUIRE_FALSE(auth_failed);
     unsetenv("GIT_USERNAME");
     unsetenv("GIT_PASSWORD");

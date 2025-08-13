@@ -11,6 +11,7 @@
 
 struct Options {
     std::filesystem::path root;
+    std::string remote_name = "origin";
     bool include_private = false;
     bool show_skipped = false;
     bool show_notgit = false;
