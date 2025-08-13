@@ -76,7 +76,7 @@
 | `--daemon-status` | false (disabled) | Check daemon existence and running state |
 | `--force-restart-daemon` | false (disabled) | Force restart daemon |
 | `--force-stop-daemon` | false (disabled) | Force stop daemon |
-| `--install-daemon` | false (disabled) | Install background daemon |
+| `--install-daemon` | false (disabled) | Install background daemon (systemd/launchd) |
 | `--restart-daemon` | false (disabled) | Restart daemon service |
 | `--start-daemon` | false (disabled) | Start daemon service |
 | `--stop-daemon` | false (disabled) | Stop daemon service |
@@ -189,7 +189,7 @@
 |--------|---------|-------------|
 | `--force-restart-service` | false (disabled) | Force restart service |
 | `--force-stop-service` | false (disabled) | Force stop service |
-| `--install-service` | false (disabled) | Install system service |
+| `--install-service` | false (disabled) | Install system service (launchd/systemd/Windows) |
 | `--list-daemons` | false (disabled) | Alias for --list-services |
 | `--list-services` | false (disabled) | List installed service units |
 | `--restart-service` | false (disabled) | Restart service |

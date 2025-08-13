@@ -66,6 +66,20 @@ TEST_CASE("parse_options daemon name flag") {
     REQUIRE(opts.daemon_name == std::string("dname"));
 }
 
+TEST_CASE("parse_options install daemon name override") {
+    const char* argv[] = {"prog", "path", "--install-daemon", "dname"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.install_daemon);
+    REQUIRE(opts.daemon_name == std::string("dname"));
+}
+
+TEST_CASE("parse_options install service name override") {
+    const char* argv[] = {"prog", "path", "--install-service", "svc"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.install_service);
+    REQUIRE(opts.service_name == std::string("svc"));
+}
+
 TEST_CASE("parse_options start daemon name override") {
     const char* argv[] = {"prog", "path", "--start-daemon", "dname"};
     Options opts = parse_options(4, const_cast<char**>(argv));

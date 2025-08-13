@@ -44,6 +44,27 @@ void parse_service_options(Options& opts, ArgParser& parser,
     for (const auto& bf : bool_flags)
         opts.*(bf.state) = parser.has_flag(bf.flag) || cfg_flag(bf.flag);
 
+    if (opts.install_daemon) {
+        std::string val = parser.get_option("--install-daemon");
+        if (!val.empty())
+            opts.daemon_name = val;
+    }
+    if (opts.uninstall_daemon) {
+        std::string val = parser.get_option("--uninstall-daemon");
+        if (!val.empty())
+            opts.daemon_name = val;
+    }
+    if (opts.install_service) {
+        std::string val = parser.get_option("--install-service");
+        if (!val.empty())
+            opts.service_name = val;
+    }
+    if (opts.uninstall_service) {
+        std::string val = parser.get_option("--uninstall-service");
+        if (!val.empty())
+            opts.service_name = val;
+    }
+
     opts.list_services = parser.has_flag("--list-services") || parser.has_flag("--list-daemons") ||
                          cfg_flag("--list-services") || cfg_flag("--list-daemons");
 
