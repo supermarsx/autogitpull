@@ -1,5 +1,22 @@
 @echo off
 echo Installing dependencies...
+rem Auto-detect cmake and make if they are not in PATH
+where cmake >nul 2>nul
+if errorlevel 1 (
+    if exist "C:\Program Files\CMake\bin\cmake.exe" (
+        set "PATH=C:\Program Files\CMake\bin;%PATH%"
+    ) else if exist "C:\Program Files (x86)\CMake\bin\cmake.exe" (
+        set "PATH=C:\Program Files (x86)\CMake\bin;%PATH%"
+    )
+)
+where make >nul 2>nul
+if errorlevel 1 (
+    if exist "%ProgramFiles%\Git\usr\bin\make.exe" (
+        set "PATH=%ProgramFiles%\Git\usr\bin;%PATH%"
+    ) else if exist "%ProgramFiles(x86)%\GnuWin32\bin\make.exe" (
+        set "PATH=%ProgramFiles(x86)%\GnuWin32\bin;%PATH%"
+    )
+)
 rem Install cpplint if missing
 where cpplint >nul 2>nul
 if errorlevel 1 (
