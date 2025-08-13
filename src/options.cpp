@@ -4,6 +4,7 @@
 #include <climits>
 #include <filesystem>
 #include <map>
+#include <functional>
 #include <set>
 #include <string>
 #include <thread>
@@ -14,6 +15,235 @@
 #include "parse_utils.hpp"
 
 namespace fs = std::filesystem;
+
+void parse_service_options(Options& opts, ArgParser& parser,
+                           const std::function<bool(const std::string&)>& cfg_flag,
+                           const std::function<std::string(const std::string&)>& cfg_opt,
+                           const std::map<std::string, std::string>& cfg_opts) {
+    struct ControlFlag {
+        const char* flag;
+        bool Options::* state;
+        std::string Options::* name;
+    };
+    struct BoolFlag {
+        const char* flag;
+        bool Options::* state;
+    };
+    const BoolFlag bool_flags[] = {
+        {"--install-daemon", &Options::install_daemon},
+        {"--uninstall-daemon", &Options::uninstall_daemon},
+        {"--install-service", &Options::install_service},
+        {"--uninstall-service", &Options::uninstall_service},
+        {"--service-status", &Options::service_status},
+        {"--daemon-status", &Options::daemon_status},
+        {"--show-service", &Options::show_service},
+        {"--kill-all", &Options::kill_all},
+        {"--kill-on-sleep", &Options::kill_on_sleep},
+        {"--list-instances", &Options::list_instances},
+    };
+    for (const auto& bf : bool_flags)
+        opts.*(bf.state) = parser.has_flag(bf.flag) || cfg_flag(bf.flag);
+
+    opts.list_services = parser.has_flag("--list-services") || parser.has_flag("--list-daemons") ||
+                         cfg_flag("--list-services") || cfg_flag("--list-daemons");
+
+    struct ValueOpt {
+        const char* flag;
+        std::string Options::* member;
+    };
+    const ValueOpt value_opts[] = {
+        {"--daemon-config", &Options::daemon_config},
+        {"--service-config", &Options::service_config},
+        {"--service-name", &Options::service_name},
+        {"--daemon-name", &Options::daemon_name},
+    };
+    for (const auto& vo : value_opts) {
+        if (parser.has_flag(vo.flag) || cfg_opts.count(vo.flag)) {
+            std::string val = parser.get_option(vo.flag);
+            if (val.empty())
+                val = cfg_opt(vo.flag);
+            opts.*(vo.member) = val;
+        }
+    }
+
+    const ControlFlag daemon_controls[] = {
+        {"--start-daemon", &Options::start_daemon, &Options::start_daemon_name},
+        {"--stop-daemon", &Options::stop_daemon, &Options::stop_daemon_name},
+        {"--restart-daemon", &Options::restart_daemon, &Options::restart_daemon_name},
+    };
+    for (const auto& c : daemon_controls) {
+        if (parser.has_flag(c.flag) || cfg_flag(c.flag)) {
+            opts.*(c.state) = true;
+            std::string val = parser.get_option(c.flag);
+            if (val.empty())
+                val = cfg_opt(c.flag);
+            opts.*(c.name) = val;
+        }
+    }
+    const ControlFlag service_controls[] = {
+        {"--start-service", &Options::start_service, &Options::start_service_name},
+        {"--stop-service", &Options::stop_service, &Options::stop_service_name},
+        {"--restart-service", &Options::restart_service, &Options::restart_service_name},
+    };
+    for (const auto& c : service_controls) {
+        if (parser.has_flag(c.flag) || cfg_flag(c.flag)) {
+            opts.*(c.state) = true;
+            std::string val = parser.get_option(c.flag);
+            if (val.empty())
+                val = cfg_opt(c.flag);
+            opts.*(c.name) = val;
+        }
+    }
+
+    struct ForceFlag {
+        const char* flag;
+        bool Options::* state;
+    };
+    const ForceFlag force_flags[] = {
+        {"--force-stop-daemon", &Options::force_stop_daemon},
+        {"--force-restart-daemon", &Options::force_restart_daemon},
+        {"--force-stop-service", &Options::force_stop_service},
+        {"--force-restart-service", &Options::force_restart_service},
+    };
+    for (const auto& ff : force_flags)
+        opts.*(ff.state) = parser.has_flag(ff.flag) || cfg_flag(ff.flag);
+
+    if (parser.has_flag("--attach") || cfg_opts.count("--attach")) {
+        std::string val = parser.get_option("--attach");
+        if (val.empty())
+            val = cfg_opt("--attach");
+        if (val.empty())
+            throw std::runtime_error("--attach requires a name");
+        opts.attach_name = val;
+    }
+    opts.run_background = parser.has_flag("--background") || cfg_opts.count("--background");
+    if (opts.run_background) {
+        std::string val = parser.get_option("--background");
+        if (val.empty())
+            val = cfg_opt("--background");
+        if (val.empty())
+            throw std::runtime_error("--background requires a name");
+        opts.attach_name = val;
+    }
+    if (parser.has_flag("--reattach") || cfg_opts.count("--reattach")) {
+        std::string val = parser.get_option("--reattach");
+        if (val.empty())
+            val = cfg_opt("--reattach");
+        if (val.empty())
+            throw std::runtime_error("--reattach requires a name");
+        opts.attach_name = val;
+        opts.reattach = true;
+    }
+
+    if (opts.start_service_name.empty())
+        opts.start_service_name = opts.service_name;
+    if (opts.stop_service_name.empty())
+        opts.stop_service_name = opts.service_name;
+    if (opts.restart_service_name.empty())
+        opts.restart_service_name = opts.service_name;
+    if (opts.start_daemon_name.empty())
+        opts.start_daemon_name = opts.daemon_name;
+    if (opts.stop_daemon_name.empty())
+        opts.stop_daemon_name = opts.daemon_name;
+    if (opts.restart_daemon_name.empty())
+        opts.restart_daemon_name = opts.daemon_name;
+}
+
+void parse_tracker_options(Options& opts, ArgParser& parser,
+                           const std::function<bool(const std::string&)>& cfg_flag) {
+    struct TrackerFlag {
+        const char* flag;
+        bool negative;
+        bool Options::* member;
+    };
+    const TrackerFlag trackers[] = {
+        {"--no-cpu-tracker", true, &Options::cpu_tracker},
+        {"--no-mem-tracker", true, &Options::mem_tracker},
+        {"--no-thread-tracker", true, &Options::thread_tracker},
+        {"--net-tracker", false, &Options::net_tracker},
+    };
+    for (const auto& t : trackers) {
+        bool val = cfg_flag(t.flag);
+        if (t.negative) {
+            opts.*(t.member) = !val;
+            if (parser.has_flag(t.flag))
+                opts.*(t.member) = false;
+        } else {
+            opts.*(t.member) = val;
+            if (parser.has_flag(t.flag))
+                opts.*(t.member) = true;
+        }
+    }
+}
+
+void parse_limits(Options& opts, ArgParser& parser,
+                  const std::function<std::string(const std::string&)>& cfg_opt,
+                  const std::map<std::string, std::string>& cfg_opts) {
+    bool ok = false;
+    if (cfg_opts.count("--cpu-percent")) {
+        std::string v = cfg_opt("--cpu-percent");
+        if (!v.empty() && v.back() == '%')
+            v.pop_back();
+        opts.cpu_percent_limit = parse_double(v, 0.0, 100.0, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-percent");
+    }
+    if (parser.has_flag("--cpu-percent")) {
+        std::string v = parser.get_option("--cpu-percent");
+        if (!v.empty() && v.back() == '%')
+            v.pop_back();
+        opts.cpu_percent_limit = parse_double(v, 0.0, 100.0, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-percent");
+    }
+    if (cfg_opts.count("--cpu-cores")) {
+        opts.cpu_core_mask = parse_ull(cfg_opt("--cpu-cores"), 0, ULLONG_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-cores");
+    }
+    if (parser.has_flag("--cpu-cores")) {
+        opts.cpu_core_mask = parse_ull(parser, "--cpu-cores", 0, ULLONG_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --cpu-cores");
+    }
+
+    struct ByteLimit {
+        const char* flag;
+        size_t Options::* member;
+        size_t divisor;
+    };
+    const ByteLimit limits[] = {
+        {"--mem-limit", &Options::mem_limit, 1024ull * 1024ull},
+        {"--download-limit", &Options::download_limit, 1024ull},
+        {"--upload-limit", &Options::upload_limit, 1024ull},
+        {"--disk-limit", &Options::disk_limit, 1024ull},
+        {"--total-traffic-limit", &Options::total_traffic_limit, 1},
+    };
+    for (const auto& lim : limits) {
+        if (cfg_opts.count(lim.flag)) {
+            size_t bytes = parse_bytes(cfg_opt(lim.flag), 0, SIZE_MAX, ok);
+            if (!ok)
+                throw std::runtime_error(std::string("Invalid value for ") + lim.flag);
+            opts.*(lim.member) = bytes / lim.divisor;
+        }
+        if (parser.has_flag(lim.flag)) {
+            size_t bytes = parse_bytes(parser.get_option(lim.flag), 0, SIZE_MAX, ok);
+            if (!ok)
+                throw std::runtime_error(std::string("Invalid value for ") + lim.flag);
+            opts.*(lim.member) = bytes / lim.divisor;
+        }
+    }
+    if (cfg_opts.count("--max-depth")) {
+        opts.max_depth = parse_size_t(cfg_opt("--max-depth"), 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --max-depth");
+    }
+    if (parser.has_flag("--max-depth")) {
+        opts.max_depth = parse_size_t(parser, "--max-depth", 0, SIZE_MAX, ok);
+        if (!ok)
+            throw std::runtime_error("Invalid value for --max-depth");
+    }
+}
 
 Options parse_options(int argc, char* argv[]) {
     // Parse config file option first
@@ -300,120 +530,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.single_repo = parser.has_flag("--single-repo") || cfg_flag("--single-repo");
     if (opts.single_run)
         opts.cli = true;
-    opts.install_daemon = parser.has_flag("--install-daemon") || cfg_flag("--install-daemon");
-    opts.uninstall_daemon = parser.has_flag("--uninstall-daemon") || cfg_flag("--uninstall-daemon");
-    opts.start_daemon = parser.has_flag("--start-daemon") || cfg_flag("--start-daemon");
-    if (opts.start_daemon) {
-        opts.start_daemon_name = parser.get_option("--start-daemon");
-        if (opts.start_daemon_name.empty())
-            opts.start_daemon_name = cfg_opt("--start-daemon");
-    }
-    opts.stop_daemon = parser.has_flag("--stop-daemon") || cfg_flag("--stop-daemon");
-    if (opts.stop_daemon) {
-        opts.stop_daemon_name = parser.get_option("--stop-daemon");
-        if (opts.stop_daemon_name.empty())
-            opts.stop_daemon_name = cfg_opt("--stop-daemon");
-    }
-    opts.force_stop_daemon =
-        parser.has_flag("--force-stop-daemon") || cfg_flag("--force-stop-daemon");
-    opts.restart_daemon = parser.has_flag("--restart-daemon") || cfg_flag("--restart-daemon");
-    if (opts.restart_daemon) {
-        opts.restart_daemon_name = parser.get_option("--restart-daemon");
-        if (opts.restart_daemon_name.empty())
-            opts.restart_daemon_name = cfg_opt("--restart-daemon");
-    }
-    opts.force_restart_daemon =
-        parser.has_flag("--force-restart-daemon") || cfg_flag("--force-restart-daemon");
-    opts.service_status = parser.has_flag("--service-status") || cfg_flag("--service-status");
-    opts.daemon_status = parser.has_flag("--daemon-status") || cfg_flag("--daemon-status");
-    if (parser.has_flag("--daemon-config") || cfg_opts.count("--daemon-config")) {
-        std::string val = parser.get_option("--daemon-config");
-        if (val.empty())
-            val = cfg_opt("--daemon-config");
-        opts.daemon_config = val;
-    }
-    opts.install_service = parser.has_flag("--install-service") || cfg_flag("--install-service");
-    opts.uninstall_service =
-        parser.has_flag("--uninstall-service") || cfg_flag("--uninstall-service");
-    opts.start_service = parser.has_flag("--start-service") || cfg_flag("--start-service");
-    if (opts.start_service) {
-        opts.start_service_name = parser.get_option("--start-service");
-        if (opts.start_service_name.empty())
-            opts.start_service_name = cfg_opt("--start-service");
-    }
-    opts.stop_service = parser.has_flag("--stop-service") || cfg_flag("--stop-service");
-    if (opts.stop_service) {
-        opts.stop_service_name = parser.get_option("--stop-service");
-        if (opts.stop_service_name.empty())
-            opts.stop_service_name = cfg_opt("--stop-service");
-    }
-    opts.force_stop_service =
-        parser.has_flag("--force-stop-service") || cfg_flag("--force-stop-service");
-    opts.restart_service = parser.has_flag("--restart-service") || cfg_flag("--restart-service");
-    if (opts.restart_service) {
-        opts.restart_service_name = parser.get_option("--restart-service");
-        if (opts.restart_service_name.empty())
-            opts.restart_service_name = cfg_opt("--restart-service");
-    }
-    opts.force_restart_service =
-        parser.has_flag("--force-restart-service") || cfg_flag("--force-restart-service");
-    if (parser.has_flag("--service-config") || cfg_opts.count("--service-config")) {
-        std::string val = parser.get_option("--service-config");
-        if (val.empty())
-            val = cfg_opt("--service-config");
-        opts.service_config = val;
-    }
-    if (parser.has_flag("--service-name") || cfg_opts.count("--service-name")) {
-        std::string val = parser.get_option("--service-name");
-        if (val.empty())
-            val = cfg_opt("--service-name");
-        opts.service_name = val;
-    }
-    if (parser.has_flag("--daemon-name") || cfg_opts.count("--daemon-name")) {
-        std::string val = parser.get_option("--daemon-name");
-        if (val.empty())
-            val = cfg_opt("--daemon-name");
-        opts.daemon_name = val;
-    }
-    if (opts.start_service_name.empty())
-        opts.start_service_name = opts.service_name;
-    if (opts.stop_service_name.empty())
-        opts.stop_service_name = opts.service_name;
-    if (opts.restart_service_name.empty())
-        opts.restart_service_name = opts.service_name;
-    if (opts.start_daemon_name.empty())
-        opts.start_daemon_name = opts.daemon_name;
-    if (opts.stop_daemon_name.empty())
-        opts.stop_daemon_name = opts.daemon_name;
-    if (opts.restart_daemon_name.empty())
-        opts.restart_daemon_name = opts.daemon_name;
-    opts.show_service = parser.has_flag("--show-service") || cfg_flag("--show-service");
-    if (parser.has_flag("--attach") || cfg_opts.count("--attach")) {
-        std::string val = parser.get_option("--attach");
-        if (val.empty())
-            val = cfg_opt("--attach");
-        if (val.empty())
-            throw std::runtime_error("--attach requires a name");
-        opts.attach_name = val;
-    }
-    opts.run_background = parser.has_flag("--background") || cfg_opts.count("--background");
-    if (opts.run_background) {
-        std::string val = parser.get_option("--background");
-        if (val.empty())
-            val = cfg_opt("--background");
-        if (val.empty())
-            throw std::runtime_error("--background requires a name");
-        opts.attach_name = val;
-    }
-    if (parser.has_flag("--reattach") || cfg_opts.count("--reattach")) {
-        std::string val = parser.get_option("--reattach");
-        if (val.empty())
-            val = cfg_opt("--reattach");
-        if (val.empty())
-            throw std::runtime_error("--reattach requires a name");
-        opts.attach_name = val;
-        opts.reattach = true;
-    }
+    parse_service_options(opts, parser, cfg_flag, cfg_opt, cfg_opts);
     opts.show_runtime = parser.has_flag("--show-runtime") || cfg_flag("--show-runtime");
     opts.show_repo_count = parser.has_flag("--show-repo-count") || cfg_flag("--show-repo-count");
     if (parser.has_flag("--max-runtime") || cfg_opts.count("--max-runtime")) {
@@ -454,11 +571,6 @@ Options parse_options(int argc, char* argv[]) {
             opts.respawn_window = std::chrono::minutes(mins);
         }
     }
-    opts.kill_all = parser.has_flag("--kill-all") || cfg_flag("--kill-all");
-    opts.kill_on_sleep = parser.has_flag("--kill-on-sleep") || cfg_flag("--kill-on-sleep");
-    opts.list_instances = parser.has_flag("--list-instances") || cfg_flag("--list-instances");
-    opts.list_services = parser.has_flag("--list-services") || parser.has_flag("--list-daemons") ||
-                         cfg_flag("--list-services") || cfg_flag("--list-daemons");
     opts.rescan_new = parser.has_flag("--rescan-new") || cfg_flag("--rescan-new");
     if (opts.rescan_new) {
         std::string val = parser.get_option("--rescan-new");
@@ -622,113 +734,8 @@ Options parse_options(int argc, char* argv[]) {
         if (!ok)
             throw std::runtime_error("Invalid value for --max-threads");
     }
-    if (cfg_opts.count("--cpu-percent")) {
-        std::string v = cfg_opt("--cpu-percent");
-        if (!v.empty() && v.back() == '%')
-            v.pop_back();
-        opts.cpu_percent_limit = parse_double(v, 0.0, 100.0, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --cpu-percent");
-    }
-    if (parser.has_flag("--cpu-percent")) {
-        std::string v = parser.get_option("--cpu-percent");
-        if (!v.empty() && v.back() == '%')
-            v.pop_back();
-        opts.cpu_percent_limit = parse_double(v, 0.0, 100.0, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --cpu-percent");
-    }
-    if (cfg_opts.count("--cpu-cores")) {
-        opts.cpu_core_mask = parse_ull(cfg_opt("--cpu-cores"), 0, ULLONG_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --cpu-cores");
-    }
-    if (parser.has_flag("--cpu-cores")) {
-        opts.cpu_core_mask = parse_ull(parser, "--cpu-cores", 0, ULLONG_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --cpu-cores");
-    }
-    if (cfg_opts.count("--mem-limit")) {
-        size_t bytes = parse_bytes(cfg_opt("--mem-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --mem-limit");
-        opts.mem_limit = bytes / (1024ull * 1024ull);
-    }
-    if (parser.has_flag("--mem-limit")) {
-        size_t bytes = parse_bytes(parser.get_option("--mem-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --mem-limit");
-        opts.mem_limit = bytes / (1024ull * 1024ull);
-    }
-    if (cfg_opts.count("--download-limit")) {
-        size_t bytes = parse_bytes(cfg_opt("--download-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --download-limit");
-        opts.download_limit = bytes / 1024ull;
-    }
-    if (parser.has_flag("--download-limit")) {
-        size_t bytes = parse_bytes(parser.get_option("--download-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --download-limit");
-        opts.download_limit = bytes / 1024ull;
-    }
-    if (cfg_opts.count("--upload-limit")) {
-        size_t bytes = parse_bytes(cfg_opt("--upload-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --upload-limit");
-        opts.upload_limit = bytes / 1024ull;
-    }
-    if (parser.has_flag("--upload-limit")) {
-        size_t bytes = parse_bytes(parser.get_option("--upload-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --upload-limit");
-        opts.upload_limit = bytes / 1024ull;
-    }
-    if (cfg_opts.count("--disk-limit")) {
-        size_t bytes = parse_bytes(cfg_opt("--disk-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --disk-limit");
-        opts.disk_limit = bytes / 1024ull;
-    }
-    if (parser.has_flag("--disk-limit")) {
-        size_t bytes = parse_bytes(parser.get_option("--disk-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --disk-limit");
-        opts.disk_limit = bytes / 1024ull;
-    }
-    if (cfg_opts.count("--total-traffic-limit")) {
-        opts.total_traffic_limit = parse_bytes(cfg_opt("--total-traffic-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --total-traffic-limit");
-    }
-    if (parser.has_flag("--total-traffic-limit")) {
-        opts.total_traffic_limit =
-            parse_bytes(parser.get_option("--total-traffic-limit"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --total-traffic-limit");
-    }
-    if (cfg_opts.count("--max-depth")) {
-        opts.max_depth = parse_size_t(cfg_opt("--max-depth"), 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --max-depth");
-    }
-    if (parser.has_flag("--max-depth")) {
-        opts.max_depth = parse_size_t(parser, "--max-depth", 0, SIZE_MAX, ok);
-        if (!ok)
-            throw std::runtime_error("Invalid value for --max-depth");
-    }
-    opts.cpu_tracker = !cfg_flag("--no-cpu-tracker");
-    opts.mem_tracker = !cfg_flag("--no-mem-tracker");
-    opts.thread_tracker = !cfg_flag("--no-thread-tracker");
-    opts.net_tracker = cfg_flag("--net-tracker");
-    if (parser.has_flag("--no-cpu-tracker"))
-        opts.cpu_tracker = false;
-    if (parser.has_flag("--no-mem-tracker"))
-        opts.mem_tracker = false;
-    if (parser.has_flag("--no-thread-tracker"))
-        opts.thread_tracker = false;
-    if (parser.has_flag("--net-tracker"))
-        opts.net_tracker = true;
+    parse_limits(opts, parser, cfg_opt, cfg_opts);
+    parse_tracker_options(opts, parser, cfg_flag);
     opts.debug_memory = cfg_flag("--debug-memory") || parser.has_flag("--debug-memory");
     opts.dump_state = cfg_flag("--dump-state") || parser.has_flag("--dump-state");
     if (cfg_opts.count("--dump-large")) {
