@@ -100,10 +100,10 @@ static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& s
             log_debug(p.string() + " tagged: not a git repo");
         return false;
     }
-    ri.commit = git::get_local_hash(p);
+    ri.commit = git::get_local_hash(p).value_or("");
     if (ri.commit.size() > 7)
         ri.commit = ri.commit.substr(0, 7);
-    std::string origin = git::get_origin_url(p);
+    std::string origin = git::get_origin_url(p).value_or("");
     if (!include_private) {
         if (!git::is_github_url(origin)) {
             ri.status = RS_SKIPPED;
@@ -127,7 +127,7 @@ static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& s
             return false;
         }
     }
-    ri.branch = git::get_current_branch(p);
+    ri.branch = git::get_current_branch(p).value_or("");
     if (ri.branch.empty() || ri.branch == "HEAD") {
         ri.status = RS_HEAD_PROBLEM;
         ri.message = "Detached HEAD or branch error";
@@ -142,9 +142,10 @@ static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_on
                                   bool include_private, std::set<fs::path>& skip_repos,
                                   bool was_accessible, bool skip_accessible_errors) {
     if (hash_check) {
-        std::string local = git::get_local_hash(p);
+        std::string local = git::get_local_hash(p).value_or("");
         bool auth_fail = false;
-        std::string remote = git::get_remote_hash(p, ri.branch, include_private, &auth_fail);
+        std::string remote =
+            git::get_remote_hash(p, ri.branch, include_private, &auth_fail).value_or("");
         ri.auth_failed = auth_fail;
         if (local.empty() || remote.empty()) {
             ri.status = RS_ERROR;
@@ -166,7 +167,7 @@ static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_on
     if (check_only) {
         ri.status = RS_REMOTE_AHEAD;
         ri.message = hash_check ? "Remote ahead" : "Update possible";
-        ri.commit = git::get_local_hash(p);
+        ri.commit = git::get_local_hash(p).value_or("");
         if (ri.commit.size() > 7)
             ri.commit = ri.commit.substr(0, 7);
         if (logger_initialized())
@@ -227,7 +228,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
     if (code == 0) {
         ri.status = RS_PULL_OK;
         ri.message = "Pulled successfully";
-        ri.commit = git::get_local_hash(p);
+        ri.commit = git::get_local_hash(p).value_or("");
         if (ri.commit.size() > 7)
             ri.commit = ri.commit.substr(0, 7);
         ri.pulled = true;
@@ -236,7 +237,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
     } else if (code == 1) {
         ri.status = RS_PKGLOCK_FIXED;
         ri.message = "package-lock.json auto-reset & pulled";
-        ri.commit = git::get_local_hash(p);
+        ri.commit = git::get_local_hash(p).value_or("");
         if (ri.commit.size() > 7)
             ri.commit = ri.commit.substr(0, 7);
         ri.pulled = true;
