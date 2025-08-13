@@ -24,6 +24,7 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <vector>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -31,12 +32,11 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#endif
-#ifdef __linux__
 #include <sys/socket.h>
 #include <netinet/in.h>
+#endif
+#ifdef __linux__
 #include <sys/un.h>
-#include <vector>
 #endif
 
 namespace fs = std::filesystem;
