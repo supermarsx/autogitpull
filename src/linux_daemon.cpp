@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <vector>
 #include <cstdlib>
+#include <iomanip>
 
 namespace fs = std::filesystem;
 
@@ -67,9 +68,9 @@ bool create_service_unit(const std::string& name, const std::string& exec_path,
     if (!out.is_open())
         return false;
     out << "[Unit]\nDescription=autogitpull daemon\nAfter=network.target\n\n";
-    out << "[Service]\nType=simple\nUser=" << user << "\nExecStart=" << exec_path;
+    out << "[Service]\nType=simple\nUser=" << user << "\nExecStart=" << std::quoted(exec_path);
     if (!config_file.empty())
-        out << " --daemon-config " << config_file;
+        out << " --daemon-config " << std::quoted(config_file);
     if (persist)
         out << " --persist";
     out << "\nRestart=on-failure\n\n";
