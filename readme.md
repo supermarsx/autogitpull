@@ -105,6 +105,15 @@ The full catalogue of flags with their default values is documented in
 - `--print-skipped` – Print skipped repositories once.
 - `--keep-first` – Keep repositories validated on the first scan.
 
+#### Daemon management
+On macOS and Linux, `autogitpull` can run as a background service via
+`launchd` or `systemd`:
+
+- `--install-daemon` – install the service unit.
+- `--uninstall-daemon` – remove the service unit.
+- `--start-daemon` / `--stop-daemon` – control the service.
+- `--daemon-status` – check whether it is installed and running.
+
 #### Logging
 - `--log-dir` (`-d`) `<path>` – Directory for pull logs.
 - `--log-file` (`-l`) `<path>` – File for general logs.

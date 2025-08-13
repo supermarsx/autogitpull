@@ -10,7 +10,11 @@
 #include "history_utils.hpp"
 #include "version.hpp"
 #ifndef _WIN32
+#ifdef __APPLE__
+#include "macos_daemon.hpp"
+#else
 #include "linux_daemon.hpp"
+#endif
 #else
 #include "windows_service.hpp"
 #endif
@@ -75,6 +79,30 @@ int main(int argc, char* argv[]) {
             for (const auto& [name, st] : svcs)
                 std::cout << name << " " << (st.running ? "running" : "stopped") << "\n";
             return 0;
+        }
+        if (opts.install_service || opts.install_daemon) {
+#ifndef _WIN32
+            std::string exec = fs::absolute(argv[0]).string();
+            std::string cfg = opts.install_service ? opts.service_config : opts.daemon_config;
+            std::string name = opts.install_service ? opts.service_name : opts.daemon_name;
+            const char* user = std::getenv("USER");
+            std::string usr = user ? user : "root";
+            return procutil::create_service_unit(name, exec, cfg, usr, opts.persist) ? 0 : 1;
+#else
+            std::string exec = fs::absolute(argv[0]).string();
+            std::string cfg = opts.install_service ? opts.service_config : opts.daemon_config;
+            std::string name = opts.install_service ? opts.service_name : opts.daemon_name;
+            return winservice::install_service(name, exec, cfg, opts.persist) ? 0 : 1;
+#endif
+        }
+        if (opts.uninstall_service || opts.uninstall_daemon) {
+#ifndef _WIN32
+            std::string name = opts.uninstall_service ? opts.service_name : opts.daemon_name;
+            return procutil::remove_service_unit(name) ? 0 : 1;
+#else
+            std::string name = opts.uninstall_service ? opts.service_name : opts.daemon_name;
+            return winservice::uninstall_service(name) ? 0 : 1;
+#endif
         }
         if (opts.service_status) {
 #ifndef _WIN32
