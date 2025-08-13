@@ -5,6 +5,54 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
                   unsigned int allowed_types, void* payload);
 }
 
+TEST_CASE("parse_service_options start service flag") {
+    const char* argv[] = {"prog", "--service-name", "svc", "--start-service"};
+    ArgParser parser(4, const_cast<char**>(argv));
+    Options opts;
+    auto cfg_flag = [](const std::string&) { return false; };
+    auto cfg_opt = [](const std::string&) -> std::string { return ""; };
+    std::map<std::string, std::string> cfg_opts;
+    parse_service_options(opts, parser, cfg_flag, cfg_opt, cfg_opts);
+    REQUIRE(opts.start_service);
+    REQUIRE(opts.service_name == std::string("svc"));
+    REQUIRE(opts.start_service_name == std::string("svc"));
+}
+
+TEST_CASE("parse_service_options missing attach or background names") {
+    auto cfg_flag = [](const std::string&) { return false; };
+    auto cfg_opt = [](const std::string&) -> std::string { return ""; };
+    std::map<std::string, std::string> cfg_opts;
+
+    {
+        const char* argv[] = {"prog", "--attach"};
+        ArgParser parser(2, const_cast<char**>(argv));
+        Options opts;
+        REQUIRE_THROWS_AS(parse_service_options(opts, parser, cfg_flag, cfg_opt, cfg_opts),
+                          std::runtime_error);
+    }
+
+    {
+        const char* argv[] = {"prog", "--background"};
+        ArgParser parser(2, const_cast<char**>(argv));
+        Options opts;
+        REQUIRE_THROWS_AS(parse_service_options(opts, parser, cfg_flag, cfg_opt, cfg_opts),
+                          std::runtime_error);
+    }
+}
+
+TEST_CASE("parse_tracker_options config and flags") {
+    const char* argv[] = {"prog", "--no-cpu-tracker", "--net-tracker"};
+    ArgParser parser(3, const_cast<char**>(argv));
+    std::set<std::string> cfg_flags{"--no-mem-tracker"};
+    auto cfg_flag = [&](const std::string& f) { return cfg_flags.count(f) > 0; };
+    Options opts;
+    parse_tracker_options(opts, parser, cfg_flag);
+    REQUIRE_FALSE(opts.cpu_tracker);
+    REQUIRE_FALSE(opts.mem_tracker);
+    REQUIRE(opts.net_tracker);
+    REQUIRE(opts.thread_tracker);
+}
+
 TEST_CASE("parse_options service flags") {
     const char* argv[] = {"prog", "path",     "--install-service", "--service-config",
                           "cfg",  "--persist"};
