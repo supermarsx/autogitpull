@@ -38,7 +38,6 @@ Process:
   keep-first: False
 Config:
   auto-config: False
-  auto-reload-config: False
   rerun-last: False
   save-args: False
   enable-history: False

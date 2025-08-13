@@ -451,9 +451,12 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                     break;
                 const auto& p = all_repos[idx];
                 RepoOptions ro;
-                auto it_ro = repo_settings.find(p);
-                if (it_ro != repo_settings.end())
-                    ro = it_ro->second;
+                {
+                    std::lock_guard<std::mutex> lk(mtx);
+                    auto it_ro = repo_settings.find(p);
+                    if (it_ro != repo_settings.end())
+                        ro = it_ro->second;
+                }
                 if (ro.exclude.value_or(false)) {
                     std::lock_guard<std::mutex> lk(mtx);
                     RepoInfo& info = repo_infos[p];

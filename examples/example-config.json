@@ -42,7 +42,6 @@
     },
     "Config": {
         "auto-config": false,
-        "auto-reload-config": false,
         "rerun-last": false,
         "save-args": false,
         "enable-history": false,
