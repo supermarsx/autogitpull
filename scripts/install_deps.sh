@@ -3,6 +3,22 @@ set -e
 echo "Installing dependencies..."
 
 
+# Auto-detect make and cmake if missing from PATH
+for tool in make cmake; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        for dir in /usr/local/opt/cmake/bin /usr/local/bin /opt/homebrew/bin /usr/bin; do
+            if [ -x "$dir/$tool" ]; then
+                export PATH="$dir:$PATH"
+                break
+            fi
+        done
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            echo "$tool not found. Please install $tool or add it to PATH." >&2
+        fi
+    fi
+done
+
+
 # Install cpplint if missing
 if ! command -v cpplint >/dev/null; then
     if command -v pip3 >/dev/null; then
