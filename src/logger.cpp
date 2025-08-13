@@ -13,6 +13,7 @@ static std::mutex g_log_mtx;
 static LogLevel g_min_level = LogLevel::INFO;
 static std::string g_log_path; // NOLINT(runtime/string)
 static size_t g_max_size = 0;
+static bool g_json_log = false;
 #ifdef __linux__
 static bool g_syslog = false;
 static int g_facility = LOG_USER;
@@ -52,16 +53,63 @@ void set_log_level(LogLevel level) {
     g_min_level = level;
 }
 
+void set_json_logging(bool enable) {
+    std::lock_guard<std::mutex> lk(g_log_mtx);
+    g_json_log = enable;
+}
+
 bool logger_initialized() {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     return g_log_ofs.is_open();
 }
 
-static void log(LogLevel level, const std::string& label, const std::string& msg) {
+static std::string json_escape(const std::string& in) {
+    std::string out;
+    out.reserve(in.size());
+    for (char c : in) {
+        switch (c) {
+        case '"':
+            out += "\\\"";
+            break;
+        case '\\':
+            out += "\\\\";
+            break;
+        case '\n':
+            out += "\\n";
+            break;
+        case '\r':
+            out += "\\r";
+            break;
+        case '\t':
+            out += "\\t";
+            break;
+        default:
+            out += c;
+            break;
+        }
+    }
+    return out;
+}
+
+static void log(LogLevel level, const std::string& label, const std::string& msg,
+                const std::string& data = "") {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     if (!g_log_ofs.is_open() || level < g_min_level)
         return;
-    g_log_ofs << "[" << timestamp() << "] [" << label << "] " << msg << std::endl;
+    std::string line;
+    std::string ts = timestamp();
+    if (g_json_log) {
+        line = "{\"timestamp\":\"" + json_escape(ts) + "\",\"level\":\"" + label + "\",\"msg\":\"" +
+               json_escape(msg) + "\"";
+        if (!data.empty())
+            line += ",\"data\":" + data;
+        line += "}";
+    } else {
+        line = "[" + ts + "] [" + label + "] " + msg;
+        if (!data.empty())
+            line += " " + data;
+    }
+    g_log_ofs << line << std::endl;
     if (g_max_size > 0) {
         g_log_ofs.flush();
         std::error_code ec;
@@ -87,17 +135,67 @@ static void log(LogLevel level, const std::string& label, const std::string& msg
             pri = LOG_ERR;
             break;
         }
-        syslog(pri, "%s", msg.c_str());
+        syslog(pri, "%s", line.c_str());
     }
 #endif
 }
 
+void log_event(LogLevel level, const std::string& message) {
+    const char* label = "INFO";
+    switch (level) {
+    case LogLevel::DEBUG:
+        label = "DEBUG";
+        break;
+    case LogLevel::INFO:
+        label = "INFO";
+        break;
+    case LogLevel::WARNING:
+        label = "WARNING";
+        break;
+    case LogLevel::ERR:
+        label = "ERROR";
+        break;
+    }
+    log(level, label, message);
+}
+
+void log_event(LogLevel level, const std::string& message, const std::string& data) {
+    const char* label = "INFO";
+    switch (level) {
+    case LogLevel::DEBUG:
+        label = "DEBUG";
+        break;
+    case LogLevel::INFO:
+        label = "INFO";
+        break;
+    case LogLevel::WARNING:
+        label = "WARNING";
+        break;
+    case LogLevel::ERR:
+        label = "ERROR";
+        break;
+    }
+    log(level, label, message, data);
+}
+
 void log_debug(const std::string& msg) { log(LogLevel::DEBUG, "DEBUG", msg); }
+void log_debug(const std::string& msg, const std::string& data) {
+    log(LogLevel::DEBUG, "DEBUG", msg, data);
+}
 void log_info(const std::string& msg) { log(LogLevel::INFO, "INFO", msg); }
+void log_info(const std::string& msg, const std::string& data) {
+    log(LogLevel::INFO, "INFO", msg, data);
+}
 
 void log_warning(const std::string& msg) { log(LogLevel::WARNING, "WARNING", msg); }
+void log_warning(const std::string& msg, const std::string& data) {
+    log(LogLevel::WARNING, "WARNING", msg, data);
+}
 
 void log_error(const std::string& msg) { log(LogLevel::ERR, "ERROR", msg); }
+void log_error(const std::string& msg, const std::string& data) {
+    log(LogLevel::ERR, "ERROR", msg, data);
+}
 
 #ifdef __linux__
 static void close_logger() {

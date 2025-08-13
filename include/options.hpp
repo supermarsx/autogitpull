@@ -31,6 +31,7 @@ struct Options {
     std::filesystem::path ssh_private_key;
     std::filesystem::path credential_file;
     size_t max_log_size = 0;
+    bool json_log = false;
     int interval = 30;
     std::chrono::milliseconds refresh_ms{250};
     unsigned int cpu_poll_sec = 5;
