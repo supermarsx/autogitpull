@@ -195,6 +195,12 @@ TEST_CASE("parse_options refresh rate units") {
     REQUIRE(opts.refresh_ms == std::chrono::seconds(2));
 }
 
+TEST_CASE("parse_options respawn delay units") {
+    const char* argv[] = {"prog", "path", "--respawn-delay", "2s"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.respawn_delay == std::chrono::seconds(2));
+}
+
 TEST_CASE("parse_options poll duration units") {
     const char* argv[] = {"prog",       "path", "--cpu-poll",    "2m",
                           "--mem-poll", "1m",   "--thread-poll", "30s"};

@@ -412,6 +412,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--max-runtime",
                                       "--persist",
                                       "--respawn-limit",
+                                      "--respawn-delay",
                                       "--kill-all",
                                       "--kill-on-sleep",
                                       "--list-instances",
@@ -576,6 +577,15 @@ Options parse_options(int argc, char* argv[]) {
                 throw std::runtime_error("Invalid value for --respawn-limit");
             opts.respawn_window = std::chrono::minutes(mins);
         }
+    }
+    if (parser.has_flag("--respawn-delay") || cfg_opts.count("--respawn-delay")) {
+        std::string val = parser.get_option("--respawn-delay");
+        if (val.empty())
+            val = cfg_opt("--respawn-delay");
+        bool ok = false;
+        opts.respawn_delay = parse_time_ms(val, ok);
+        if (!ok || opts.respawn_delay.count() < 0)
+            throw std::runtime_error("Invalid value for --respawn-delay");
     }
     opts.rescan_new = parser.has_flag("--rescan-new") || cfg_flag("--rescan-new");
     if (opts.rescan_new) {

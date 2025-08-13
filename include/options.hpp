@@ -111,6 +111,7 @@ struct Options {
     bool persist = false;
     int respawn_max = 0;
     std::chrono::minutes respawn_window{10};
+    std::chrono::milliseconds respawn_delay{1000};
     bool kill_all = false;
     bool kill_on_sleep = false;
     bool list_instances = false;

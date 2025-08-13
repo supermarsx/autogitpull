@@ -20,6 +20,7 @@ int run_with_monitor(const Options& opts) {
     if (!opts.persist)
         return g_worker(opts);
     std::deque<std::chrono::steady_clock::time_point> starts;
+    int fail_count = 0;
     while (true) {
         auto now = std::chrono::steady_clock::now();
         starts.push_back(now);
@@ -40,8 +41,12 @@ int run_with_monitor(const Options& opts) {
             rc = 1;
         }
         log_info("Worker exited with code " + std::to_string(rc));
-        (void)rc;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        auto delay = opts.respawn_delay * (1LL << fail_count);
+        std::this_thread::sleep_for(delay);
+        if (rc != 0)
+            ++fail_count;
+        else
+            fail_count = 0;
     }
     return 0;
 }
