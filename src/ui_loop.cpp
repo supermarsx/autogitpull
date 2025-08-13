@@ -529,7 +529,7 @@ int run_event_loop(const Options& opts) {
                 opts.mem_limit, opts.download_limit, opts.upload_limit, opts.disk_limit,
                 opts.silent, opts.cli, opts.force_pull, opts.skip_timeout,
                 opts.skip_accessible_errors, opts.updated_since, opts.show_pull_author,
-                opts.pull_timeout, opts.retry_skipped, opts.repo_overrides);
+                opts.pull_timeout, opts.retry_skipped, opts.repo_settings);
             countdown_ms = std::chrono::seconds(interval);
         }
 #ifndef _WIN32

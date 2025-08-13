@@ -408,7 +408,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t up_limit, size_t disk_limit, bool silent, bool cli_mode, bool force_pull,
                 bool skip_timeout, bool skip_accessible_errors, std::chrono::seconds updated_since,
                 bool show_pull_author, std::chrono::seconds pull_timeout, bool retry_skipped,
-                const std::map<std::filesystem::path, RepoOptions>& overrides) {
+                const std::map<std::filesystem::path, RepoOptions>& repo_settings) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
@@ -446,8 +446,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                     break;
                 const auto& p = all_repos[idx];
                 RepoOptions ro;
-                auto it_ro = overrides.find(p);
-                if (it_ro != overrides.end())
+                auto it_ro = repo_settings.find(p);
+                if (it_ro != repo_settings.end())
                     ro = it_ro->second;
                 if (ro.exclude.value_or(false)) {
                     std::lock_guard<std::mutex> lk(mtx);

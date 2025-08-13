@@ -69,7 +69,30 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
                 continue;
             const std::string key_name = it->first.as<std::string>();
             const YAML::Node& node = it->second;
-            if (node.IsMap()) {
+            if (key_name == "repositories" && node.IsMap()) {
+                for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
+                    if (!it2->first.IsScalar())
+                        continue;
+                    const std::string repo_key = it2->first.as<std::string>();
+                    const YAML::Node& repo_node = it2->second;
+                    auto& m = repo_opts[repo_key];
+                    if (repo_node.IsMap()) {
+                        for (auto it3 = repo_node.begin(); it3 != repo_node.end(); ++it3) {
+                            if (!it3->first.IsScalar())
+                                continue;
+                            std::string subk = "--" + it3->first.as<std::string>();
+                            const YAML::Node& val = it3->second;
+                            if (val.IsScalar() ||
+                                (val.IsDefined() && !val.IsSequence() && !val.IsMap()))
+                                m[subk] = yaml_node_to_string(val);
+                            else if (val.IsNull())
+                                m[subk] = "";
+                        }
+                    } else if (repo_node.IsNull()) {
+                        m.clear();
+                    }
+                }
+            } else if (node.IsMap()) {
                 if (key_name.find('/') != std::string::npos ||
                     key_name.find('\\') != std::string::npos) {
                     auto& m = repo_opts[key_name];
@@ -136,7 +159,36 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
         for (auto it = root.begin(); it != root.end(); ++it) {
             const auto& val = it.value();
             const std::string key_name = it.key();
-            if (val.is_object()) {
+            if (key_name == "repositories" && val.is_object()) {
+                for (auto repo_it = val.begin(); repo_it != val.end(); ++repo_it) {
+                    const std::string repo_key = repo_it.key();
+                    const auto& repo_node = repo_it.value();
+                    auto& m = repo_opts[repo_key];
+                    if (repo_node.is_object()) {
+                        for (auto sub = repo_node.begin(); sub != repo_node.end(); ++sub) {
+                            std::string key = "--" + sub.key();
+                            const auto& v = sub.value();
+                            if (v.is_string()) {
+                                m[key] = v.get<std::string>();
+                            } else if (v.is_boolean()) {
+                                m[key] = v.get<bool>() ? "true" : "false";
+                            } else if (v.is_number_integer()) {
+                                m[key] = std::to_string(v.get<long long>());
+                            } else if (v.is_number_unsigned()) {
+                                m[key] = std::to_string(v.get<unsigned long long>());
+                            } else if (v.is_number_float()) {
+                                std::ostringstream oss;
+                                oss << v.get<double>();
+                                m[key] = oss.str();
+                            } else if (v.is_null()) {
+                                m[key] = "";
+                            }
+                        }
+                    } else if (repo_node.is_null()) {
+                        m.clear();
+                    }
+                }
+            } else if (val.is_object()) {
                 if (key_name.find('/') != std::string::npos ||
                     key_name.find('\\') != std::string::npos) {
                     auto& m = repo_opts[key_name];
