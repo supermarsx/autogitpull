@@ -109,6 +109,26 @@ TEST_CASE("build_repo_list skips files") {
     fs::remove_all(root);
 }
 
+TEST_CASE("build_repo_list ignores symlinks outside root") {
+    fs::path tmp = fs::temp_directory_path();
+    fs::path root = tmp / "symlink_scan_root";
+    fs::path outside = tmp / "symlink_outside";
+    fs::remove_all(root);
+    fs::remove_all(outside);
+    fs::create_directories(root / "repo");
+    fs::create_directories(outside / "repo");
+    fs::path link = root / "outside_link";
+    fs::create_directory_symlink(outside, link);
+
+    std::vector<fs::path> repos = build_repo_list({root}, false, {}, 0);
+    REQUIRE(std::find(repos.begin(), repos.end(), root / "repo") != repos.end());
+    REQUIRE(std::find(repos.begin(), repos.end(), link) == repos.end());
+    REQUIRE(std::find(repos.begin(), repos.end(), outside) == repos.end());
+
+    fs::remove_all(root);
+    fs::remove_all(outside);
+}
+
 TEST_CASE("recursive iterator finds nested repo") {
     git::GitInitGuard guard;
     fs::path root = fs::temp_directory_path() / "recursive_test";
