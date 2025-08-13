@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <unordered_set>
 #include <map>
 #include <algorithm>
 #include <mutex>
@@ -207,7 +208,8 @@ static void prepare_repos(const Options& opts, std::vector<fs::path>& all_repos,
     } else {
         std::vector<fs::path> roots{opts.root};
         roots.insert(roots.end(), opts.include_dirs.begin(), opts.include_dirs.end());
-        all_repos = build_repo_list(roots, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+        std::unordered_set<fs::path> ignore(opts.ignore_dirs.begin(), opts.ignore_dirs.end());
+        all_repos = build_repo_list(roots, opts.recursive_scan, ignore, opts.max_depth);
         if (opts.sort_mode == Options::ALPHA)
             std::sort(all_repos.begin(), all_repos.end());
         else if (opts.sort_mode == Options::REVERSE)
@@ -527,8 +529,10 @@ int run_event_loop(Options opts) {
             if (opts.rescan_new && rescan_countdown_ms <= std::chrono::milliseconds(0)) {
                 std::vector<fs::path> roots{opts.root};
                 roots.insert(roots.end(), opts.include_dirs.begin(), opts.include_dirs.end());
+                std::unordered_set<fs::path> ignore(opts.ignore_dirs.begin(),
+                                                    opts.ignore_dirs.end());
                 auto new_repos =
-                    build_repo_list(roots, opts.recursive_scan, opts.ignore_dirs, opts.max_depth);
+                    build_repo_list(roots, opts.recursive_scan, ignore, opts.max_depth);
                 if (opts.keep_first_valid) {
                     for (const auto& p : first_validated) {
                         if (std::find(new_repos.begin(), new_repos.end(), p) == new_repos.end())
