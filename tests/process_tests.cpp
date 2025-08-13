@@ -1,5 +1,11 @@
 #include "test_common.hpp"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 static int g_monitor_count = 0;
 
 TEST_CASE("run_event_loop runtime limit") {
