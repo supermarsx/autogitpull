@@ -449,13 +449,24 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 auto it_ro = overrides.find(p);
                 if (it_ro != overrides.end())
                     ro = it_ro->second;
+                if (ro.exclude.value_or(false)) {
+                    std::lock_guard<std::mutex> lk(mtx);
+                    RepoInfo& info = repo_infos[p];
+                    if (info.path.empty())
+                        info.path = p;
+                    info.status = RS_SKIPPED;
+                    info.message = "Excluded";
+                    continue;
+                }
+                bool co = ro.check_only.value_or(check_only);
+                double cl = ro.cpu_limit.value_or(cpu_percent_limit);
                 size_t dl = ro.download_limit.value_or(down_limit);
                 size_t ul = ro.upload_limit.value_or(up_limit);
                 size_t disk = ro.disk_limit.value_or(disk_limit);
                 bool fp = ro.force_pull.value_or(force_pull);
                 std::chrono::seconds pt = ro.pull_timeout.value_or(pull_timeout);
                 process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
-                             include_private, log_dir, check_only, hash_check, dl, ul, disk, silent,
+                             include_private, log_dir, co, hash_check, dl, ul, disk, silent,
                              cli_mode, fp, skip_timeout, skip_accessible_errors, updated_since,
                              show_pull_author, pt);
                 if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
@@ -463,10 +474,10 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                     running = false;
                     break;
                 }
-                if (cpu_percent_limit > 0.0) {
+                if (cl > 0.0) {
                     double cpu = procutil::get_cpu_percent();
-                    if (cpu > cpu_percent_limit) {
-                        double over = cpu / cpu_percent_limit - 1.0;
+                    if (cpu > cl) {
+                        double over = cpu / cl - 1.0;
                         std::this_thread::sleep_for(
                             std::chrono::milliseconds(static_cast<int>(over * 100)));
                     }

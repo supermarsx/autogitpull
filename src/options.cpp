@@ -127,6 +127,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--download-limit",
                                       "--upload-limit",
                                       "--disk-limit",
+                                      "--cpu-limit",
                                       "--total-traffic-limit",
                                       "--max-depth",
                                       "--cli",
@@ -138,6 +139,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--config-json",
                                       "--ignore",
                                       "--force-pull",
+                                      "--exclude",
                                       "--discard-dirty",
                                       "--debug-memory",
                                       "--dump-state",
@@ -914,6 +916,10 @@ Options parse_options(int argc, char* argv[]) {
         bool ok = false;
         if (rflag("--force-pull") || rflag("--discard-dirty"))
             ro.force_pull = true;
+        if (rflag("--exclude"))
+            ro.exclude = true;
+        if (rflag("--check-only"))
+            ro.check_only = true;
         if (values.count("--download-limit")) {
             size_t bytes = parse_bytes(ropt("--download-limit"), 0, SIZE_MAX, ok);
             if (!ok)
@@ -931,6 +937,12 @@ Options parse_options(int argc, char* argv[]) {
             if (!ok)
                 throw std::runtime_error("Invalid per-repo disk-limit");
             ro.disk_limit = bytes / 1024ull;
+        }
+        if (values.count("--cpu-limit")) {
+            double pct = parse_double(ropt("--cpu-limit"), 0.0, 100.0, ok);
+            if (!ok)
+                throw std::runtime_error("Invalid per-repo cpu-limit");
+            ro.cpu_limit = pct;
         }
         if (values.count("--max-runtime")) {
             int sec = parse_int(ropt("--max-runtime"), 1, INT_MAX, ok);

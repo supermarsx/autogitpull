@@ -7,6 +7,9 @@
 
 struct RepoOptions {
     std::optional<bool> force_pull;
+    std::optional<bool> exclude;
+    std::optional<bool> check_only;
+    std::optional<double> cpu_limit;
     std::optional<size_t> download_limit;
     std::optional<size_t> upload_limit;
     std::optional<size_t> disk_limit;
