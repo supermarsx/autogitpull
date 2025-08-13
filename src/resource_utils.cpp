@@ -6,6 +6,7 @@
 #include <sstream>
 #include <utility>
 #include <filesystem>
+#include <cstdint>
 #ifdef __linux__
 #include <sched.h>
 #include <unistd.h>
@@ -119,6 +120,10 @@ static long prev_jiffies = 0;
 #ifdef _WIN32
 static ULONGLONG prev_proc_time = 0;
 #endif
+#ifdef __APPLE__
+static uint64_t prev_user = 0;
+static uint64_t prev_system = 0;
+#endif
 static auto prev_time = std::chrono::steady_clock::now();
 static std::chrono::seconds cpu_poll_interval(5);
 static double last_cpu_percent = 0.0;
@@ -177,6 +182,37 @@ void set_thread_poll_interval(unsigned int seconds) {
         thread_poll_interval = std::chrono::seconds(1);
 }
 
+void reset_cpu_usage() {
+    prev_time = std::chrono::steady_clock::now();
+#ifdef __linux__
+    prev_jiffies = read_proc_jiffies();
+#elif defined(_WIN32)
+    prev_proc_time = get_process_time();
+#elif defined(__APPLE__)
+    mach_msg_type_number_t count = 0;
+    task_flavor_t flavor = MACH_TASK_BASIC_INFO;
+#ifdef TASK_BASIC_INFO_64
+    task_basic_info_64_data_t info;
+    flavor = TASK_BASIC_INFO_64;
+    count = TASK_BASIC_INFO_64_COUNT;
+#else
+    mach_task_basic_info_data_t info;
+    count = MACH_TASK_BASIC_INFO_COUNT;
+#endif
+    if (task_info(mach_task_self(), flavor, reinterpret_cast<task_info_t>(&info), &count) ==
+        KERN_SUCCESS) {
+        prev_user = static_cast<uint64_t>(info.user_time.seconds) * 1000000ULL +
+                    info.user_time.microseconds;
+        prev_system = static_cast<uint64_t>(info.system_time.seconds) * 1000000ULL +
+                      info.system_time.microseconds;
+    } else {
+        prev_user = 0;
+        prev_system = 0;
+    }
+#endif
+    last_cpu_percent = 0.0;
+}
+
 double get_cpu_percent() {
 #ifdef __linux__
     auto now = std::chrono::steady_clock::now();
@@ -228,7 +264,6 @@ double get_cpu_percent() {
     if (task_info(mach_task_self(), flavor, reinterpret_cast<task_info_t>(&info), &count) !=
         KERN_SUCCESS)
         return last_cpu_percent;
-    static uint64_t prev_user = 0, prev_system = 0;
     uint64_t user_us =
         static_cast<uint64_t>(info.user_time.seconds) * 1000000ULL + info.user_time.microseconds;
     uint64_t system_us = static_cast<uint64_t>(info.system_time.seconds) * 1000000ULL +
@@ -384,6 +419,8 @@ NetUsage get_network_usage() {
     return u;
 }
 
+void reset_network_usage() { init_network_usage(); }
+
 #ifdef __linux__
 static std::pair<std::size_t, std::size_t> read_io_bytes() {
     std::ifstream io("/proc/self/io");
@@ -438,5 +475,7 @@ DiskUsage get_disk_usage() {
     u.write_bytes = b.second - base_write;
     return u;
 }
+
+void reset_disk_usage() { init_disk_usage(); }
 
 } // namespace procutil

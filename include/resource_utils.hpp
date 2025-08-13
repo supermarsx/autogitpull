@@ -7,6 +7,9 @@ namespace procutil {
 /** @brief Return the approximate CPU usage of the current process. */
 double get_cpu_percent();
 
+/** @brief Reset cached CPU usage counters. */
+void reset_cpu_usage();
+
 /** @brief Set the polling interval for CPU usage in seconds. */
 void set_cpu_poll_interval(unsigned int seconds);
 
@@ -37,6 +40,9 @@ void init_network_usage();
  *         the call to @ref init_network_usage. */
 NetUsage get_network_usage();
 
+/** @brief Reset the network usage baseline. */
+void reset_network_usage();
+
 struct DiskUsage {
     std::size_t read_bytes;
     std::size_t write_bytes;
@@ -44,6 +50,9 @@ struct DiskUsage {
 
 void init_disk_usage();
 DiskUsage get_disk_usage();
+
+/** @brief Reset the disk usage baseline. */
+void reset_disk_usage();
 
 } // namespace procutil
 
