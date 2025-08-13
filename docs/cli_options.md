@@ -37,6 +37,13 @@
 | `--updated-since` | 0 | Only sync repos updated recently (m, h, d, w, M, Y) |
 | `--wait-empty` | false (disabled) | Keep retrying when no repos are found (optional limit) |
 
+## Authentication
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--ssh-public-key` |  | Path to SSH public key |
+| `--ssh-private-key` |  | Path to SSH private key |
+
 ## Concurrency
 
 | Option | Default | Description |

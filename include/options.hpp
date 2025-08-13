@@ -25,6 +25,8 @@ struct Options {
     LogLevel log_level = LogLevel::INFO;
     std::filesystem::path log_dir;
     std::string log_file;
+    std::filesystem::path ssh_public_key;
+    std::filesystem::path ssh_private_key;
     size_t max_log_size = 0;
     int interval = 30;
     std::chrono::milliseconds refresh_ms{250};

@@ -1,5 +1,10 @@
 #include "test_common.hpp"
 
+namespace git {
+int credential_cb(git_credential** out, const char* url, const char* username_from_url,
+                  unsigned int allowed_types, void* payload);
+}
+
 TEST_CASE("parse_options service flags") {
     const char* argv[] = {"prog", "path",     "--install-service", "--service-config",
                           "cfg",  "--persist"};
@@ -432,4 +437,37 @@ TEST_CASE("parse_options alert flags") {
     Options opts = parse_options(4, const_cast<char**>(argv));
     REQUIRE(opts.confirm_alert);
     REQUIRE(opts.sudo_su);
+}
+
+TEST_CASE("parse_options ssh key paths") {
+    const char* argv[] = {"prog", "path", "--ssh-public-key", "pub", "--ssh-private-key", "priv"};
+    Options opts = parse_options(6, const_cast<char**>(argv));
+    REQUIRE(opts.ssh_public_key == std::filesystem::path("pub"));
+    REQUIRE(opts.ssh_private_key == std::filesystem::path("priv"));
+}
+
+TEST_CASE("credential callback selection") {
+    Options opts;
+    opts.ssh_public_key = "pubkey";
+    opts.ssh_private_key = "privkey";
+    git_credential* cred = nullptr;
+    int r = git::credential_cb(&cred, "url", "git", GIT_CREDENTIAL_SSH_KEY, &opts);
+    REQUIRE(r == 0);
+    REQUIRE(cred->credtype == GIT_CREDENTIAL_SSH_KEY);
+    git_credential_free(cred);
+
+    git_credential* cred2 = nullptr;
+    r = git::credential_cb(&cred2, "url", "git",
+                           GIT_CREDENTIAL_SSH_KEY | GIT_CREDENTIAL_USERNAME, nullptr);
+    REQUIRE(r == 0);
+    REQUIRE(cred2->credtype == GIT_CREDENTIAL_USERNAME);
+    git_credential_free(cred2);
+
+    setenv("GIT_USERNAME", "user", 1);
+    setenv("GIT_PASSWORD", "pass", 1);
+    git_credential* cred3 = nullptr;
+    r = git::credential_cb(&cred3, "url", nullptr, GIT_CREDENTIAL_USERPASS_PLAINTEXT, nullptr);
+    REQUIRE(r == 0);
+    REQUIRE(cred3->credtype == GIT_CREDENTIAL_USERPASS_PLAINTEXT);
+    git_credential_free(cred3);
 }

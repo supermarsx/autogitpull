@@ -6,6 +6,7 @@
 #include <ctime>
 #include <algorithm>
 #include "resource_utils.hpp"
+#include "options.hpp"
 
 using namespace std;
 
@@ -31,14 +32,30 @@ struct ProgressData {
     size_t disk_limit;
 };
 
-static int credential_cb(git_credential** out, const char* url, const char* username_from_url,
-                         unsigned int allowed_types, void* payload) {
-    const char* user = getenv("GIT_USERNAME");
-    const char* pass = getenv("GIT_PASSWORD");
-
-    if ((allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) && user && pass) {
-        return git_credential_userpass_plaintext_new(out, user, pass);
+int credential_cb(git_credential** out, const char* url, const char* username_from_url,
+                  unsigned int allowed_types, void* payload) {
+    const Options* opts = static_cast<const Options*>(payload);
+    const char* env_user = getenv("GIT_USERNAME");
+    const char* env_pass = getenv("GIT_PASSWORD");
+    const char* user = username_from_url ? username_from_url : env_user;
+    if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && opts && !opts->ssh_private_key.empty() &&
+        user) {
+        const char* pub =
+            opts->ssh_public_key.empty() ? nullptr : opts->ssh_public_key.string().c_str();
+        if (git_credential_ssh_key_new(out, user, pub, opts->ssh_private_key.string().c_str(),
+                                       "") == 0)
+            return 0;
     }
+    if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && user) {
+        if (git_credential_ssh_key_from_agent(out, user) == 0)
+            return 0;
+    }
+    if ((allowed_types & GIT_CREDENTIAL_USERNAME) && user) {
+        if (git_credential_username_new(out, user) == 0)
+            return 0;
+    }
+    if ((allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) && env_user && env_pass)
+        return git_credential_userpass_plaintext_new(out, env_user, env_pass);
     return git_credential_default_new(out);
 }
 
