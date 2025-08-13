@@ -6,6 +6,7 @@
 #include <sstream>
 #include <utility>
 #include <filesystem>
+#include <system_error>
 #include <cstdint>
 #ifdef __linux__
 #include <sched.h>
@@ -474,16 +475,48 @@ static std::pair<std::size_t, std::size_t> read_io_bytes() {
     return {0, 0};
 }
 #else
-static std::pair<std::size_t, std::size_t> read_io_bytes() { return {0, 0}; }
+static std::pair<std::size_t, std::size_t> read_io_bytes() {
+    std::ifstream ifs("/proc/self/io");
+    if (ifs.is_open()) {
+        std::string key;
+        std::size_t value;
+        std::size_t read = 0;
+        std::size_t write = 0;
+        while (ifs >> key >> value) {
+            if (key == "read_bytes:")
+                read = value;
+            else if (key == "write_bytes:")
+                write = value;
+        }
+        return {read, write};
+    }
+    rusage ru{};
+    if (getrusage(RUSAGE_SELF, &ru) == 0)
+        return {static_cast<std::size_t>(ru.ru_inblock) * 512,
+                static_cast<std::size_t>(ru.ru_oublock) * 512};
+    return {0, 0};
+}
 #endif
 
 static std::size_t base_read = 0;
 static std::size_t base_write = 0;
+static std::uintmax_t base_dir_size = 0;
+
+static std::uintmax_t directory_size(const std::filesystem::path& p) {
+    std::uintmax_t total = 0;
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator(p, ec)) {
+        if (entry.is_regular_file(ec))
+            total += entry.file_size(ec);
+    }
+    return total;
+}
 
 void init_disk_usage() {
     auto b = read_io_bytes();
     base_read = b.first;
     base_write = b.second;
+    base_dir_size = directory_size(std::filesystem::temp_directory_path());
 }
 
 DiskUsage get_disk_usage() {
@@ -491,6 +524,11 @@ DiskUsage get_disk_usage() {
     DiskUsage u;
     u.read_bytes = b.first - base_read;
     u.write_bytes = b.second - base_write;
+    if (u.read_bytes == 0 && u.write_bytes == 0) {
+        auto current = directory_size(std::filesystem::temp_directory_path());
+        u.write_bytes =
+            current > base_dir_size ? static_cast<std::size_t>(current - base_dir_size) : 0;
+    }
     return u;
 }
 
