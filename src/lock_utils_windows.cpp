@@ -1,6 +1,6 @@
 #include "lock_utils.hpp"
-#include <tlhelp32.h>
 #include <windows.h>
+#include <tlhelp32.h>
 #include <algorithm>
 #include <cstring>
 #include <fstream>
