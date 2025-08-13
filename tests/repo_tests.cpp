@@ -22,7 +22,7 @@ TEST_CASE("get_remote_hash surfaces error for missing remote") {
     std::system(("git -C " + repo.string() + " add file.txt").c_str());
     std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
     std::string err;
-    auto hash = git::get_remote_hash(repo, "master", false, nullptr, &err);
+    auto hash = git::get_remote_hash(repo, "origin", "master", false, nullptr, &err);
     REQUIRE_FALSE(hash);
     REQUIRE(!err.empty());
     fs::remove_all(repo);
@@ -196,9 +196,10 @@ TEST_CASE("scan_repos respects concurrency limit") {
     std::size_t max_seen = baseline;
 
     std::thread t([&]() {
-        scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false, fs::path(),
-                   true, true, concurrency, 0, 0, 0, 0, 0, true, false, false, true, false,
-                   std::chrono::seconds(0), false, std::chrono::seconds(0), false, {});
+        scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false,
+                   "origin", fs::path(), true, true, concurrency, 0, 0, 0, 0, 0, true,
+                   false, false, true, false, std::chrono::seconds(0), false,
+                   std::chrono::seconds(0), false, {});
     });
     while (scanning) {
         max_seen = std::max(max_seen, read_thread_count());
@@ -241,13 +242,13 @@ TEST_CASE("try_pull handles dirty repos") {
 
     std::string log;
     bool auth_fail = false;
-    int ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, 0, false);
+    int ret = git::try_pull(repo, "origin", log, nullptr, false, &auth_fail, 0, 0, 0, false);
     REQUIRE(ret == 3);
     REQUIRE(fs::exists(repo / "file.txt"));
     std::string after = git::get_local_hash(repo).value_or("");
     REQUIRE(after != git::get_local_hash(src).value_or(""));
 
-    ret = git::try_pull(repo, log, nullptr, false, &auth_fail, 0, 0, 0, true);
+    ret = git::try_pull(repo, "origin", log, nullptr, false, &auth_fail, 0, 0, 0, true);
     REQUIRE(ret == 0);
     {
         std::ifstream ifs(repo / "file.txt");
@@ -278,8 +279,8 @@ TEST_CASE("scan_repos resets statuses to pending") {
     std::string act;
     std::mutex act_mtx;
 
-    scan_repos({}, infos, skip, mtx, scanning, running, act, act_mtx, false, fs::path(),
-               true, true, 1, 0, 0, 0, 0, 0, true, false, false, false, false,
+    scan_repos({}, infos, skip, mtx, scanning, running, act, act_mtx, false, "origin",
+               fs::path(), true, true, 1, 0, 0, 0, 0, 0, true, false, false, false, false,
                std::chrono::seconds(0), false, std::chrono::seconds(0), false, {});
 
     REQUIRE(infos[p].status == RS_PENDING);

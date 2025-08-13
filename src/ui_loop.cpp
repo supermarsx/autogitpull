@@ -572,10 +572,10 @@ int run_event_loop(Options opts) {
             scan_thread = th_compat::jthread(
                 scan_repos, std::cref(all_repos), std::ref(repo_infos), std::ref(skip_repos),
                 std::ref(mtx), std::ref(scanning), std::ref(running), std::ref(current_action),
-                std::ref(action_mtx), opts.include_private, std::cref(opts.log_dir),
-                opts.check_only, opts.hash_check, concurrency, opts.cpu_percent_limit,
-                opts.mem_limit, opts.download_limit, opts.upload_limit, opts.disk_limit,
-                opts.silent, opts.cli, opts.force_pull, opts.skip_timeout,
+                std::ref(action_mtx), opts.include_private, opts.remote_name,
+                std::cref(opts.log_dir), opts.check_only, opts.hash_check, concurrency,
+                opts.cpu_percent_limit, opts.mem_limit, opts.download_limit, opts.upload_limit,
+                opts.disk_limit, opts.silent, opts.cli, opts.force_pull, opts.skip_timeout,
                 opts.skip_accessible_errors, opts.updated_since, opts.show_pull_author,
                 opts.pull_timeout, opts.retry_skipped, opts.repo_settings);
             countdown_ms = std::chrono::seconds(interval);
