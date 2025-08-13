@@ -1,5 +1,6 @@
 #include "test_common.hpp"
 #include <catch2/catch_approx.hpp>
+
 using Catch::Approx;
 
 TEST_CASE("Resource helpers") {
