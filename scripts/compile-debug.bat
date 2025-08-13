@@ -37,7 +37,7 @@ if exist "%LIBSSH2_LIB%\libssh2.a" (
     "%ROOT_DIR%\src\git_utils.cpp" "%ROOT_DIR%\src\tui.cpp" "%ROOT_DIR%\src\logger.cpp" ^
     "%ROOT_DIR%\src\resource_utils.cpp" "%ROOT_DIR%\src\system_utils.cpp" "%ROOT_DIR%\src\time_utils.cpp" ^
     "%ROOT_DIR%\src\config_utils.cpp" "%ROOT_DIR%\src\ignore_utils.cpp" "%ROOT_DIR%\src\debug_utils.cpp" "%ROOT_DIR%\src\options.cpp" ^
-    "%ROOT_DIR%\src\parse_utils.cpp" "%ROOT_DIR%\src\history_utils.cpp" "%ROOT_DIR%\src\lock_utils.cpp" "%ROOT_DIR%\src\process_monitor.cpp" ^
+    "%ROOT_DIR%\src\parse_utils.cpp" "%ROOT_DIR%\src\history_utils.cpp" "%ROOT_DIR%\src\lock_utils_windows.cpp" "%ROOT_DIR%\src\process_monitor.cpp" ^
     "%ROOT_DIR%\src\help_text.cpp" "%ROOT_DIR%\src\linux_daemon.cpp" "%ROOT_DIR%\src\windows_service.cpp" ^
     "%LIBGIT2_LIB%\libgit2.a" "%YAMLCPP_LIB%\libyaml-cpp.a" %SSH2_LIB% -lz -lws2_32 -lwinhttp ^
     -lole32 -lrpcrt4 -lcrypt32 -lpsapi %LDFLAGS% -o "%ROOT_DIR%\dist\autogitpull_debug.exe"
