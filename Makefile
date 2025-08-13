@@ -31,6 +31,7 @@ SRC = \
     src/lock_utils.cpp \
     src/process_monitor.cpp \
     src/help_text.cpp \
+    src/cli_commands.cpp \
     src/linux_daemon.cpp \
     src/windows_service.cpp
 
