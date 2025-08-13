@@ -23,6 +23,8 @@
 #elif defined(__APPLE__)
 #include <mach/mach.h>
 #include <unistd.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 #endif
 
 namespace procutil {
@@ -155,6 +157,22 @@ static std::pair<std::size_t, std::size_t> read_net_bytes() {
         rx_total += rx_bytes;
         tx_total += tx_bytes;
     }
+    return {rx_total, tx_total};
+}
+#elif defined(__APPLE__)
+static std::pair<std::size_t, std::size_t> read_net_bytes() {
+    ifaddrs* ifap = nullptr;
+    if (getifaddrs(&ifap) != 0)
+        return {0, 0};
+    std::size_t rx_total = 0, tx_total = 0;
+    for (ifaddrs* ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_data)
+            continue;
+        auto* data = reinterpret_cast<if_data*>(ifa->ifa_data);
+        rx_total += data->ifi_ibytes;
+        tx_total += data->ifi_obytes;
+    }
+    freeifaddrs(ifap);
     return {rx_total, tx_total};
 }
 #else

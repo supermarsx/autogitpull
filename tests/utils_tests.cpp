@@ -269,7 +269,7 @@ TEST_CASE("--log-file without value creates file") {
 }
 
 TEST_CASE("Network usage upload bytes") {
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
     procutil::init_network_usage();
     int srv = socket(AF_INET, SOCK_STREAM, 0);
     REQUIRE(srv >= 0);
