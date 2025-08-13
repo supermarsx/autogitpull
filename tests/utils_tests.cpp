@@ -138,6 +138,33 @@ TEST_CASE("find_running_instances detects process name") {
 #endif
 }
 
+TEST_CASE("CPU usage reset starts from zero") {
+    procutil::set_cpu_poll_interval(1);
+    procutil::get_cpu_percent();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    procutil::get_cpu_percent();
+    procutil::reset_cpu_usage();
+    REQUIRE(procutil::get_cpu_percent() == Approx(0.0));
+}
+
+TEST_CASE("Disk usage reset starts from zero") {
+    namespace fs = std::filesystem;
+    procutil::init_disk_usage();
+    fs::path f = fs::temp_directory_path() / "disk_usage_reset.tmp";
+    {
+        std::ofstream ofs(f, std::ios::binary);
+        std::vector<char> data(4096, 'x');
+        ofs.write(data.data(), data.size());
+    }
+    auto before = procutil::get_disk_usage();
+    REQUIRE(before.write_bytes >= 4096);
+    procutil::reset_disk_usage();
+    auto after = procutil::get_disk_usage();
+    REQUIRE(after.read_bytes == 0);
+    REQUIRE(after.write_bytes == 0);
+    fs::remove(f);
+}
+
 TEST_CASE("Thread count reflects running threads") {
     procutil::set_thread_poll_interval(1);
     std::size_t before = procutil::get_thread_count();
@@ -267,5 +294,9 @@ TEST_CASE("Network usage upload bytes") {
     close(srv);
     auto usage = procutil::get_network_usage();
     REQUIRE(usage.upload_bytes >= data.size());
+    procutil::reset_network_usage();
+    auto after = procutil::get_network_usage();
+    REQUIRE(after.download_bytes == 0);
+    REQUIRE(after.upload_bytes == 0);
 #endif
 }
