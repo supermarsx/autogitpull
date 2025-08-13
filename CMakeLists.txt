@@ -31,7 +31,8 @@ add_library(autogitpull_lib STATIC
     src/options.cpp
     src/parse_utils.cpp
     src/history_utils.cpp
-    src/process_monitor.cpp)
+    src/process_monitor.cpp
+    src/cli_commands.cpp)
 if(WIN32)
     target_sources(autogitpull_lib PRIVATE src/windows_service.cpp src/windows_commands.cpp src/lock_utils_windows.cpp)
 elseif(APPLE)
@@ -44,8 +45,7 @@ target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohma
 
 add_executable(autogitpull
     src/autogitpull.cpp
-    src/tui.cpp
-    src/cli_commands.cpp)
+    src/tui.cpp)
 target_link_libraries(autogitpull PRIVATE autogitpull_lib)
 if(MSVC)
     target_link_options(autogitpull PRIVATE /MT)
@@ -72,7 +72,7 @@ if(NOT Catch2_FOUND)
     FetchContent_MakeAvailable(Catch2)
 endif()
 add_executable(autogitpull_tests
-  tests/arg_parser_tests.cpp tests/utils_tests.cpp tests/options_tests.cpp tests/config_tests.cpp tests/repo_tests.cpp tests/process_tests.cpp tests/ui_output_tests.cpp tests/history_tests.cpp tests/ignore_utils_tests.cpp tests/timeout_tests.cpp tests/git_remote_tests.cpp tests/windows_attach_tests.cpp tests/macos_daemon_tests.cpp tests/cli_commands_tests.cpp src/autogitpull.cpp src/tui.cpp src/cli_commands.cpp src/ignore_utils.cpp)
+  tests/arg_parser_tests.cpp tests/utils_tests.cpp tests/options_tests.cpp tests/config_tests.cpp tests/repo_tests.cpp tests/process_tests.cpp tests/ui_output_tests.cpp tests/history_tests.cpp tests/ignore_utils_tests.cpp tests/timeout_tests.cpp tests/git_remote_tests.cpp tests/windows_attach_tests.cpp tests/macos_daemon_tests.cpp tests/cli_commands_tests.cpp src/autogitpull.cpp src/tui.cpp src/ignore_utils.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
 target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib)
@@ -95,8 +95,7 @@ add_executable(memory_leak_test
     src/ignore_utils.cpp
     src/parse_utils.cpp
     src/history_utils.cpp
-    src/tui.cpp
-    src/cli_commands.cpp)
+    src/tui.cpp)
 if(WIN32)
     target_sources(memory_leak_test PRIVATE src/windows_service.cpp src/windows_commands.cpp src/lock_utils_windows.cpp)
 elseif(APPLE)
