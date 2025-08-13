@@ -16,6 +16,7 @@
 namespace fs = std::filesystem;
 
 Options parse_options(int argc, char* argv[]) {
+    fs::path config_file;
     // Parse config file option first
     const std::set<std::string> pre_known{"--config-yaml", "--config-json"};
     const std::map<char, std::string> pre_short{{'y', "--config-yaml"}, {'j', "--config-json"}};
@@ -29,6 +30,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string err;
         if (!load_yaml_config(cfg, cfg_opts, cfg_repo_opts, err))
             throw std::runtime_error("Failed to load config: " + err);
+        config_file = cfg;
     }
     if (pre_parser.has_flag("--config-json")) {
         std::string cfg = pre_parser.get_option("--config-json");
@@ -37,6 +39,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string err;
         if (!load_json_config(cfg, cfg_opts, cfg_repo_opts, err))
             throw std::runtime_error("Failed to load config: " + err);
+        config_file = cfg;
     }
 
     // Look for automatic config files if requested
@@ -91,6 +94,7 @@ Options parse_options(int argc, char* argv[]) {
                 if (!load_json_config(cfg_path.string(), cfg_opts, cfg_repo_opts, err))
                     throw std::runtime_error("Failed to load config: " + err);
             }
+            config_file = cfg_path;
         }
     }
 
@@ -485,8 +489,7 @@ Options parse_options(int argc, char* argv[]) {
                             cfg_flag("--keep-first-valid") || parser.has_flag("--keep-first") ||
                             cfg_flag("--keep-first");
     opts.auto_config = parser.has_flag("--auto-config") || cfg_flag("--auto-config");
-    opts.auto_reload_config =
-        parser.has_flag("--auto-reload-config") || cfg_flag("--auto-reload-config");
+    opts.auto_reload_config = parser.has_flag("--auto-reload-config");
     opts.rerun_last = parser.has_flag("--rerun-last") || cfg_flag("--rerun-last");
     opts.save_args = parser.has_flag("--save-args") || cfg_flag("--save-args");
     opts.enable_history = parser.has_flag("--enable-history") || cfg_flag("--enable-history");
@@ -984,6 +987,12 @@ Options parse_options(int argc, char* argv[]) {
             hist = find_hist(exe_dir);
         if (!hist.empty())
             opts.history_file = hist.string();
+    }
+    opts.config_file = config_file;
+    opts.original_args.clear();
+    for (int i = 0; i < argc; ++i) {
+        if (argv[i])
+            opts.original_args.emplace_back(argv[i]);
     }
     return opts;
 }

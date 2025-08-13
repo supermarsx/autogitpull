@@ -25,7 +25,7 @@ TEST_CASE("run_event_loop runtime limit") {
 
 TEST_CASE("process monitor single run when disabled") {
     g_monitor_count = 0;
-    auto worker_fn = [](const Options&) {
+    auto worker_fn = [](Options) {
         ++g_monitor_count;
         return 0;
     };
@@ -39,7 +39,7 @@ TEST_CASE("process monitor single run when disabled") {
 
 TEST_CASE("process monitor respawns up to limit") {
     g_monitor_count = 0;
-    auto worker_fn = [](const Options&) {
+    auto worker_fn = [](Options) {
         ++g_monitor_count;
         return 0;
     };

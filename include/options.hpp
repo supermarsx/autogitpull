@@ -64,6 +64,8 @@ struct Options {
     bool enable_hotkeys = false;
     bool auto_config = false;
     bool auto_reload_config = false;
+    std::filesystem::path config_file;
+    std::vector<std::string> original_args;
     bool rerun_last = false;
     bool save_args = false;
     bool debug_memory = false;
@@ -143,6 +145,6 @@ struct Options {
 
 Options parse_options(int argc, char* argv[]);
 bool alerts_allowed(const Options& opts);
-int run_event_loop(const Options& opts);
+int run_event_loop(Options opts);
 
 #endif // OPTIONS_HPP

@@ -7,9 +7,9 @@
 #include "logger.hpp"
 #include "ui_loop.hpp"
 
-static int (*g_worker)(const Options&) = run_event_loop;
+static int (*g_worker)(Options) = run_event_loop;
 
-void set_monitor_worker(int (*func)(const Options&)) {
+void set_monitor_worker(int (*func)(Options)) {
     if (func)
         g_worker = func;
     else

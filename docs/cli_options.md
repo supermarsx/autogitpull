@@ -51,7 +51,7 @@
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--auto-config` | false (disabled) | Auto detect YAML or JSON config |
-| `--auto-reload-config` | false (disabled) | Reload config when the file changes |
+| `--auto-reload-config` | false (disabled) | Reload config when the file changes (CLI only) |
 | `--config-json` |  | Load options from JSON file |
 | `--config-yaml` |  | Load options from YAML file |
 | `--enable-history` | false (disabled) | Enable command history |

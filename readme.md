@@ -79,7 +79,7 @@ The full catalogue of flags with their default values is documented in
 
 #### Config
 - `--auto-config` – Auto detect YAML or JSON config.
-- `--auto-reload-config` – Reload config when the file changes.
+- `--auto-reload-config` – Reload config when the file changes (disabled by default).
 - `--rerun-last` – Reuse args from `.autogitpull.config`.
 - `--save-args` – Save args to config file.
 - `--enable-history[=<file>]` – Enable command history (default `.autogitpull.config`).
