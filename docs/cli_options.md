@@ -43,6 +43,7 @@
 |--------|---------|-------------|
 | `--ssh-public-key` |  | Path to SSH public key |
 | `--ssh-private-key` |  | Path to SSH private key |
+| `--credential-file` |  | Read username and password from file |
 
 ## Concurrency
 

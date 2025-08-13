@@ -93,6 +93,34 @@ TEST_CASE("JSON config root option") {
     fs::remove(cfg);
 }
 
+TEST_CASE("YAML credential file option") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_cred.yaml";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "credential-file: creds.txt\n";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
+    REQUIRE(opts["--credential-file"] == "creds.txt");
+    fs::remove(cfg);
+}
+
+TEST_CASE("JSON credential file option") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_cred.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"credential-file\": \"creds.txt\"\n}";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE(load_json_config(cfg.string(), opts, repo, err));
+    REQUIRE(opts["--credential-file"] == "creds.txt");
+    fs::remove(cfg);
+}
+
 TEST_CASE("JSON repositories section") {
     fs::path cfg = fs::temp_directory_path() / "cfg_repo.json";
     {

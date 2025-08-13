@@ -466,6 +466,12 @@ TEST_CASE("parse_options ssh key paths") {
     REQUIRE(opts.ssh_private_key == std::filesystem::path("priv"));
 }
 
+TEST_CASE("parse_options credential file option") {
+    const char* argv[] = {"prog", "path", "--credential-file", "creds.txt"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.credential_file == std::filesystem::path("creds.txt"));
+}
+
 TEST_CASE("credential callback selection") {
     Options opts;
     opts.ssh_public_key = "pubkey";
@@ -490,4 +496,24 @@ TEST_CASE("credential callback selection") {
     REQUIRE(r == 0);
     REQUIRE(cred3->credtype == GIT_CREDENTIAL_USERPASS_PLAINTEXT);
     git_credential_free(cred3);
+}
+
+TEST_CASE("credential callback file") {
+    fs::path cred = fs::temp_directory_path() / "creds.txt";
+    {
+        std::ofstream ofs(cred);
+        ofs << "user\npass\n";
+    }
+    Options opts;
+    opts.credential_file = cred;
+    git_credential* cred_out = nullptr;
+    int r = git::credential_cb(&cred_out, "url", nullptr,
+                               GIT_CREDENTIAL_USERPASS_PLAINTEXT, &opts);
+    REQUIRE(r == 0);
+    REQUIRE(cred_out->credtype == GIT_CREDENTIAL_USERPASS_PLAINTEXT);
+    auto* up = reinterpret_cast<git_credential_userpass_plaintext*>(cred_out);
+    REQUIRE(std::string(up->username) == "user");
+    REQUIRE(std::string(up->password) == "pass");
+    git_credential_free(cred_out);
+    fs::remove(cred);
 }

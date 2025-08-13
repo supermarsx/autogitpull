@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <functional>
+#include <fstream>
 #include <thread>
 #include <ctime>
 #include <algorithm>
@@ -13,6 +14,15 @@ using namespace std;
 namespace git {
 
 static unsigned int g_libgit_timeout = 0;
+
+static bool read_credential_file(const fs::path& path, std::string& user, std::string& pass) {
+    std::ifstream ifs(path);
+    if (!ifs)
+        return false;
+    std::getline(ifs, user);
+    std::getline(ifs, pass);
+    return !user.empty() && !pass.empty();
+}
 
 void set_libgit_timeout(unsigned int seconds) {
     g_libgit_timeout = seconds;
@@ -37,7 +47,12 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
     const Options* opts = static_cast<const Options*>(payload);
     const char* env_user = getenv("GIT_USERNAME");
     const char* env_pass = getenv("GIT_PASSWORD");
-    const char* user = username_from_url ? username_from_url : env_user;
+    std::string file_user;
+    std::string file_pass;
+    if (opts && !opts->credential_file.empty())
+        read_credential_file(opts->credential_file, file_user, file_pass);
+    const char* user =
+        username_from_url ? username_from_url : (!file_user.empty() ? file_user.c_str() : env_user);
     if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && opts && !opts->ssh_private_key.empty() &&
         user) {
         const char* pub =
@@ -54,8 +69,12 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
         if (git_credential_username_new(out, user) == 0)
             return 0;
     }
-    if ((allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) && env_user && env_pass)
-        return git_credential_userpass_plaintext_new(out, env_user, env_pass);
+    if (allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) {
+        if (!file_user.empty() && !file_pass.empty())
+            return git_credential_userpass_plaintext_new(out, file_user.c_str(), file_pass.c_str());
+        if (env_user && env_pass)
+            return git_credential_userpass_plaintext_new(out, env_user, env_pass);
+    }
     return git_credential_default_new(out);
 }
 

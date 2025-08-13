@@ -28,6 +28,7 @@ struct Options {
     std::string log_file;
     std::filesystem::path ssh_public_key;
     std::filesystem::path ssh_private_key;
+    std::filesystem::path credential_file;
     size_t max_log_size = 0;
     int interval = 30;
     std::chrono::milliseconds refresh_ms{250};

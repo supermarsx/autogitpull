@@ -343,6 +343,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--log-file",
                                       "--ssh-public-key",
                                       "--ssh-private-key",
+                                      "--credential-file",
                                       "--max-log-size",
                                       "--concurrency",
                                       "--check-only",
@@ -850,6 +851,14 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty())
             throw std::runtime_error("--ssh-private-key requires a path");
         opts.ssh_private_key = val;
+    }
+    if (parser.has_flag("--credential-file") || cfg_opts.count("--credential-file")) {
+        std::string val = parser.get_option("--credential-file");
+        if (val.empty())
+            val = cfg_opt("--credential-file");
+        if (val.empty())
+            throw std::runtime_error("--credential-file requires a path");
+        opts.credential_file = val;
     }
     if (parser.has_flag("--max-log-size") || cfg_opts.count("--max-log-size")) {
         std::string val = parser.get_option("--max-log-size");
