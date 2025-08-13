@@ -13,10 +13,10 @@ namespace cli {
 namespace {
 void perform_hard_reset(const Options& opts) {
     std::error_code ec;
-    if (!opts.log_file.empty())
-        fs::remove(opts.log_file, ec);
-    if (!opts.log_dir.empty())
-        fs::remove_all(opts.log_dir, ec);
+    if (!opts.logging.log_file.empty())
+        fs::remove(opts.logging.log_file, ec);
+    if (!opts.logging.log_dir.empty())
+        fs::remove_all(opts.logging.log_dir, ec);
     if (!opts.root.empty()) {
         fs::remove(opts.root / ".autogitpull.lock", ec);
         fs::remove(opts.root / ".autogitpull.yaml", ec);
@@ -28,31 +28,31 @@ void perform_hard_reset(const Options& opts) {
 } // namespace
 
 std::optional<int> handle_status_queries(const Options& opts) {
-    if (opts.show_service) {
+    if (opts.service.show_service) {
         std::string name = platform::service_name(opts);
         if (platform::service_exists(name))
             std::cout << name << "\n";
         return 0;
     }
-    if (opts.list_services) {
+    if (opts.service.list_services) {
         auto svcs = platform::list_services();
         for (const auto& [name, st] : svcs)
             std::cout << name << " " << (st.running ? "running" : "stopped") << "\n";
         return 0;
     }
-    if (opts.service_status) {
+    if (opts.service.service_status) {
         auto st = platform::service_status(platform::service_name(opts));
         std::cout << (st.exists ? "exists" : "missing") << " "
                   << (st.running ? "running" : "stopped") << "\n";
         return 0;
     }
-    if (opts.daemon_status) {
+    if (opts.service.daemon_status) {
         auto st = platform::service_status(platform::daemon_name(opts));
         std::cout << (st.exists ? "exists" : "missing") << " "
                   << (st.running ? "running" : "stopped") << "\n";
         return 0;
     }
-    if (opts.list_instances) {
+    if (opts.service.list_instances) {
         auto insts = procutil::find_running_instances();
         for (const auto& [name, pid] : insts)
             std::cout << name << " " << pid << "\n";
@@ -62,58 +62,62 @@ std::optional<int> handle_status_queries(const Options& opts) {
 }
 
 std::optional<int> handle_service_control(const Options& opts, const std::string& exec_path) {
-    if (opts.install_service) {
+    if (opts.service.install_service) {
         std::string exec = fs::absolute(exec_path).string();
         const char* user_env = std::getenv("USER");
         std::string usr = user_env ? user_env : "root";
-        bool ok = platform::install_service(opts.service_name, exec, opts.service_config,
-                                            opts.persist, usr);
+        bool ok = platform::install_service(opts.service.service_name, exec,
+                                            opts.service.service_config, opts.service.persist, usr);
         return ok ? std::optional<int>(0) : std::optional<int>(1);
     }
-    if (opts.uninstall_service)
-        return platform::uninstall_service(opts.service_name) ? 0 : 1;
-    if (opts.start_service) {
-        std::string name =
-            opts.start_service_name.empty() ? opts.service_name : opts.start_service_name;
+    if (opts.service.uninstall_service)
+        return platform::uninstall_service(opts.service.service_name) ? 0 : 1;
+    if (opts.service.start_service) {
+        std::string name = opts.service.start_service_name.empty()
+                               ? opts.service.service_name
+                               : opts.service.start_service_name;
         return platform::start_service(name) ? 0 : 1;
     }
-    if (opts.stop_service) {
-        std::string name =
-            opts.stop_service_name.empty() ? opts.service_name : opts.stop_service_name;
-        return platform::stop_service(name, opts.force_stop_service) ? 0 : 1;
+    if (opts.service.stop_service) {
+        std::string name = opts.service.stop_service_name.empty() ? opts.service.service_name
+                                                                  : opts.service.stop_service_name;
+        return platform::stop_service(name, opts.service.force_stop_service) ? 0 : 1;
     }
-    if (opts.restart_service) {
-        std::string name =
-            opts.restart_service_name.empty() ? opts.service_name : opts.restart_service_name;
-        return platform::restart_service(name, opts.force_restart_service) ? 0 : 1;
+    if (opts.service.restart_service) {
+        std::string name = opts.service.restart_service_name.empty()
+                               ? opts.service.service_name
+                               : opts.service.restart_service_name;
+        return platform::restart_service(name, opts.service.force_restart_service) ? 0 : 1;
     }
     return std::nullopt;
 }
 
 std::optional<int> handle_daemon_control(const Options& opts, const std::string& exec_path) {
-    if (opts.install_daemon) {
+    if (opts.service.install_daemon) {
         std::string exec = fs::absolute(exec_path).string();
         const char* user_env = std::getenv("USER");
         std::string usr = user_env ? user_env : "root";
-        bool ok = platform::install_service(opts.daemon_name, exec, opts.daemon_config,
-                                            opts.persist, usr);
+        bool ok = platform::install_service(opts.service.daemon_name, exec,
+                                            opts.service.daemon_config, opts.service.persist, usr);
         return ok ? std::optional<int>(0) : std::optional<int>(1);
     }
-    if (opts.uninstall_daemon)
-        return platform::uninstall_service(opts.daemon_name) ? 0 : 1;
-    if (opts.start_daemon) {
-        std::string name =
-            opts.start_daemon_name.empty() ? opts.daemon_name : opts.start_daemon_name;
+    if (opts.service.uninstall_daemon)
+        return platform::uninstall_service(opts.service.daemon_name) ? 0 : 1;
+    if (opts.service.start_daemon) {
+        std::string name = opts.service.start_daemon_name.empty() ? opts.service.daemon_name
+                                                                  : opts.service.start_daemon_name;
         return platform::start_daemon(name) ? 0 : 1;
     }
-    if (opts.stop_daemon) {
-        std::string name = opts.stop_daemon_name.empty() ? opts.daemon_name : opts.stop_daemon_name;
-        return platform::stop_daemon(name, opts.force_stop_daemon) ? 0 : 1;
+    if (opts.service.stop_daemon) {
+        std::string name = opts.service.stop_daemon_name.empty() ? opts.service.daemon_name
+                                                                 : opts.service.stop_daemon_name;
+        return platform::stop_daemon(name, opts.service.force_stop_daemon) ? 0 : 1;
     }
-    if (opts.restart_daemon) {
-        std::string name =
-            opts.restart_daemon_name.empty() ? opts.daemon_name : opts.restart_daemon_name;
-        return platform::restart_daemon(name, opts.force_restart_daemon) ? 0 : 1;
+    if (opts.service.restart_daemon) {
+        std::string name = opts.service.restart_daemon_name.empty()
+                               ? opts.service.daemon_name
+                               : opts.service.restart_daemon_name;
+        return platform::restart_daemon(name, opts.service.force_restart_daemon) ? 0 : 1;
     }
     return std::nullopt;
 }
@@ -126,7 +130,7 @@ std::optional<int> handle_hard_reset(const Options& opts) {
         }
         return 0;
     }
-    if (opts.kill_all) {
+    if (opts.service.kill_all) {
         if (opts.root.empty()) {
             std::cerr << "--kill-all requires a root path" << std::endl;
             return 1;
