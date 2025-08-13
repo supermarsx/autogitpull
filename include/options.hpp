@@ -5,6 +5,7 @@
 #include <string>
 #include <chrono>
 #include <map>
+#include <functional>
 #include "logger.hpp"
 #include "repo_options.hpp"
 
@@ -146,5 +147,16 @@ struct Options {
 Options parse_options(int argc, char* argv[]);
 bool alerts_allowed(const Options& opts);
 int run_event_loop(Options opts);
+
+class ArgParser;
+void parse_service_options(Options& opts, ArgParser& parser,
+                           const std::function<bool(const std::string&)>& cfg_flag,
+                           const std::function<std::string(const std::string&)>& cfg_opt,
+                           const std::map<std::string, std::string>& cfg_opts);
+void parse_tracker_options(Options& opts, ArgParser& parser,
+                           const std::function<bool(const std::string&)>& cfg_flag);
+void parse_limits(Options& opts, ArgParser& parser,
+                  const std::function<std::string(const std::string&)>& cfg_opt,
+                  const std::map<std::string, std::string>& cfg_opts);
 
 #endif // OPTIONS_HPP
