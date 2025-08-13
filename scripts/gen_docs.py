@@ -42,6 +42,7 @@ FLAG_MAP = {
     '--hide-header':'show_header',
     '--row-order':'sort_mode',
     '--color':'custom_color',
+    '--theme':'theme_file',
     '--single-thread':'concurrency',
     '--threads':'concurrency',
     '--syslog':'use_syslog',

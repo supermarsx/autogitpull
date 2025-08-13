@@ -16,15 +16,6 @@
 
 namespace fs = std::filesystem;
 
-const char* COLOR_RESET = "\033[0m";
-const char* COLOR_GREEN = "\033[32m";
-const char* COLOR_YELLOW = "\033[33m";
-const char* COLOR_RED = "\033[31m";
-const char* COLOR_CYAN = "\033[36m";
-const char* COLOR_GRAY = "\033[90m";
-const char* COLOR_BOLD = "\033[1m";
-const char* COLOR_MAGENTA = "\033[35m";
-
 #ifdef _WIN32
 void enable_win_ansi() {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -49,14 +40,18 @@ static std::string format_bytes(std::size_t b) {
     return ss.str();
 }
 
-TuiColors make_tui_colors(bool no_colors, const std::string& custom_color) {
-    auto choose = [&](const char* def) {
-        return no_colors ? "" : (custom_color.empty() ? def : custom_color.c_str());
+TuiColors make_tui_colors(bool no_colors, const std::string& custom_color, const TuiTheme& theme) {
+    auto choose = [&](const std::string& def) {
+        return no_colors ? std::string() : (custom_color.empty() ? def : custom_color);
     };
-    return {no_colors ? "" : COLOR_RESET, choose(COLOR_GREEN),
-            choose(COLOR_YELLOW),         choose(COLOR_RED),
-            choose(COLOR_CYAN),           choose(COLOR_GRAY),
-            choose(COLOR_BOLD),           choose(COLOR_MAGENTA)};
+    return {no_colors ? std::string() : theme.reset,
+            choose(theme.green),
+            choose(theme.yellow),
+            choose(theme.red),
+            choose(theme.cyan),
+            choose(theme.gray),
+            choose(theme.bold),
+            choose(theme.magenta)};
 }
 
 std::string render_header(const std::vector<fs::path>& all_repos,
@@ -245,9 +240,10 @@ void draw_tui(const std::vector<fs::path>& all_repos,
               bool show_version, bool track_cpu, bool track_mem, bool track_threads, bool track_net,
               bool show_affinity, bool track_vmem, bool show_commit_date, bool show_commit_author,
               bool session_dates_only, bool no_colors, const std::string& custom_color,
-              const std::string& status_msg, int runtime_sec, bool show_datetime_line,
-              bool show_header, bool show_repo_count, bool censor_names, char censor_char) {
-    TuiColors colors = make_tui_colors(no_colors, custom_color);
+              const TuiTheme& theme, const std::string& status_msg, int runtime_sec,
+              bool show_datetime_line, bool show_header, bool show_repo_count, bool censor_names,
+              char censor_char) {
+    TuiColors colors = make_tui_colors(no_colors, custom_color, theme);
     std::ostringstream out;
     out << render_header(all_repos, repo_infos, interval, seconds_left, scanning, action,
                          show_version, show_repo_count, status_msg, runtime_sec, show_datetime_line,

@@ -72,6 +72,7 @@ void print_help(const char* prog) {
         {"--hide-header", "-H", "", "Hide status header", "Display"},
         {"--row-order", "", "<mode>", "Row ordering (alpha/reverse)", "Display"},
         {"--color", "", "<ansi>", "Override status color", "Display"},
+        {"--theme", "", "<file>", "Load colors from theme file", "Display"},
         {"--no-colors", "-C", "", "Disable ANSI colors", "Display"},
         {"--censor-names", "", "", "Mask repository names", "Display"},
         {"--censor-char", "", "<ch>", "Character for name masking", "Display"},

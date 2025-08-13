@@ -8,6 +8,7 @@
 #include <functional>
 #include "logger.hpp"
 #include "repo_options.hpp"
+#include "tui.hpp"
 
 struct Options {
     std::filesystem::path root;
@@ -63,6 +64,8 @@ struct Options {
     bool show_header = true;
     bool no_colors = false;
     std::string custom_color;
+    std::string theme_file;
+    TuiTheme theme;
     std::vector<std::filesystem::path> include_dirs;
     std::vector<std::filesystem::path> ignore_dirs;
     bool enable_history = false;

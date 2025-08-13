@@ -906,6 +906,17 @@ Options parse_options(int argc, char* argv[]) {
             val = cfg_opt("--color");
         opts.custom_color = val;
     }
+    if (parser.has_flag("--theme") || cfg_opts.count("--theme")) {
+        std::string val = parser.get_option("--theme");
+        if (val.empty())
+            val = cfg_opt("--theme");
+        opts.theme_file = val;
+        if (!val.empty()) {
+            std::string err;
+            if (!load_theme(val, opts.theme, err))
+                throw std::runtime_error("Failed to load theme: " + err);
+        }
+    }
     if (parser.has_flag("--row-order") || cfg_opts.count("--row-order")) {
         std::string val = parser.get_option("--row-order");
         if (val.empty())

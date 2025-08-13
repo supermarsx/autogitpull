@@ -89,7 +89,9 @@
 | `--censor-char` | '*' | Character for name masking |
 | `--censor-names` | false (disabled) | Mask repository names |
 | `--color` |  | Override status color |
+| `--theme` |  | Load colors from theme file |
 | `--color` |  | Override status color |
+| `--theme` |  | Load colors from theme file |
 | `--hide-date-time` | true (enabled) | Hide date/time line in TUI |
 | `--hide-date-time` | true (enabled) | Hide date/time line in TUI |
 | `--hide-header` | true (enabled) | Hide status header |

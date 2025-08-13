@@ -15,6 +15,22 @@
 void enable_win_ansi();
 
 /**
+ * @brief Theme definition for TUI colors.
+ *
+ * Contains raw ANSI sequences for each color used by the interface.
+ */
+struct TuiTheme {
+    std::string reset = "\033[0m";
+    std::string green = "\033[32m";
+    std::string yellow = "\033[33m";
+    std::string red = "\033[31m";
+    std::string cyan = "\033[36m";
+    std::string gray = "\033[90m";
+    std::string bold = "\033[1m";
+    std::string magenta = "\033[35m";
+};
+
+/**
  * @brief Resolved color codes for the TUI.
  */
 struct TuiColors {
@@ -31,7 +47,7 @@ struct TuiColors {
 /**
  * @brief Create a color palette honoring user preferences.
  */
-TuiColors make_tui_colors(bool no_colors, const std::string& custom_color);
+TuiColors make_tui_colors(bool no_colors, const std::string& custom_color, const TuiTheme& theme);
 
 std::string render_header(const std::vector<std::filesystem::path>& all_repos,
                           const std::map<std::filesystem::path, RepoInfo>& repo_infos, int interval,
@@ -65,8 +81,8 @@ void draw_tui(const std::vector<std::filesystem::path>& all_repos,
               bool show_notgit, bool show_version, bool track_cpu, bool track_mem,
               bool track_threads, bool track_net, bool show_affinity, bool track_vmem,
               bool show_commit_date, bool show_commit_author, bool session_dates_only,
-              bool no_colors, const std::string& custom_color, const std::string& status_msg,
-              int runtime_sec, bool show_datetime_line, bool show_header, bool show_repo_count,
-              bool censor_names, char censor_char);
+              bool no_colors, const std::string& custom_color, const TuiTheme& theme,
+              const std::string& status_msg, int runtime_sec, bool show_datetime_line,
+              bool show_header, bool show_repo_count, bool censor_names, char censor_char);
 
 #endif // TUI_HPP
