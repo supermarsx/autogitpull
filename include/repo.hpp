@@ -20,6 +20,7 @@ enum RepoStatus {
     RS_TIMEOUT,       ///< Pull operation timed out
     RS_RATE_LIMIT,    ///< Hit remote rate limiting
     RS_REMOTE_AHEAD,  ///< Remote contains newer commits
+    RS_TEMPFAIL,      ///< Previously accessible repo is now inaccessible
     RS_NOT_GIT        ///< Path is not a git repository
 };
 
