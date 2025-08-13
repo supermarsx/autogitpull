@@ -109,3 +109,43 @@ TEST_CASE("JSON repositories section") {
     fs::remove(cfg);
 }
 
+TEST_CASE("YAML value conversions") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_values.yaml";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "bool_true: true\n";
+        ofs << "bool_false: false\n";
+        ofs << "int_val: 7\n";
+        ofs << "float_val: 3.5\n";
+        ofs << "null_val: null\n";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
+    REQUIRE(opts["--bool_true"] == "true");
+    REQUIRE(opts["--bool_false"] == "false");
+    REQUIRE(opts["--int_val"] == "7");
+    REQUIRE(opts["--float_val"] == "3.5");
+    REQUIRE(opts["--null_val"] == "");
+    fs::remove(cfg);
+}
+
+TEST_CASE("JSON value conversions") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_values.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"bool_true\": true,\n  \"bool_false\": false,\n  \"int_val\": 7,\n  \"float_val\": 3.5,\n  \"null_val\": null\n}";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE(load_json_config(cfg.string(), opts, repo, err));
+    REQUIRE(opts["--bool_true"] == "true");
+    REQUIRE(opts["--bool_false"] == "false");
+    REQUIRE(opts["--int_val"] == "7");
+    REQUIRE(opts["--float_val"] == "3.5");
+    REQUIRE(opts["--null_val"] == "");
+    fs::remove(cfg);
+}
+
