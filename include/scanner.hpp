@@ -38,6 +38,6 @@ void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
                 bool skip_accessible_errors, std::chrono::seconds updated_since,
                 bool show_pull_author, std::chrono::seconds pull_timeout, bool retry_skipped,
-                const std::map<std::filesystem::path, RepoOptions>& overrides);
+                const std::map<std::filesystem::path, RepoOptions>& repo_settings);
 
 #endif // SCANNER_HPP

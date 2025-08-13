@@ -136,7 +136,7 @@ struct Options {
     std::string add_ignore_repo;
     std::string remove_ignore_repo;
     unsigned int depth = 2;
-    std::map<std::filesystem::path, RepoOptions> repo_overrides;
+    std::map<std::filesystem::path, RepoOptions> repo_settings;
     enum SortMode { DEFAULT, ALPHA, REVERSE } sort_mode = DEFAULT;
 };
 

@@ -93,11 +93,11 @@ TEST_CASE("JSON config root option") {
     fs::remove(cfg);
 }
 
-TEST_CASE("JSON repo overrides") {
+TEST_CASE("JSON repositories section") {
     fs::path cfg = fs::temp_directory_path() / "cfg_repo.json";
     {
         std::ofstream ofs(cfg);
-        ofs << "{\n  \"/tmp/repo\": {\n    \"force-pull\": true,\n    \"upload-limit\": 50\n  }\n}";
+        ofs << "{\n  \"repositories\": {\n    \"/tmp/repo\": {\n      \"force-pull\": true,\n      \"upload-limit\": 50\n    }\n  }\n}";
     }
     std::map<std::string, std::string> opts;
     std::map<std::string, std::map<std::string, std::string>> repo;
@@ -108,3 +108,4 @@ TEST_CASE("JSON repo overrides") {
     REQUIRE(repo["/tmp/repo"]["--upload-limit"] == "50");
     fs::remove(cfg);
 }
+

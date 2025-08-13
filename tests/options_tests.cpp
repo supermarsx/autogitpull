@@ -290,7 +290,7 @@ TEST_CASE("parse_options repo overrides") {
     fs::path cfg = fs::temp_directory_path() / "opts_repo.json";
     {
         std::ofstream ofs(cfg);
-        ofs << "{\n  \"root\": \"/tmp\",\n  \"/tmp/repo\": {\n    \"force-pull\": true,\n    \"exclude\": true,\n    \"check-only\": true,\n    \"cpu-limit\": 25.5\n  }\n}"; 
+        ofs << "{\n  \"root\": \"/tmp\",\n  \"repositories\": {\n    \"/tmp/repo\": {\n      \"force-pull\": true,\n      \"exclude\": true,\n      \"check-only\": true,\n      \"cpu-limit\": 25.5\n    }\n  }\n}";
     }
     std::string p = cfg.string();
     char* path_c = strdup(p.c_str());
@@ -298,8 +298,8 @@ TEST_CASE("parse_options repo overrides") {
     Options opts = parse_options(3, argv);
     free(path_c);
     REQUIRE(opts.root == fs::path("/tmp"));
-    REQUIRE(opts.repo_overrides.count(fs::path("/tmp/repo")) == 1);
-    const RepoOptions& ro = opts.repo_overrides[fs::path("/tmp/repo")];
+    REQUIRE(opts.repo_settings.count(fs::path("/tmp/repo")) == 1);
+    const RepoOptions& ro = opts.repo_settings[fs::path("/tmp/repo")];
     REQUIRE(ro.force_pull.value_or(false));
     REQUIRE(ro.exclude.value_or(false));
     REQUIRE(ro.check_only.value_or(false));

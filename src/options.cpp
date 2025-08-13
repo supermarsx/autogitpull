@@ -956,7 +956,7 @@ Options parse_options(int argc, char* argv[]) {
                 throw std::runtime_error("Invalid per-repo pull-timeout");
             ro.pull_timeout = std::chrono::seconds(sec);
         }
-        opts.repo_overrides[fs::path(repo)] = ro;
+        opts.repo_settings[fs::path(repo)] = ro;
     }
 
     if ((opts.rerun_last || opts.save_args || opts.enable_history) &&
