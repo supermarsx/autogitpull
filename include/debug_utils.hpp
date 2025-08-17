@@ -40,8 +40,30 @@ void log_container_delta(const std::string& name, const C& c, std::size_t& last)
     last = c.size();
 }
 
+/**
+ * @brief Log change in resident memory usage.
+ *
+ * Computes the difference between @p current and @p last memory values,
+ * reporting both the current usage and delta in megabytes. The arithmetic is
+ * constant time, but the required string formatting and logging calls can be
+ * expensive if executed in tight loops.
+ *
+ * @param current Current memory usage in megabytes.
+ * @param last    Previous memory value; updated to @p current after logging.
+ */
 void log_memory_delta_mb(std::size_t current, std::size_t& last);
 
+/**
+ * @brief Emit diagnostic information for tracked repositories.
+ *
+ * Iterates over @p infos and writes up to @p max_items entries to the debug
+ * log. Large maps or high @p max_items values increase string concatenation
+ * and logging overhead, so choose the limit carefully when debugging large
+ * sets.
+ *
+ * @param infos     Map of repository paths to status information.
+ * @param max_items Maximum number of entries to output.
+ */
 void dump_repo_infos(const std::map<std::filesystem::path, RepoInfo>& infos,
                      std::size_t max_items = 50);
 
