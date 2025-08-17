@@ -48,7 +48,12 @@ struct DiskUsage {
     std::size_t write_bytes;
 };
 
+/** @brief Record current disk I/O counters as the baseline for measuring
+ *         subsequent usage. */
 void init_disk_usage();
+
+/** @brief Return the number of bytes read and written since
+ *         the call to @ref init_disk_usage. Values are reported in bytes. */
 DiskUsage get_disk_usage();
 
 /** @brief Reset the disk usage baseline. */
