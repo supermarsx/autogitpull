@@ -11,6 +11,14 @@
 
 namespace procutil {
 
+/**
+ * @brief Set CPU affinity for the current process.
+ *
+ * Each bit in @p mask selects a CPU core that the process is allowed to run on
+ * (bit 0 for core 0, bit 1 for core 1, etc.). A mask of zero leaves the
+ * affinity unchanged. The function returns @c true on success and @c false if
+ * the affinity could not be set.
+ */
 bool set_cpu_affinity(unsigned long long mask);
 /**
  * @brief Get a comma separated list of CPU cores the process is bound to.
@@ -18,6 +26,12 @@ bool set_cpu_affinity(unsigned long long mask);
 std::string get_cpu_affinity();
 
 #ifdef _WIN32
+/**
+ * @brief RAII wrapper around a Windows @c HANDLE.
+ *
+ * Automatically closes the handle on destruction. Useful for managing handles
+ * returned from Windows API calls to ensure resources are released.
+ */
 class UniqueHandle {
   public:
     UniqueHandle() noexcept : h(INVALID_HANDLE_VALUE) {}
@@ -58,6 +72,12 @@ class UniqueHandle {
 };
 #endif // _WIN32
 
+/**
+ * @brief RAII wrapper for POSIX-style file descriptors.
+ *
+ * Closes the descriptor when the object goes out of scope. Use to manage
+ * ownership of file descriptors returned by open and similar system calls.
+ */
 class UniqueFd {
   public:
     UniqueFd() noexcept : fd(-1) {}
