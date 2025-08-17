@@ -1,7 +1,6 @@
 #include "test_common.hpp"
 #include <catch2/catch_approx.hpp>
 
-
 using Catch::Approx;
 
 TEST_CASE("Resource helpers") {
@@ -286,7 +285,7 @@ TEST_CASE("Logger outputs JSON when enabled") {
     fs::remove(log);
     init_logger(log.string());
     set_json_logging(true);
-    log_info("json entry", "{\"k\":\"v\"}");
+    log_info("json entry", {{"k", "v"}});
     shutdown_logger();
     set_json_logging(false);
     std::ifstream ifs(log);
@@ -296,7 +295,7 @@ TEST_CASE("Logger outputs JSON when enabled") {
     REQUIRE(line.find("\"timestamp\"") != std::string::npos);
     REQUIRE(line.find("\"level\":\"INFO\"") != std::string::npos);
     REQUIRE(line.find("\"msg\":\"json entry\"") != std::string::npos);
-    REQUIRE(line.find("\"data\":{\"k\":\"v\"}") != std::string::npos);
+    REQUIRE(line.find("\"k\":\"v\"") != std::string::npos);
     fs::remove(log);
 }
 

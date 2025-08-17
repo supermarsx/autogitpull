@@ -229,11 +229,11 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
     if (!opts.silent && !opts.cli) {
         draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, opts.show_skipped,
                  opts.show_notgit, opts.show_version, opts.cpu_tracker, opts.mem_tracker,
-                 opts.thread_tracker, opts.net_tracker, opts.cpu_core_mask != 0, opts.show_vmem,
-                 opts.show_commit_date, opts.show_commit_author, opts.session_dates_only,
-                 opts.no_colors, opts.custom_color, opts.theme, message, runtime_sec,
-                 opts.show_datetime_line, opts.show_header, opts.show_repo_count, opts.censor_names,
-                 opts.censor_char);
+                 opts.thread_tracker, opts.net_tracker, opts.limits.cpu_core_mask != 0,
+                 opts.show_vmem, opts.show_commit_date, opts.show_commit_author,
+                 opts.session_dates_only, opts.no_colors, opts.custom_color, opts.theme, message,
+                 runtime_sec, opts.show_datetime_line, opts.show_header, opts.show_repo_count,
+                 opts.censor_names, opts.censor_char);
     }
 }
 int run_event_loop(Options opts) {

@@ -149,6 +149,7 @@
 | `--log-file` |  | File for general logs |
 | `--log-level` | INFO | Set log verbosity |
 | `--max-log-size` | 0 | Rotate --log-file when over this size |
+| `--json-log` | false (disabled) | Emit logs in JSON format |
 | `--syslog` | false (disabled) | Log to syslog |
 | `--syslog-facility` | 0 | Syslog facility |
 | `--verbose` | INFO | Shorthand for --log-level DEBUG |
