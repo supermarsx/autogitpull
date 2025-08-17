@@ -174,17 +174,81 @@ inline LegacyOptions aggregate_options(const Options& opts) {
     return LegacyOptions(opts.logging, opts.service, opts.limits);
 }
 
+/**
+ * Parse command-line arguments and configuration files to populate an Options
+ * instance.
+ *
+ * @param argc Number of command-line arguments.
+ * @param argv Argument vector.
+ * @return Fully populated Options structure.
+ * Side effects on Options: none. The resulting Options is returned by value
+ * and the original arguments remain untouched.
+ */
 Options parse_options(int argc, char* argv[]);
+
+/**
+ * Determine whether user-visible alerts are permitted.
+ *
+ * @param opts Configuration values to inspect.
+ * @return true if alerts may be shown, false otherwise.
+ * Side effects on Options: none; opts is read-only.
+ */
 bool alerts_allowed(const Options& opts);
+
+/**
+ * Execute the main application event loop.
+ *
+ * @param opts Options controlling application behavior. Passed by value so
+ *             modifications are local to the event loop.
+ * @return Process exit code to report to the caller.
+ * Side effects on Options: none to the caller's instance since it is copied
+ * on entry.
+ */
 int run_event_loop(Options opts);
 
 class ArgParser;
+
+/**
+ * Parse service-related flags and options.
+ *
+ * @param opts    Options structure to update with service settings.
+ * @param parser  Command-line parser containing service arguments.
+ * @param cfg_flag Function to query boolean service flags from config.
+ * @param cfg_opt  Function to fetch service option values from config.
+ * @param cfg_opts Map of service option names to their string values.
+ * @return void
+ * Side effects on Options: updates opts.service fields based on CLI and
+ * configuration data.
+ */
 void parse_service_options(Options& opts, ArgParser& parser,
                            const std::function<bool(const std::string&)>& cfg_flag,
                            const std::function<std::string(const std::string&)>& cfg_opt,
                            const std::map<std::string, std::string>& cfg_opts);
+
+/**
+ * Parse tracker-related flags to enable or disable resource trackers.
+ *
+ * @param opts    Options structure to update with tracker settings.
+ * @param parser  Command-line parser containing tracker arguments.
+ * @param cfg_flag Function to query tracker flags from config.
+ * @return void
+ * Side effects on Options: updates tracker fields within opts based on
+ * provided inputs.
+ */
 void parse_tracker_options(Options& opts, ArgParser& parser,
                            const std::function<bool(const std::string&)>& cfg_flag);
+
+/**
+ * Parse resource limit settings from command-line and configuration.
+ *
+ * @param opts    Options structure to update with limit settings.
+ * @param parser  Command-line parser containing limit arguments.
+ * @param cfg_opt Function to fetch limit option values from config.
+ * @param cfg_opts Map of limit option names to their string values.
+ * @return void
+ * Side effects on Options: updates opts.limits to reflect configured
+ * resource limits.
+ */
 void parse_limits(Options& opts, ArgParser& parser,
                   const std::function<std::string(const std::string&)>& cfg_opt,
                   const std::map<std::string, std::string>& cfg_opts);
