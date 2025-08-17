@@ -63,7 +63,7 @@ TEST_CASE("parse_options service flags") {
     REQUIRE(opts.service.attach_name == std::string("path"));
     const char* argv2[] = {"prog", "path", "--uninstall-service"};
     Options opts2 = parse_options(3, const_cast<char**>(argv2));
-    REQUIRE(opts2.uninstall_service);
+    REQUIRE(opts2.service.uninstall_service);
 }
 
 TEST_CASE("parse_options service control flags") {
@@ -166,7 +166,7 @@ TEST_CASE("parse_options list services flags") {
     REQUIRE(opts.service.list_services);
     const char* argv2[] = {"prog", "path", "--list-daemons"};
     Options opts2 = parse_options(3, const_cast<char**>(argv2));
-    REQUIRE(opts2.list_services);
+    REQUIRE(opts2.service.list_services);
 }
 
 TEST_CASE("parse_options attach option") {
@@ -267,9 +267,9 @@ TEST_CASE("parse_options poll duration units") {
     const char* argv[] = {"prog",       "path", "--cpu-poll",    "2m",
                           "--mem-poll", "1m",   "--thread-poll", "30s"};
     Options opts = parse_options(8, const_cast<char**>(argv));
-    REQUIRE(opts.cpu_poll_sec == 120);
-    REQUIRE(opts.mem_poll_sec == 60);
-    REQUIRE(opts.thread_poll_sec == 30);
+    REQUIRE(opts.limits.cpu_poll_sec == 120);
+    REQUIRE(opts.limits.mem_poll_sec == 60);
+    REQUIRE(opts.limits.thread_poll_sec == 30);
 }
 
 TEST_CASE("parse_options commit options") {
@@ -392,7 +392,9 @@ TEST_CASE("parse_options repo overrides") {
     fs::path cfg = fs::temp_directory_path() / "opts_repo.json";
     {
         std::ofstream ofs(cfg);
-        ofs << "{\n  \"root\": \"/tmp\",\n  \"repositories\": {\n    \"/tmp/repo\": {\n      \"force-pull\": true,\n      \"exclude\": true,\n      \"check-only\": true,\n      \"cpu-limit\": 25.5\n    }\n  }\n}";
+        ofs << "{\n  \"root\": \"/tmp\",\n  \"repositories\": {\n    \"/tmp/repo\": {\n      "
+               "\"force-pull\": true,\n      \"exclude\": true,\n      \"check-only\": true,\n     "
+               " \"cpu-limit\": 25.5\n    }\n  }\n}";
     }
     std::string p = cfg.string();
     char* path_c = strdup(p.c_str());
@@ -545,8 +547,8 @@ TEST_CASE("credential callback selection") {
     git_credential_free(cred);
 
     git_credential* cred2 = nullptr;
-    r = git::credential_cb(&cred2, "url", "git",
-                           GIT_CREDENTIAL_SSH_KEY | GIT_CREDENTIAL_USERNAME, nullptr);
+    r = git::credential_cb(&cred2, "url", "git", GIT_CREDENTIAL_SSH_KEY | GIT_CREDENTIAL_USERNAME,
+                           nullptr);
     REQUIRE(r == 0);
     REQUIRE(cred2->credtype == GIT_CREDENTIAL_USERNAME);
     git_credential_free(cred2);
@@ -569,8 +571,7 @@ TEST_CASE("credential callback file") {
     Options opts;
     opts.credential_file = cred;
     git_credential* cred_out = nullptr;
-    int r = git::credential_cb(&cred_out, "url", nullptr,
-                               GIT_CREDENTIAL_USERPASS_PLAINTEXT, &opts);
+    int r = git::credential_cb(&cred_out, "url", nullptr, GIT_CREDENTIAL_USERPASS_PLAINTEXT, &opts);
     REQUIRE(r == 0);
     REQUIRE(cred_out->credtype == GIT_CREDENTIAL_USERPASS_PLAINTEXT);
     auto* up = reinterpret_cast<git_credential_userpass_plaintext*>(cred_out);

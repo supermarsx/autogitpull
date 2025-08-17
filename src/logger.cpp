@@ -3,6 +3,7 @@
 #include <mutex>
 #include <iostream>
 #include <filesystem>
+#include <map>
 #include "time_utils.hpp"
 #ifdef __linux__
 #include <syslog.h>
@@ -98,8 +99,22 @@ static std::string json_escape(const std::string& in) {
     return out;
 }
 
-static void log(LogLevel level, const std::string& label, const std::string& msg,
-                const std::string& data = "") {
+static std::string format_extra_json(const std::map<std::string, std::string>& fields) {
+    if (fields.empty())
+        return "";
+    std::string out;
+    bool first = true;
+    for (const auto& [k, v] : fields) {
+        if (!first)
+            out += ",";
+        out += "\"" + json_escape(k) + "\":\"" + json_escape(v) + "\"";
+        first = false;
+    }
+    return out;
+}
+
+static void log_impl(LogLevel level, const std::string& label, const std::string& msg,
+                     const std::map<std::string, std::string>& fields) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     if (!g_log_ofs.is_open() || level < g_min_level)
         return;
@@ -108,13 +123,14 @@ static void log(LogLevel level, const std::string& label, const std::string& msg
     if (g_json_log) {
         line = "{\"timestamp\":\"" + json_escape(ts) + "\",\"level\":\"" + label + "\",\"msg\":\"" +
                json_escape(msg) + "\"";
-        if (!data.empty())
-            line += ",\"data\":" + data;
+        std::string extras = format_extra_json(fields);
+        if (!extras.empty())
+            line += "," + extras;
         line += "}";
     } else {
         line = "[" + ts + "] [" + label + "] " + msg;
-        if (!data.empty())
-            line += " " + data;
+        for (const auto& [k, v] : fields)
+            line += " " + k + "=" + v;
     }
     g_log_ofs << line << std::endl;
     if (g_max_size > 0) {
@@ -161,6 +177,24 @@ static void log(LogLevel level, const std::string& label, const std::string& msg
 #endif
 }
 
+static void log(LogLevel level, const std::string& label, const std::string& msg) {
+    log_impl(level, label, msg, {});
+}
+
+static void log(LogLevel level, const std::string& label, const std::string& msg,
+                const std::string& data) {
+    if (data.empty()) {
+        log_impl(level, label, msg, {});
+    } else {
+        log_impl(level, label, msg, {{"data", data}});
+    }
+}
+
+static void log(LogLevel level, const std::string& label, const std::string& msg,
+                const std::map<std::string, std::string>& fields) {
+    log_impl(level, label, msg, fields);
+}
+
 void log_event(LogLevel level, const std::string& message) {
     const char* label = "INFO";
     switch (level) {
@@ -199,23 +233,55 @@ void log_event(LogLevel level, const std::string& message, const std::string& da
     log(level, label, message, data);
 }
 
+void log_event(LogLevel level, const std::string& message,
+               const std::map<std::string, std::string>& fields) {
+    const char* label = "INFO";
+    switch (level) {
+    case LogLevel::DEBUG:
+        label = "DEBUG";
+        break;
+    case LogLevel::INFO:
+        label = "INFO";
+        break;
+    case LogLevel::WARNING:
+        label = "WARNING";
+        break;
+    case LogLevel::ERR:
+        label = "ERROR";
+        break;
+    }
+    log(level, label, message, fields);
+}
+
 void log_debug(const std::string& msg) { log(LogLevel::DEBUG, "DEBUG", msg); }
 void log_debug(const std::string& msg, const std::string& data) {
     log(LogLevel::DEBUG, "DEBUG", msg, data);
 }
+void log_debug(const std::string& msg, const std::map<std::string, std::string>& fields) {
+    log(LogLevel::DEBUG, "DEBUG", msg, fields);
+}
 void log_info(const std::string& msg) { log(LogLevel::INFO, "INFO", msg); }
 void log_info(const std::string& msg, const std::string& data) {
     log(LogLevel::INFO, "INFO", msg, data);
+}
+void log_info(const std::string& msg, const std::map<std::string, std::string>& fields) {
+    log(LogLevel::INFO, "INFO", msg, fields);
 }
 
 void log_warning(const std::string& msg) { log(LogLevel::WARNING, "WARNING", msg); }
 void log_warning(const std::string& msg, const std::string& data) {
     log(LogLevel::WARNING, "WARNING", msg, data);
 }
+void log_warning(const std::string& msg, const std::map<std::string, std::string>& fields) {
+    log(LogLevel::WARNING, "WARNING", msg, fields);
+}
 
 void log_error(const std::string& msg) { log(LogLevel::ERR, "ERROR", msg); }
 void log_error(const std::string& msg, const std::string& data) {
     log(LogLevel::ERR, "ERROR", msg, data);
+}
+void log_error(const std::string& msg, const std::map<std::string, std::string>& fields) {
+    log(LogLevel::ERR, "ERROR", msg, fields);
 }
 
 #ifdef __linux__

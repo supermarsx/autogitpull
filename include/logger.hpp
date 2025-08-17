@@ -1,6 +1,7 @@
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
 #include <string>
+#include <map>
 
 enum class LogLevel { DEBUG = 0, INFO, WARNING, ERR };
 
@@ -12,14 +13,20 @@ void set_log_rotation(size_t max_files);
 bool logger_initialized();
 void log_event(LogLevel level, const std::string& message);
 void log_event(LogLevel level, const std::string& message, const std::string& data);
+void log_event(LogLevel level, const std::string& message,
+               const std::map<std::string, std::string>& fields);
 void log_debug(const std::string& msg);
 void log_debug(const std::string& msg, const std::string& data);
+void log_debug(const std::string& msg, const std::map<std::string, std::string>& fields);
 void log_info(const std::string& msg);
 void log_info(const std::string& msg, const std::string& data);
+void log_info(const std::string& msg, const std::map<std::string, std::string>& fields);
 void log_warning(const std::string& msg);
 void log_warning(const std::string& msg, const std::string& data);
+void log_warning(const std::string& msg, const std::map<std::string, std::string>& fields);
 void log_error(const std::string& msg);
 void log_error(const std::string& msg, const std::string& data);
+void log_error(const std::string& msg, const std::map<std::string, std::string>& fields);
 void init_syslog(int facility = 0);
 void shutdown_logger();
 
