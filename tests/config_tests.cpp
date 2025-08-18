@@ -177,3 +177,59 @@ TEST_CASE("JSON value conversions") {
     fs::remove(cfg);
 }
 
+TEST_CASE("YAML invalid key is reported") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_bad.yaml";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "unknown: 1\n";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE_FALSE(load_yaml_config(cfg.string(), opts, repo, err));
+    REQUIRE(err.find("Unknown key") != std::string::npos);
+    fs::remove(cfg);
+}
+
+TEST_CASE("JSON invalid key is reported") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_bad.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"unknown\": 1\n}";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE_FALSE(load_json_config(cfg.string(), opts, repo, err));
+    REQUIRE(err.find("Unknown key") != std::string::npos);
+    fs::remove(cfg);
+}
+
+TEST_CASE("YAML type mismatch is reported") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_type.yaml";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "interval:\n  sub: 1\n";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE_FALSE(load_yaml_config(cfg.string(), opts, repo, err));
+    REQUIRE(err.find("interval") != std::string::npos);
+    fs::remove(cfg);
+}
+
+TEST_CASE("JSON type mismatch is reported") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_type.json";
+    {
+        std::ofstream ofs(cfg);
+        ofs << "{\n  \"interval\": {\n    \"sub\": 1\n  }\n}";
+    }
+    std::map<std::string, std::string> opts;
+    std::map<std::string, std::map<std::string, std::string>> repo;
+    std::string err;
+    REQUIRE_FALSE(load_json_config(cfg.string(), opts, repo, err));
+    REQUIRE(err.find("interval") != std::string::npos);
+    fs::remove(cfg);
+}
+

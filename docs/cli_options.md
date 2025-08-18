@@ -1,6 +1,22 @@
 # Command Line Options
 
 
+## Configuration file schema
+
+Configuration files may be written in YAML or JSON. The top level accepts the
+following keys:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `interval` | number or string | Maps to `--interval` |
+| `cli` | boolean | Maps to `--cli` |
+| `root` | string | Maps to `--root` |
+| `credential-file` | string | Maps to `--credential-file` |
+| `repositories` | object | Map of repository paths to option maps |
+
+All other top-level mappings are treated as option categories or repository
+overrides. Scalar keys outside this list are rejected.
+
 ## Actions
 
 | Option | Default | Description |

@@ -7,6 +7,14 @@
 #include <string>
 #include <sstream>
 #include <nlohmann/json.hpp>
+
+enum class NodeKind { Scalar, Map };
+
+static const std::map<std::string, NodeKind> kTopLevelSchema = {
+    {"interval", NodeKind::Scalar},  {"cli", NodeKind::Scalar},
+    {"root", NodeKind::Scalar},      {"credential-file", NodeKind::Scalar},
+    {"repositories", NodeKind::Map},
+};
 #ifdef HAVE_YAMLCPP
 static bool to_string_value(const YAML::Node& node, std::string& out) {
     if (!node.IsDefined() || node.IsSequence() || node.IsMap())
@@ -94,26 +102,47 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
                 continue;
             const std::string key_name = it->first.as<std::string>();
             const YAML::Node& node = it->second;
-            if (key_name == "repositories" && node.IsMap()) {
-                for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
-                    if (!it2->first.IsScalar())
-                        continue;
-                    const std::string repo_key = it2->first.as<std::string>();
-                    const YAML::Node& repo_node = it2->second;
-                    auto& m = repo_opts[repo_key];
-                    if (repo_node.IsMap()) {
-                        for (auto it3 = repo_node.begin(); it3 != repo_node.end(); ++it3) {
-                            if (!it3->first.IsScalar())
-                                continue;
-                            std::string subk = "--" + it3->first.as<std::string>();
-                            const YAML::Node& val = it3->second;
-                            std::string s;
-                            if (to_string_value(val, s))
-                                m[subk] = s;
-                        }
-                    } else if (repo_node.IsNull()) {
-                        m.clear();
+            auto schema_it = kTopLevelSchema.find(key_name);
+            if (schema_it != kTopLevelSchema.end()) {
+                if (schema_it->second == NodeKind::Map) {
+                    if (!node.IsMap()) {
+                        error = "Key '" + key_name + "' must be a map";
+                        return false;
                     }
+                    for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
+                        if (!it2->first.IsScalar())
+                            continue;
+                        const std::string repo_key = it2->first.as<std::string>();
+                        const YAML::Node& repo_node = it2->second;
+                        auto& m = repo_opts[repo_key];
+                        if (repo_node.IsMap()) {
+                            for (auto it3 = repo_node.begin(); it3 != repo_node.end(); ++it3) {
+                                if (!it3->first.IsScalar())
+                                    continue;
+                                std::string subk = "--" + it3->first.as<std::string>();
+                                const YAML::Node& val = it3->second;
+                                std::string s;
+                                if (!to_string_value(val, s)) {
+                                    error = "Invalid type for key '" + repo_key + "/" +
+                                            subk.substr(2) + "'";
+                                    return false;
+                                }
+                                m[subk] = s;
+                            }
+                        } else if (repo_node.IsNull()) {
+                            m.clear();
+                        } else {
+                            error = "Invalid type for key '" + repo_key + "'";
+                            return false;
+                        }
+                    }
+                } else {
+                    std::string s;
+                    if (!to_string_value(node, s)) {
+                        error = "Invalid type for key '" + key_name + "'";
+                        return false;
+                    }
+                    opts["--" + key_name] = s;
                 }
             } else if (node.IsMap()) {
                 if (key_name.find('/') != std::string::npos ||
@@ -125,8 +154,12 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
                         std::string subk = "--" + it2->first.as<std::string>();
                         const YAML::Node& val = it2->second;
                         std::string s;
-                        if (to_string_value(val, s))
-                            m[subk] = s;
+                        if (!to_string_value(val, s)) {
+                            error =
+                                "Invalid type for key '" + key_name + "/" + subk.substr(2) + "'";
+                            return false;
+                        }
+                        m[subk] = s;
                     }
                 } else {
                     for (auto it2 = node.begin(); it2 != node.end(); ++it2) {
@@ -135,14 +168,16 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
                         std::string key = "--" + it2->first.as<std::string>();
                         const YAML::Node& val = it2->second;
                         std::string s;
-                        if (to_string_value(val, s))
-                            opts[key] = s;
+                        if (!to_string_value(val, s)) {
+                            error = "Invalid type for key '" + key_name + "/" + key.substr(2) + "'";
+                            return false;
+                        }
+                        opts[key] = s;
                     }
                 }
             } else {
-                std::string s;
-                if (to_string_value(node, s))
-                    opts["--" + key_name] = s;
+                error = "Unknown key: " + key_name;
+                return false;
             }
         }
         return true;
@@ -176,22 +211,43 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
         for (auto it = root.begin(); it != root.end(); ++it) {
             const auto& val = it.value();
             const std::string key_name = it.key();
-            if (key_name == "repositories" && val.is_object()) {
-                for (auto repo_it = val.begin(); repo_it != val.end(); ++repo_it) {
-                    const std::string repo_key = repo_it.key();
-                    const auto& repo_node = repo_it.value();
-                    auto& m = repo_opts[repo_key];
-                    if (repo_node.is_object()) {
-                        for (auto sub = repo_node.begin(); sub != repo_node.end(); ++sub) {
-                            std::string key = "--" + sub.key();
-                            const auto& v = sub.value();
-                            std::string s;
-                            if (to_string_value(v, s))
-                                m[key] = s;
-                        }
-                    } else if (repo_node.is_null()) {
-                        m.clear();
+            auto schema_it = kTopLevelSchema.find(key_name);
+            if (schema_it != kTopLevelSchema.end()) {
+                if (schema_it->second == NodeKind::Map) {
+                    if (!val.is_object()) {
+                        error = "Key '" + key_name + "' must be an object";
+                        return false;
                     }
+                    for (auto repo_it = val.begin(); repo_it != val.end(); ++repo_it) {
+                        const std::string repo_key = repo_it.key();
+                        const auto& repo_node = repo_it.value();
+                        auto& m = repo_opts[repo_key];
+                        if (repo_node.is_object()) {
+                            for (auto sub = repo_node.begin(); sub != repo_node.end(); ++sub) {
+                                std::string key = "--" + sub.key();
+                                const auto& v = sub.value();
+                                std::string s;
+                                if (!to_string_value(v, s)) {
+                                    error =
+                                        "Invalid type for key '" + repo_key + "/" + sub.key() + "'";
+                                    return false;
+                                }
+                                m[key] = s;
+                            }
+                        } else if (repo_node.is_null()) {
+                            m.clear();
+                        } else {
+                            error = "Invalid type for key '" + repo_key + "'";
+                            return false;
+                        }
+                    }
+                } else {
+                    std::string s;
+                    if (!to_string_value(val, s)) {
+                        error = "Invalid type for key '" + key_name + "'";
+                        return false;
+                    }
+                    opts["--" + key_name] = s;
                 }
             } else if (val.is_object()) {
                 if (key_name.find('/') != std::string::npos ||
@@ -201,23 +257,27 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
                         std::string key = "--" + sub.key();
                         const auto& v = sub.value();
                         std::string s;
-                        if (to_string_value(v, s))
-                            m[key] = s;
+                        if (!to_string_value(v, s)) {
+                            error = "Invalid type for key '" + key_name + "/" + sub.key() + "'";
+                            return false;
+                        }
+                        m[key] = s;
                     }
                 } else {
                     for (auto sub = val.begin(); sub != val.end(); ++sub) {
                         std::string key = "--" + sub.key();
                         const auto& v = sub.value();
                         std::string s;
-                        if (to_string_value(v, s))
-                            opts[key] = s;
+                        if (!to_string_value(v, s)) {
+                            error = "Invalid type for key '" + key_name + "/" + sub.key() + "'";
+                            return false;
+                        }
+                        opts[key] = s;
                     }
                 }
             } else {
-                std::string key = "--" + key_name;
-                std::string s;
-                if (to_string_value(val, s))
-                    opts[key] = s;
+                error = "Unknown key: " + key_name;
+                return false;
             }
         }
         return true;
