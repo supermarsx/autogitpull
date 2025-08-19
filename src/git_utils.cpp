@@ -42,6 +42,52 @@ struct ProgressData {
     size_t disk_limit;
 };
 
+static git_transfer_progress_cb make_progress_callback(const std::function<void(int)>* cb,
+                                                       ProgressData& pd) {
+    pd.cb = cb;
+    if (!cb && pd.down_limit == 0 && pd.up_limit == 0 && pd.disk_limit == 0)
+        return nullptr;
+    return [](const git_transfer_progress* stats, void* payload) -> int {
+        if (!payload)
+            return 0;
+        auto* pd = static_cast<ProgressData*>(payload);
+        if (pd->cb) {
+            int pct = 0;
+            if (stats->total_objects > 0)
+                pct = static_cast<int>(100 * stats->received_objects / stats->total_objects);
+            (*pd->cb)(pct);
+        }
+        double expected_ms = 0.0;
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::steady_clock::now() - pd->start)
+                           .count();
+        if (pd->down_limit > 0) {
+            double ms =
+                static_cast<double>(stats->received_bytes) / (pd->down_limit * 1024.0) * 1000.0;
+            if (ms > expected_ms)
+                expected_ms = ms;
+        }
+        if (pd->up_limit > 0) {
+            auto net = procutil::get_network_usage();
+            double ms = static_cast<double>(net.upload_bytes) / (pd->up_limit * 1024.0) * 1000.0;
+            if (ms > expected_ms)
+                expected_ms = ms;
+        }
+        if (pd->disk_limit > 0) {
+            auto du = procutil::get_disk_usage();
+            double ms = static_cast<double>(du.read_bytes + du.write_bytes) /
+                        (pd->disk_limit * 1024.0) * 1000.0;
+            if (ms > expected_ms)
+                expected_ms = ms;
+        }
+        if (expected_ms > elapsed) {
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(static_cast<int>(expected_ms - elapsed)));
+        }
+        return 0;
+    };
+}
+
 int credential_cb(git_credential** out, const char* url, const char* username_from_url,
                   unsigned int allowed_types, void* payload) {
     GitInitGuard guard;
@@ -272,52 +318,16 @@ bool clone_repo(const fs::path& dest, const std::string& url,
                 size_t disk_limit_kbps) {
     git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
-    ProgressData progress{progress_cb, std::chrono::steady_clock::now(), down_limit_kbps,
-                          up_limit_kbps, disk_limit_kbps};
+    ProgressData progress{nullptr, std::chrono::steady_clock::now(), down_limit_kbps, up_limit_kbps,
+                          disk_limit_kbps};
     if (up_limit_kbps > 0)
         procutil::init_network_usage();
-    if (progress_cb || down_limit_kbps > 0 || up_limit_kbps > 0 || disk_limit_kbps > 0) {
+    auto transfer_cb = make_progress_callback(progress_cb, progress);
+    if (transfer_cb) {
         if (disk_limit_kbps > 0)
             procutil::init_disk_usage();
         callbacks.payload = &progress;
-        callbacks.transfer_progress = [](const git_transfer_progress* stats, void* payload) -> int {
-            if (!payload)
-                return 0;
-            auto* pd = static_cast<ProgressData*>(payload);
-            if (pd->cb) {
-                int pct = 0;
-                if (stats->total_objects > 0)
-                    pct = static_cast<int>(100 * stats->received_objects / stats->total_objects);
-                (*pd->cb)(pct);
-            }
-            double expected_ms = 0.0;
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                               std::chrono::steady_clock::now() - pd->start)
-                               .count();
-            if (pd->down_limit > 0) {
-                double ms = (double)stats->received_bytes / (pd->down_limit * 1024.0) * 1000.0;
-                if (ms > expected_ms)
-                    expected_ms = ms;
-            }
-            if (pd->up_limit > 0) {
-                auto net = procutil::get_network_usage();
-                double ms = (double)net.upload_bytes / (pd->up_limit * 1024.0) * 1000.0;
-                if (ms > expected_ms)
-                    expected_ms = ms;
-            }
-            if (pd->disk_limit > 0) {
-                auto du = procutil::get_disk_usage();
-                double ms =
-                    (double)(du.read_bytes + du.write_bytes) / (pd->disk_limit * 1024.0) * 1000.0;
-                if (ms > expected_ms)
-                    expected_ms = ms;
-            }
-            if (expected_ms > elapsed) {
-                std::this_thread::sleep_for(
-                    std::chrono::milliseconds(static_cast<int>(expected_ms - elapsed)));
-            }
-            return 0;
-        };
+        callbacks.transfer_progress = transfer_cb;
     }
     if (use_credentials)
         callbacks.credentials = credential_cb;
@@ -375,52 +385,16 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
     remote_ptr remote_handle(raw_remote);
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
-    ProgressData progress{progress_cb, std::chrono::steady_clock::now(), down_limit_kbps,
-                          up_limit_kbps, disk_limit_kbps};
+    ProgressData progress{nullptr, std::chrono::steady_clock::now(), down_limit_kbps, up_limit_kbps,
+                          disk_limit_kbps};
     if (up_limit_kbps > 0)
         procutil::init_network_usage();
-    if (progress_cb || down_limit_kbps > 0 || up_limit_kbps > 0 || disk_limit_kbps > 0) {
+    auto transfer_cb = make_progress_callback(progress_cb, progress);
+    if (transfer_cb) {
         if (disk_limit_kbps > 0)
             procutil::init_disk_usage();
         callbacks.payload = &progress;
-        callbacks.transfer_progress = [](const git_transfer_progress* stats, void* payload) -> int {
-            if (!payload)
-                return 0;
-            auto* pd = static_cast<ProgressData*>(payload);
-            if (pd->cb) {
-                int pct = 0;
-                if (stats->total_objects > 0)
-                    pct = static_cast<int>(100 * stats->received_objects / stats->total_objects);
-                (*pd->cb)(pct);
-            }
-            double expected_ms = 0.0;
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                               std::chrono::steady_clock::now() - pd->start)
-                               .count();
-            if (pd->down_limit > 0) {
-                double ms = (double)stats->received_bytes / (pd->down_limit * 1024.0) * 1000.0;
-                if (ms > expected_ms)
-                    expected_ms = ms;
-            }
-            if (pd->up_limit > 0) {
-                auto net = procutil::get_network_usage();
-                double ms = (double)net.upload_bytes / (pd->up_limit * 1024.0) * 1000.0;
-                if (ms > expected_ms)
-                    expected_ms = ms;
-            }
-            if (pd->disk_limit > 0) {
-                auto du = procutil::get_disk_usage();
-                double ms =
-                    (double)(du.read_bytes + du.write_bytes) / (pd->disk_limit * 1024.0) * 1000.0;
-                if (ms > expected_ms)
-                    expected_ms = ms;
-            }
-            if (expected_ms > elapsed) {
-                std::this_thread::sleep_for(
-                    std::chrono::milliseconds(static_cast<int>(expected_ms - elapsed)));
-            }
-            return 0;
-        };
+        callbacks.transfer_progress = transfer_cb;
     }
     if (use_credentials)
         callbacks.credentials = credential_cb;
