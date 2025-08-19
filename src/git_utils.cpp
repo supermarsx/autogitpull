@@ -102,8 +102,12 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
         username_from_url ? username_from_url : (!file_user.empty() ? file_user.c_str() : env_user);
     if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && opts && !opts->ssh_private_key.empty() &&
         user) {
-        const char* pub =
-            opts->ssh_public_key.empty() ? nullptr : opts->ssh_public_key.string().c_str();
+        const char* pub = nullptr;
+        std::string pub_buf;
+        if (!opts->ssh_public_key.empty()) {
+            pub_buf = opts->ssh_public_key.string();
+            pub = pub_buf.c_str();
+        }
         if (git_credential_ssh_key_new(out, user, pub, opts->ssh_private_key.string().c_str(),
                                        "") == 0)
             return 0;
