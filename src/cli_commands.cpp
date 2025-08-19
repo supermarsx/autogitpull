@@ -151,7 +151,8 @@ std::optional<int> handle_hard_reset(const Options& opts) {
         return 0;
     }
     if (opts.hard_reset) {
-        std::cerr << "WARNING: --hard-reset will delete all application data" << std::endl;
+        std::cerr << "WARNING: --hard-reset permanently removes logs, configs, and lock files"
+                  << std::endl;
         if (!opts.confirm_reset) {
             std::cerr << "Re-run with --confirm-reset to proceed" << std::endl;
             return 1;
@@ -165,7 +166,12 @@ std::optional<int> handle_hard_reset(const Options& opts) {
 
 int handle_monitoring_run(const Options& opts) {
     if (!alerts_allowed(opts)) {
-        std::cerr << "WARNING: --interval below 15s or --force-pull used" << std::endl;
+        if (opts.interval < 15)
+            std::cerr << "WARNING: --interval below 15s may overwhelm remote repositories"
+                      << std::endl;
+        if (opts.force_pull)
+            std::cerr << "WARNING: --force-pull discards uncommitted changes and untracked files"
+                      << std::endl;
         std::cerr << "Re-run with --confirm-alert or --sudo-su to proceed" << std::endl;
         return 1;
     }
