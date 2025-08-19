@@ -24,12 +24,19 @@ overrides. Scalar keys outside this list are rejected.
 | `--check-only` | false (disabled) | Only check for updates |
 | `--confirm-alert` | false (disabled) | Confirm unsafe options |
 | `--confirm-reset` | false (disabled) | Confirm --hard-reset |
-| `--discard-dirty` | false (disabled) | Alias for --force-pull |
-| `--force-pull` | false (disabled) | Discard local changes when pulling |
-| `--hard-reset` | false (disabled) | Delete all logs and configs |
+| `--discard-dirty` | false (disabled) | Alias for --force-pull; resets repo to remote state |
+| `--force-pull` | false (disabled) | Reset repos to remote state, losing uncommitted work |
+| `--hard-reset` | false (disabled) | Remove logs, configs, and lock files |
 | `--list-instances` | false (disabled) | List running instance names and PIDs |
 | `--no-hash-check` | false (feature enabled) | Always pull without hash check |
 | `--sudo-su` | false (disabled) | Suppress confirmation alerts |
+
+### Destructive Actions
+
+These flags permanently alter data and require explicit confirmation:
+
+- `--force-pull` (alias `--discard-dirty`): Resets each repository to match its remote, deleting uncommitted changes and untracked files.
+- `--hard-reset`: Wipes autogitpull's log files, configuration files, and lock files under the specified root directory.
 
 ## Basics
 

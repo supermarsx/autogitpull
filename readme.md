@@ -28,11 +28,11 @@ and shows progress either in an interactive TUI or with plain console output.
 ### TLDR usage tips
 
 - For minimum memory footprint use `--single-thread`, trade off on performance/speed.
-- To override/discard local changes every time use `--force-pull`, it's basically to sync with remote.
+- To override and discard local changes every time, use `--force-pull`; uncommitted work is erased as repositories reset to remote.
 - To only sync the latest repos you're working on use `--updated-since` 6h, to only sync repos updated in the last 6 hours.
 - To only show dates from repos that have been synced during the current session use `--session-dates-only`.
 
-Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` (alias: `--discard-dirty`) to reset such repositories to the remote state.
+Repositories with uncommitted changes are skipped by default to avoid losing work. Use `--force-pull` (alias: `--discard-dirty`) to reset such repositories to the remote state, permanently deleting their uncommitted changes.
 
 ### Usage options
 
@@ -154,8 +154,8 @@ On macOS and Linux, `autogitpull` can run as a background service via
 #### Actions
 - `--check-only` (`-x`) – Only check for updates.
 - `--no-hash-check` (`-N`) – Always pull without hash check.
-- `--force-pull` (`-f`) – Discard local changes when pulling.
-- `--discard-dirty` – Alias for `--force-pull`.
+- `--force-pull` (`-f`) – Reset repos to remote state, losing uncommitted changes and untracked files.
+- `--discard-dirty` – Alias for `--force-pull`; same data loss.
 - `--install-daemon` – Install background daemon.
 - `--uninstall-daemon` – Uninstall background daemon.
 - `--daemon-config` `<file>` – Config file for daemon install.
@@ -179,7 +179,7 @@ On macOS and Linux, `autogitpull` can run as a background service via
 - `--list-services` – List installed service units.
 - `--list-daemons` – Alias for `--list-services`.
 - `--ignore-lock` – Don't create or check lock file.
-- `--hard-reset` – Delete all logs and configs.
+- `--hard-reset` – Remove autogitpull logs, configs, and lock files (cannot be undone).
 - `--confirm-reset` – Confirm `--hard-reset`.
 - `--confirm-alert` – Confirm unsafe interval or force pull.
 - `--sudo-su` – Suppress confirmation alerts.
