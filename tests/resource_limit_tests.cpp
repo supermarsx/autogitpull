@@ -46,11 +46,15 @@ TEST_CASE("rate limits throttle git pull") {
 
     std::string log;
     bool auth_fail = false;
+    std::vector<int> updates_base;
+    std::function<void(int)> cb_base = [&](int pct) { updates_base.push_back(pct); };
     auto start = steady_clock::now();
     int ret =
-        git::try_pull(repo, "origin", log, nullptr, false, &auth_fail, 0, 0, 0, false);
+        git::try_pull(repo, "origin", log, &cb_base, false, &auth_fail, 0, 0, 0, false);
     auto base_ms = duration_cast<milliseconds>(steady_clock::now() - start).count();
     REQUIRE(ret == 0);
+    REQUIRE_FALSE(updates_base.empty());
+    REQUIRE(updates_base.back() == 100);
 
     {
         std::ofstream(src / "big3.bin") << payload;
@@ -59,11 +63,15 @@ TEST_CASE("rate limits throttle git pull") {
         std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
     }
 
+    std::vector<int> updates_limited;
+    std::function<void(int)> cb_limited = [&](int pct) { updates_limited.push_back(pct); };
     start = steady_clock::now();
-    ret = git::try_pull(repo, "origin", log, nullptr, false, &auth_fail, 20, 20, 20, false);
+    ret = git::try_pull(repo, "origin", log, &cb_limited, false, &auth_fail, 20, 20, 20, false);
     auto limited_ms =
         duration_cast<milliseconds>(steady_clock::now() - start).count();
     REQUIRE(ret == 0);
+    REQUIRE_FALSE(updates_limited.empty());
+    REQUIRE(updates_limited.back() == 100);
 
     REQUIRE(limited_ms - base_ms >= 5);
 
