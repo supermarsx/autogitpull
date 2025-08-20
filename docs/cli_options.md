@@ -30,6 +30,7 @@ overrides. Scalar keys outside this list are rejected.
 | `--list-instances` | false (disabled) | List running instance names and PIDs |
 | `--no-hash-check` | false (feature enabled) | Always pull without hash check |
 | `--sudo-su` | false (disabled) | Suppress confirmation alerts |
+| `--confirm-mutant` | false (disabled) | Confirm enabling mutant mode |
 
 ### Destructive Actions
 
@@ -192,6 +193,9 @@ These flags permanently alter data and require explicit confirmation:
 | `--persist` | false (disabled) | Keep running after exit (optional name) |
 | `--print-skipped` | false (disabled) | Print skipped repositories once |
 | `--pull-timeout` | 0 | Network operation timeout (s, m, h, d, w, M, Y) |
+| `--mutant` | false (disabled) | Enable full auto mutant mode with smart verification and adaptive timeouts |
+| `--recover-mutant` | false (disabled) | Recover persisted mutant session |
+| `--mutant-config` |  | Path to mutant config file |
 | `--pull-timeout` | 0 | Network operation timeout (s, m, h, d, w, M, Y) |
 | `--reattach` | false (disabled) | Reattach to background process |
 | `--respawn-limit` | 0 | Respawn limit within minutes |

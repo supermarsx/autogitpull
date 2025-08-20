@@ -562,6 +562,15 @@ TEST_CASE("credential callback selection") {
     git_credential_free(cred3);
 }
 
+TEST_CASE("mutant mode requires confirmation") {
+    const char* argv[] = {"prog", "--mutant", "--root", "/tmp"};
+    REQUIRE_THROWS(parse_options(4, const_cast<char**>(argv)));
+    const char* argv2[] = {"prog", "--mutant", "--confirm-mutant", "--root", "/tmp"};
+    Options opts = parse_options(5, const_cast<char**>(argv2));
+    REQUIRE(opts.mutant_mode);
+    REQUIRE(opts.service.run_background);
+}
+
 TEST_CASE("credential callback file") {
     fs::path cred = fs::temp_directory_path() / "creds.txt";
     {

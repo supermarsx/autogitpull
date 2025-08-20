@@ -176,8 +176,12 @@ bool load_yaml_config(const std::string& path, std::map<std::string, std::string
                     }
                 }
             } else {
-                error = "Unknown key: " + key_name;
-                return false;
+                std::string s;
+                if (!to_string_value(node, s)) {
+                    error = "Invalid type for key '" + key_name + "'";
+                    return false;
+                }
+                opts["--" + key_name] = s;
             }
         }
         return true;
@@ -276,8 +280,12 @@ bool load_json_config(const std::string& path, std::map<std::string, std::string
                     }
                 }
             } else {
-                error = "Unknown key: " + key_name;
-                return false;
+                std::string s;
+                if (!to_string_value(val, s)) {
+                    error = "Invalid type for key '" + key_name + "'";
+                    return false;
+                }
+                opts["--" + key_name] = s;
             }
         }
         return true;

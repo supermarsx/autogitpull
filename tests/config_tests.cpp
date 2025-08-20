@@ -125,7 +125,8 @@ TEST_CASE("JSON repositories section") {
     fs::path cfg = fs::temp_directory_path() / "cfg_repo.json";
     {
         std::ofstream ofs(cfg);
-        ofs << "{\n  \"repositories\": {\n    \"/tmp/repo\": {\n      \"force-pull\": true,\n      \"upload-limit\": 50\n    }\n  }\n}";
+        ofs << "{\n  \"repositories\": {\n    \"/tmp/repo\": {\n      \"force-pull\": true,\n      "
+               "\"upload-limit\": 50\n    }\n  }\n}";
     }
     std::map<std::string, std::string> opts;
     std::map<std::string, std::map<std::string, std::string>> repo;
@@ -163,7 +164,8 @@ TEST_CASE("JSON value conversions") {
     fs::path cfg = fs::temp_directory_path() / "cfg_values.json";
     {
         std::ofstream ofs(cfg);
-        ofs << "{\n  \"bool_true\": true,\n  \"bool_false\": false,\n  \"int_val\": 7,\n  \"float_val\": 3.5,\n  \"null_val\": null\n}";
+        ofs << "{\n  \"bool_true\": true,\n  \"bool_false\": false,\n  \"int_val\": 7,\n  "
+               "\"float_val\": 3.5,\n  \"null_val\": null\n}";
     }
     std::map<std::string, std::string> opts;
     std::map<std::string, std::map<std::string, std::string>> repo;
@@ -177,8 +179,8 @@ TEST_CASE("JSON value conversions") {
     fs::remove(cfg);
 }
 
-TEST_CASE("YAML invalid key is reported") {
-    fs::path cfg = fs::temp_directory_path() / "cfg_bad.yaml";
+TEST_CASE("YAML unknown key allowed") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_unknown.yaml";
     {
         std::ofstream ofs(cfg);
         ofs << "unknown: 1\n";
@@ -186,13 +188,13 @@ TEST_CASE("YAML invalid key is reported") {
     std::map<std::string, std::string> opts;
     std::map<std::string, std::map<std::string, std::string>> repo;
     std::string err;
-    REQUIRE_FALSE(load_yaml_config(cfg.string(), opts, repo, err));
-    REQUIRE(err.find("Unknown key") != std::string::npos);
+    REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
+    REQUIRE(opts["--unknown"] == "1");
     fs::remove(cfg);
 }
 
-TEST_CASE("JSON invalid key is reported") {
-    fs::path cfg = fs::temp_directory_path() / "cfg_bad.json";
+TEST_CASE("JSON unknown key allowed") {
+    fs::path cfg = fs::temp_directory_path() / "cfg_unknown.json";
     {
         std::ofstream ofs(cfg);
         ofs << "{\n  \"unknown\": 1\n}";
@@ -200,8 +202,8 @@ TEST_CASE("JSON invalid key is reported") {
     std::map<std::string, std::string> opts;
     std::map<std::string, std::map<std::string, std::string>> repo;
     std::string err;
-    REQUIRE_FALSE(load_json_config(cfg.string(), opts, repo, err));
-    REQUIRE(err.find("Unknown key") != std::string::npos);
+    REQUIRE(load_json_config(cfg.string(), opts, repo, err));
+    REQUIRE(opts["--unknown"] == "1");
     fs::remove(cfg);
 }
 
@@ -232,4 +234,3 @@ TEST_CASE("JSON type mismatch is reported") {
     REQUIRE(err.find("interval") != std::string::npos);
     fs::remove(cfg);
 }
-

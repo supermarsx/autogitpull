@@ -1,6 +1,9 @@
 #include <cstdio>
 #include <array>
+#include <chrono>
 #include "test_common.hpp"
+#include "options.hpp"
+#include "mutant_mode.hpp"
 
 static std::string run_cmd(const std::string& cmd) {
     std::array<char, 128> buffer{};
@@ -86,4 +89,27 @@ TEST_CASE("get_remote_commit_time handles authentication options") {
 
     fs::remove_all(repo);
     fs::remove_all(remote);
+}
+
+TEST_CASE("mutant_should_pull skips unchanged repos") {
+    git::GitInitGuard guard;
+    fs::path repo, remote;
+    std::string hash;
+    std::time_t ctime;
+    setup_repo(repo, remote, hash, ctime);
+
+    Options opts;
+    opts.mutant_mode = true;
+    opts.mutant_config = fs::temp_directory_path() / "mutant_test.cfg";
+    fs::remove(opts.mutant_config);
+    apply_mutant_mode(opts);
+
+    RepoInfo ri;
+    ri.branch = "master";
+    REQUIRE(mutant_should_pull(repo, ri, "origin", false, std::chrono::hours(1)));
+    REQUIRE_FALSE(mutant_should_pull(repo, ri, "origin", false, std::chrono::hours(1)));
+
+    fs::remove_all(repo);
+    fs::remove_all(remote);
+    fs::remove(opts.mutant_config);
 }

@@ -613,7 +613,7 @@ int run_event_loop(Options opts) {
                 opts.force_pull, opts.limits.skip_timeout, opts.skip_unavailable,
                 opts.skip_accessible_errors, opts.updated_since, opts.show_pull_author,
                 opts.limits.pull_timeout, opts.retry_skipped, opts.reset_skipped,
-                opts.repo_settings);
+                opts.repo_settings, opts.mutant_mode);
             countdown_ms = std::chrono::seconds(interval);
         }
 #ifndef _WIN32
