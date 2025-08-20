@@ -27,7 +27,7 @@ void process_repo(const std::filesystem::path& p,
                   size_t down_limit, size_t up_limit, size_t disk_limit, bool silent, bool cli_mode,
                   bool force_pull, bool skip_timeout, bool skip_unavailable,
                   bool skip_accessible_errors, std::chrono::seconds updated_since,
-                  bool show_pull_author, std::chrono::seconds pull_timeout);
+                  bool show_pull_author, std::chrono::seconds pull_timeout, bool mutant_mode);
 
 void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 std::map<std::filesystem::path, RepoInfo>& repo_infos,
@@ -40,6 +40,7 @@ void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 bool skip_timeout, bool skip_unavailable, bool skip_accessible_errors,
                 std::chrono::seconds updated_since, bool show_pull_author,
                 std::chrono::seconds pull_timeout, bool retry_skipped, bool reset_skipped,
-                const std::map<std::filesystem::path, RepoOptions>& repo_settings);
+                const std::map<std::filesystem::path, RepoOptions>& repo_settings,
+                bool mutant_mode);
 
 #endif // SCANNER_HPP

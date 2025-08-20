@@ -481,6 +481,10 @@ Options parse_options(int argc, char* argv[]) {
                                       "--confirm-reset",
                                       "--confirm-alert",
                                       "--sudo-su",
+                                      "--mutant",
+                                      "--recover-mutant",
+                                      "--confirm-mutant",
+                                      "--mutant-config",
                                       "--add-ignore",
                                       "--remove-ignore",
                                       "--clear-ignores",
@@ -687,6 +691,31 @@ Options parse_options(int argc, char* argv[]) {
     opts.confirm_reset = parser.has_flag("--confirm-reset") || cfg_flag("--confirm-reset");
     opts.confirm_alert = parser.has_flag("--confirm-alert") || cfg_flag("--confirm-alert");
     opts.sudo_su = parser.has_flag("--sudo-su") || cfg_flag("--sudo-su");
+    opts.mutant_mode = parser.has_flag("--mutant") || parser.has_flag("--recover-mutant") ||
+                       cfg_flag("--mutant") || cfg_flag("--recover-mutant");
+    opts.confirm_mutant = parser.has_flag("--confirm-mutant") || cfg_flag("--confirm-mutant");
+    opts.recover_mutant = parser.has_flag("--recover-mutant") || cfg_flag("--recover-mutant");
+    if (parser.has_flag("--mutant-config") || cfg_opts.count("--mutant-config")) {
+        std::string val = parser.get_option("--mutant-config");
+        if (val.empty())
+            val = cfg_opt("--mutant-config");
+        if (!val.empty())
+            opts.mutant_config = val;
+    }
+    if (opts.mutant_mode) {
+        if (!(opts.confirm_mutant || opts.sudo_su))
+            throw std::runtime_error("--mutant requires --confirm-mutant or --sudo-su");
+        opts.service.persist = true;
+        if (opts.recover_mutant) {
+            opts.service.reattach = true;
+            if (opts.service.attach_name.empty())
+                opts.service.attach_name = "mutant";
+        } else {
+            opts.service.run_background = true;
+            if (opts.service.attach_name.empty())
+                opts.service.attach_name = "mutant";
+        }
+    }
     opts.add_ignore = parser.has_flag("--add-ignore") || cfg_flag("--add-ignore");
     if (opts.add_ignore)
         opts.add_ignore_repo = parser.get_option("--add-ignore");

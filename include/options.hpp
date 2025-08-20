@@ -156,6 +156,10 @@ struct Options {
     bool confirm_reset = false;
     bool confirm_alert = false;
     bool sudo_su = false;
+    bool mutant_mode = false;
+    bool confirm_mutant = false;
+    bool recover_mutant = false;
+    std::filesystem::path mutant_config;
     bool add_ignore = false;
     bool remove_ignore = false;
     bool clear_ignores = false;

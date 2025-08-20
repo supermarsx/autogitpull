@@ -17,6 +17,7 @@
 #include "debug_utils.hpp"
 #include "thread_compat.hpp"
 #include "ui_loop.hpp"
+#include "mutant_mode.hpp"
 
 namespace fs = std::filesystem;
 
@@ -328,7 +329,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
                   bool skip_unavailable, bool skip_accessible_errors,
                   std::chrono::seconds updated_since, bool show_pull_author,
-                  std::chrono::seconds pull_timeout) {
+                  std::chrono::seconds pull_timeout, bool mutant_mode) {
     if (!running)
         return;
     if (logger_initialized())
@@ -390,17 +391,25 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         ri.commit_date = git::get_last_commit_date(p);
         ri.commit_time = git::get_last_commit_time(p);
         if (updated_since.count() > 0) {
-            std::time_t ct =
-                git::get_remote_commit_time(p, remote, ri.branch, include_private, nullptr);
-            if (ct == 0)
-                ct = git::get_last_commit_time(p);
-            std::time_t now = std::time(nullptr);
-            if (ct == 0 || now - ct > updated_since.count()) {
-                ri.status = RS_SKIPPED;
-                ri.message = "Older than limit";
-                std::lock_guard<std::mutex> lk(mtx);
-                repo_infos[p] = ri;
-                return;
+            if (mutant_mode) {
+                if (!mutant_should_pull(p, ri, remote, include_private, updated_since)) {
+                    std::lock_guard<std::mutex> lk(mtx);
+                    repo_infos[p] = ri;
+                    return;
+                }
+            } else {
+                std::time_t ct =
+                    git::get_remote_commit_time(p, remote, ri.branch, include_private, nullptr);
+                if (ct == 0)
+                    ct = git::get_last_commit_time(p);
+                std::time_t now = std::time(nullptr);
+                if (ct == 0 || now - ct > updated_since.count()) {
+                    ri.status = RS_SKIPPED;
+                    ri.message = "Older than limit";
+                    std::lock_guard<std::mutex> lk(mtx);
+                    repo_infos[p] = ri;
+                    return;
+                }
             }
         }
 
@@ -408,10 +417,16 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
             determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos,
                                   was_accessible, skip_unavailable, skip_accessible_errors, remote);
         if (do_pull) {
+            auto start_time = std::chrono::steady_clock::now();
             execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
                          include_private, remote, down_limit, up_limit, disk_limit, force_pull,
                          was_accessible, skip_timeout, skip_unavailable, skip_accessible_errors,
                          cli_mode, silent, effective_timeout);
+            auto end_time = std::chrono::steady_clock::now();
+            if (mutant_mode)
+                mutant_record_result(
+                    p, ri.status,
+                    std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time));
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
@@ -457,7 +472,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool skip_unavailable, bool skip_accessible_errors,
                 std::chrono::seconds updated_since, bool show_pull_author,
                 std::chrono::seconds pull_timeout, bool retry_skipped, bool reset_skipped,
-                const std::map<std::filesystem::path, RepoOptions>& repo_settings) {
+                const std::map<std::filesystem::path, RepoOptions>& repo_settings,
+                bool mutant_mode) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
@@ -527,7 +543,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                              include_private, remote, log_dir, co, hash_check, dl, ul, disk, silent,
                              cli_mode, fp, skip_timeout, skip_unavailable, skip_accessible_errors,
-                             updated_since, show_pull_author, pt);
+                             updated_since, show_pull_author, pt, mutant_mode);
                 if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                     log_error("Memory limit exceeded");
                     running = false;

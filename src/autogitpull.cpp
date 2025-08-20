@@ -8,6 +8,7 @@
 #include "history_utils.hpp"
 #include "version.hpp"
 #include "cli_commands.hpp"
+#include "mutant_mode.hpp"
 
 namespace fs = std::filesystem;
 
@@ -16,6 +17,7 @@ int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
         Options opts = parse_options(argc, argv);
+        apply_mutant_mode(opts);
         if (opts.enable_history) {
             std::string cmd;
             for (int i = 1; i < argc; ++i) {
