@@ -2,6 +2,7 @@
 #define REPO_HPP
 #include <filesystem>
 #include <string>
+#include <ctime>
 
 /**
  * @brief High level status for a repository being monitored.
@@ -35,6 +36,7 @@ struct RepoInfo {
     std::string commit;             ///< Short hash of HEAD
     std::string commit_date;        ///< Date of last commit
     std::string commit_author;      ///< Author of last commit
+    std::time_t commit_time = 0;    ///< Time of last commit
     std::string last_pull_log;      ///< Result of last pull attempt
     int progress = 0;               ///< Fetch progress percentage
     bool auth_failed = false;       ///< Authentication error flag

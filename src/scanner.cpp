@@ -175,8 +175,8 @@ static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& s
 // Determine whether a pull is required and set RepoInfo accordingly
 static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_only, bool hash_check,
                                   bool include_private, std::set<fs::path>& skip_repos,
-                                  bool was_accessible, bool skip_accessible_errors,
-                                  const std::string& remote) {
+                                  bool was_accessible, bool skip_unavailable,
+                                  bool skip_accessible_errors, const std::string& remote) {
     if (hash_check) {
         std::string local = git::get_local_hash(p).value_or("");
         bool auth_fail = false;
@@ -186,7 +186,7 @@ static bool determine_pull_action(const fs::path& p, RepoInfo& ri, bool check_on
         if (local.empty() || remote_hash.empty()) {
             ri.status = RS_ERROR;
             ri.message = "Error getting hashes or remote";
-            if (!was_accessible || skip_accessible_errors)
+            if ((skip_unavailable && !was_accessible) || skip_accessible_errors)
                 skip_repos.insert(p);
             else
                 std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -223,8 +223,8 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
                          std::mutex& action_mtx, const fs::path& log_dir, bool include_private,
                          const std::string& remote, size_t down_limit, size_t up_limit,
                          size_t disk_limit, bool force_pull, bool was_accessible, bool skip_timeout,
-                         bool skip_accessible_errors, bool cli_mode, bool silent,
-                         std::chrono::seconds pull_timeout) {
+                         bool skip_unavailable, bool skip_accessible_errors, bool cli_mode,
+                         bool silent, std::chrono::seconds pull_timeout) {
     (void)skip_timeout;
     {
         std::lock_guard<std::mutex> lk(action_mtx);
@@ -304,7 +304,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
     } else {
         ri.status = RS_ERROR;
         ri.message = "Pull failed (see log)";
-        if (!was_accessible || skip_accessible_errors)
+        if ((skip_unavailable && !was_accessible) || skip_accessible_errors)
             skip_repos.insert(p);
         else
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -316,6 +316,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
         ri.message += " - " + log_file_path.string();
     ri.commit_author = git::get_last_commit_author(p);
     ri.commit_date = git::get_last_commit_date(p);
+    ri.commit_time = git::get_last_commit_time(p);
 }
 
 // Process a single repository
@@ -325,8 +326,9 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   const std::string& remote, const fs::path& log_dir, bool check_only,
                   bool hash_check, size_t down_limit, size_t up_limit, size_t disk_limit,
                   bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
-                  bool skip_accessible_errors, std::chrono::seconds updated_since,
-                  bool show_pull_author, std::chrono::seconds pull_timeout) {
+                  bool skip_unavailable, bool skip_accessible_errors,
+                  std::chrono::seconds updated_since, bool show_pull_author,
+                  std::chrono::seconds pull_timeout) {
     if (!running)
         return;
     if (logger_initialized())
@@ -386,6 +388,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         }
         ri.commit_author = git::get_last_commit_author(p);
         ri.commit_date = git::get_last_commit_date(p);
+        ri.commit_time = git::get_last_commit_time(p);
         if (updated_since.count() > 0) {
             std::time_t ct =
                 git::get_remote_commit_time(p, remote, ri.branch, include_private, nullptr);
@@ -403,17 +406,17 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
 
         bool do_pull =
             determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos,
-                                  was_accessible, skip_accessible_errors, remote);
+                                  was_accessible, skip_unavailable, skip_accessible_errors, remote);
         if (do_pull) {
             execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
                          include_private, remote, down_limit, up_limit, disk_limit, force_pull,
-                         was_accessible, skip_timeout, skip_accessible_errors, cli_mode, silent,
-                         effective_timeout);
+                         was_accessible, skip_timeout, skip_unavailable, skip_accessible_errors,
+                         cli_mode, silent, effective_timeout);
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
         ri.message = e.what();
-        if (!was_accessible || skip_accessible_errors)
+        if ((skip_unavailable && !was_accessible) || skip_accessible_errors)
             skip_repos.insert(p);
         else
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -451,8 +454,9 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool check_only, bool hash_check, size_t concurrency, double cpu_percent_limit,
                 size_t mem_limit, size_t down_limit, size_t up_limit, size_t disk_limit,
                 bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
-                bool skip_accessible_errors, std::chrono::seconds updated_since,
-                bool show_pull_author, std::chrono::seconds pull_timeout, bool retry_skipped,
+                bool skip_unavailable, bool skip_accessible_errors,
+                std::chrono::seconds updated_since, bool show_pull_author,
+                std::chrono::seconds pull_timeout, bool retry_skipped, bool reset_skipped,
                 const std::map<std::filesystem::path, RepoOptions>& repo_settings) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
@@ -462,18 +466,23 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
     {
         std::lock_guard<std::mutex> lk(mtx);
         for (auto& [p, info] : repo_infos) {
-            if (!retry_skipped && skip_repos.count(p))
-                continue;
+            if (skip_repos.count(p)) {
+                if (reset_skipped && info.status != RS_NOT_GIT) {
+                    info.status = RS_PENDING;
+                    info.message = "Pending...";
+                    info.progress = 0;
+                }
+                if (!retry_skipped)
+                    continue;
+            }
             if (info.status != RS_NOT_GIT) {
                 info.status = RS_PENDING;
                 info.message = "Pending...";
                 info.progress = 0;
             }
         }
-        if (retry_skipped) {
-            std::set<fs::path> empty_set;
-            skip_repos.swap(empty_set);
-        }
+        if (retry_skipped)
+            skip_repos.clear();
     }
 
     if (concurrency == 0)
@@ -490,6 +499,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 if (idx >= all_repos.size())
                     break;
                 const auto& p = all_repos[idx];
+                if (!retry_skipped && skip_repos.count(p))
+                    continue;
                 RepoOptions ro;
                 {
                     std::lock_guard<std::mutex> lk(mtx);
@@ -515,8 +526,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::chrono::seconds pt = ro.pull_timeout.value_or(pull_timeout);
                 process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                              include_private, remote, log_dir, co, hash_check, dl, ul, disk, silent,
-                             cli_mode, fp, skip_timeout, skip_accessible_errors, updated_since,
-                             show_pull_author, pt);
+                             cli_mode, fp, skip_timeout, skip_unavailable, skip_accessible_errors,
+                             updated_since, show_pull_author, pt);
                 if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                     log_error("Memory limit exceeded");
                     running = false;

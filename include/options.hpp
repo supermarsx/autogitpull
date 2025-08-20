@@ -146,7 +146,9 @@ struct Options {
     bool wait_empty = false;
     int wait_empty_limit = 0;
     bool skip_accessible_errors = false;
+    bool skip_unavailable = true;
     bool retry_skipped = false;
+    bool reset_skipped = false;
     bool cli_print_skipped = false;
     bool show_help = false;
     bool print_version = false;
@@ -162,7 +164,7 @@ struct Options {
     std::string remove_ignore_repo;
     unsigned int depth = 2;
     std::map<std::filesystem::path, RepoOptions> repo_settings;
-    enum SortMode { DEFAULT, ALPHA, REVERSE } sort_mode = DEFAULT;
+    enum SortMode { UPDATED, ALPHA, REVERSE } sort_mode = UPDATED;
 };
 
 struct LegacyOptions : LoggingOptions, ServiceOptions, ResourceLimits {

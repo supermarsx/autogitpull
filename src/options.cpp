@@ -458,7 +458,9 @@ Options parse_options(int argc, char* argv[]) {
                                       "--pull-timeout",
                                       "--exit-on-timeout",
                                       "--dont-skip-timeouts",
+                                      "--dont-skip-unavailable",
                                       "--retry-skipped",
+                                      "--reset-skipped",
                                       "--skip-accessible-errors",
                                       "--keep-first-valid",
                                       "--wait-empty",
@@ -927,6 +929,8 @@ Options parse_options(int argc, char* argv[]) {
             opts.sort_mode = Options::ALPHA;
         else if (val == "reverse")
             opts.sort_mode = Options::REVERSE;
+        else if (val == "updated")
+            opts.sort_mode = Options::UPDATED;
         else
             throw std::runtime_error("Invalid value for --row-order");
     }
@@ -956,7 +960,10 @@ Options parse_options(int argc, char* argv[]) {
         !(parser.has_flag("--dont-skip-timeouts") || cfg_flag("--dont-skip-timeouts"));
     opts.skip_accessible_errors =
         parser.has_flag("--skip-accessible-errors") || cfg_flag("--skip-accessible-errors");
+    opts.skip_unavailable =
+        !(parser.has_flag("--dont-skip-unavailable") || cfg_flag("--dont-skip-unavailable"));
     opts.retry_skipped = parser.has_flag("--retry-skipped") || cfg_flag("--retry-skipped");
+    opts.reset_skipped = parser.has_flag("--reset-skipped") || cfg_flag("--reset-skipped");
     opts.limits.exit_on_timeout =
         parser.has_flag("--exit-on-timeout") || cfg_flag("--exit-on-timeout");
     if (parser.has_flag("--remote") || cfg_opts.count("--remote")) {
