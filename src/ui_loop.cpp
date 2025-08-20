@@ -5,6 +5,9 @@
 #include <fstream>
 #include <iomanip>
 #include <cstring>
+#ifdef __APPLE__
+#include <strings.h>
+#endif
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -50,6 +53,14 @@
 #endif
 
 namespace fs = std::filesystem;
+
+static bool path_less(const fs::path& a, const fs::path& b) {
+#ifdef __APPLE__
+    return strcasecmp(a.string().c_str(), b.string().c_str()) < 0;
+#else
+    return a < b;
+#endif
+}
 
 struct AltScreenGuard {
     AltScreenGuard() {
@@ -139,7 +150,7 @@ void draw_cli(const std::vector<fs::path>& all_repos,
         if (it != repo_infos.end())
             ri = it->second;
         else
-            ri = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
+            ri = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", 0, "", 0, false, false};
         if ((ri.status == RS_SKIPPED && !show_skipped) || (ri.status == RS_NOT_GIT && !show_notgit))
             continue;
         std::string name = p.filename().string();
@@ -212,12 +223,14 @@ static void prepare_repos(const Options& opts, std::vector<fs::path>& all_repos,
         std::unordered_set<fs::path> ignore(opts.ignore_dirs.begin(), opts.ignore_dirs.end());
         all_repos = build_repo_list(roots, opts.recursive_scan, ignore, opts.max_depth);
         if (opts.sort_mode == Options::ALPHA)
-            std::sort(all_repos.begin(), all_repos.end());
+            std::sort(all_repos.begin(), all_repos.end(), path_less);
         else if (opts.sort_mode == Options::REVERSE)
-            std::sort(all_repos.rbegin(), all_repos.rend());
+            std::sort(all_repos.begin(), all_repos.end(),
+                      [](const fs::path& a, const fs::path& b) { return path_less(b, a); });
     }
     for (const auto& p : all_repos)
-        repo_infos[p] = RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
+        repo_infos[p] =
+            RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", 0, "", 0, false, false};
 }
 
 // Render either the TUI or CLI output
@@ -525,6 +538,16 @@ int run_event_loop(Options opts) {
                 }
                 first_cycle = false;
             }
+            if (opts.sort_mode == Options::UPDATED) {
+                std::sort(all_repos.begin(), all_repos.end(),
+                          [&](const fs::path& a, const fs::path& b) {
+                              auto ta = repo_infos.at(a).commit_time;
+                              auto tb = repo_infos.at(b).commit_time;
+                              if (ta != tb)
+                                  return ta > tb;
+                              return path_less(a, b);
+                          });
+            }
             if (opts.single_run)
                 running = false;
         }
@@ -543,15 +566,17 @@ int run_event_loop(Options opts) {
                     }
                 }
                 if (opts.sort_mode == Options::ALPHA)
-                    std::sort(new_repos.begin(), new_repos.end());
+                    std::sort(new_repos.begin(), new_repos.end(), path_less);
                 else if (opts.sort_mode == Options::REVERSE)
-                    std::sort(new_repos.rbegin(), new_repos.rend());
+                    std::sort(new_repos.begin(), new_repos.end(),
+                              [](const fs::path& a, const fs::path& b) { return path_less(b, a); });
                 {
                     std::lock_guard<std::mutex> lk(mtx);
                     for (const auto& p : new_repos) {
                         if (!repo_infos.count(p))
                             repo_infos[p] =
-                                RepoInfo{p, RS_PENDING, "Pending...", "", "", "", "", "", 0, false};
+                                RepoInfo{p,  RS_PENDING, "Pending...", "", "",    "",
+                                         "", 0,          "",           0,  false, false};
                     }
                 }
                 for (const auto& p : new_repos) {
@@ -559,9 +584,10 @@ int run_event_loop(Options opts) {
                         all_repos.push_back(p);
                 }
                 if (opts.sort_mode == Options::ALPHA)
-                    std::sort(all_repos.begin(), all_repos.end());
+                    std::sort(all_repos.begin(), all_repos.end(), path_less);
                 else if (opts.sort_mode == Options::REVERSE)
-                    std::sort(all_repos.rbegin(), all_repos.rend());
+                    std::sort(all_repos.begin(), all_repos.end(),
+                              [](const fs::path& a, const fs::path& b) { return path_less(b, a); });
                 rescan_countdown_ms = opts.rescan_interval;
             }
             {
@@ -584,9 +610,10 @@ int run_event_loop(Options opts) {
                 std::cref(opts.logging.log_dir), opts.check_only, opts.hash_check, concurrency,
                 opts.limits.cpu_percent_limit, opts.limits.mem_limit, opts.limits.download_limit,
                 opts.limits.upload_limit, opts.limits.disk_limit, opts.silent, opts.cli,
-                opts.force_pull, opts.limits.skip_timeout, opts.skip_accessible_errors,
-                opts.updated_since, opts.show_pull_author, opts.limits.pull_timeout,
-                opts.retry_skipped, opts.repo_settings);
+                opts.force_pull, opts.limits.skip_timeout, opts.skip_unavailable,
+                opts.skip_accessible_errors, opts.updated_since, opts.show_pull_author,
+                opts.limits.pull_timeout, opts.retry_skipped, opts.reset_skipped,
+                opts.repo_settings);
             countdown_ms = std::chrono::seconds(interval);
         }
 #ifndef _WIN32

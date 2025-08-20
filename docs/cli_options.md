@@ -53,6 +53,8 @@ These flags permanently alter data and require explicit confirmation:
 | `--refresh-rate` | 250 | TUI refresh rate |
 | `--rescan-new` | false (disabled) | Rescan for new repos every N minutes (default 5) |
 | `--retry-skipped` | false (disabled) | Retry repositories skipped previously |
+| `--reset-skipped` | false (disabled) | Reset status to pending for skipped repos |
+| `--dont-skip-unavailable` | false (disabled) | Retry repos missing or invalid on first pass |
 | `--root` |  | Root folder of repositories |
 | `--single-repo` | false (disabled) | Only monitor the specified root repo |
 | `--single-run` | false (disabled) | Run a single scan cycle and exit |
@@ -121,8 +123,7 @@ These flags permanently alter data and require explicit confirmation:
 | `--hide-header` | true (enabled) | Hide status header |
 | `--no-colors` | false | Disable ANSI colors |
 | `--no-colors` | false | Disable ANSI colors |
-| `--row-order` | DEFAULT | Row ordering (alpha/reverse) |
-| `--row-order` | DEFAULT | Row ordering (alpha/reverse) |
+| `--row-order` | updated | Row ordering (updated/alpha/reverse) |
 | `--session-dates-only` | false (disabled) | Only show dates for repos pulled this session |
 | `--show-commit-author` | false (disabled) | Display last commit author |
 | `--show-commit-author` | false (disabled) | Display last commit author |

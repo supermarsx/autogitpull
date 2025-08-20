@@ -31,7 +31,10 @@ void print_help(const char* prog) {
         {"--wait-empty", "-W", "[n]", "Keep retrying when no repos are found (optional limit)",
          "Basics"},
         {"--dont-skip-timeouts", "", "", "Retry repositories that timeout", "Basics"},
+        {"--dont-skip-unavailable", "", "", "Retry repos missing or invalid on first pass",
+         "Basics"},
         {"--retry-skipped", "", "", "Retry repositories skipped previously", "Basics"},
+        {"--reset-skipped", "", "", "Reset status to pending for skipped repos", "Basics"},
         {"--skip-accessible-errors", "", "", "Skip repos with errors even if previously accessible",
          "Basics"},
         {"--keep-first-valid", "", "", "Keep valid repos from first scan", "Basics"},
@@ -70,7 +73,7 @@ void print_help(const char* prog) {
          "Display"},
         {"--hide-date-time", "", "", "Hide date/time line in TUI", "Display"},
         {"--hide-header", "-H", "", "Hide status header", "Display"},
-        {"--row-order", "", "<mode>", "Row ordering (alpha/reverse)", "Display"},
+        {"--row-order", "", "<mode>", "Row ordering (updated/alpha/reverse)", "Display"},
         {"--color", "", "<ansi>", "Override status color", "Display"},
         {"--theme", "", "<file>", "Load colors from theme file", "Display"},
         {"--no-colors", "-C", "", "Disable ANSI colors", "Display"},
@@ -148,7 +151,6 @@ void print_help(const char* prog) {
         {"--show-commit-author", "-U", "", "Display last commit author", "Display"},
         {"--hide-date-time", "", "", "Hide date/time line in TUI", "Display"},
         {"--hide-header", "-H", "", "Hide status header", "Display"},
-        {"--row-order", "", "<mode>", "Row ordering (alpha/reverse)", "Display"},
         {"--color", "", "<ansi>", "Override status color", "Display"},
         {"--no-colors", "-C", "", "Disable ANSI colors", "Display"},
         {"--vmem", "", "", "Show virtual memory usage", "Tracking"},
@@ -157,6 +159,14 @@ void print_help(const char* prog) {
         {"--pull-timeout", "-O", "<N[s|m|h|d|w|M|Y]>", "Network operation timeout", "Process"},
         {"--exit-on-timeout", "", "", "Terminate worker on poll timeout", "Process"},
         {"--help", "-h", "", "Show this message", "Basics"}};
+
+    static const std::map<std::string, std::string> defaults{
+        {"--interval", "30s"},     {"--refresh-rate", "250ms"},
+        {"--max-depth", "0"},      {"--rescan-new", "5m"},
+        {"--wait-empty", "0"},     {"--row-order", "updated"},
+        {"--pull-timeout", "0"},   {"--respawn-delay", "1000ms"},
+        {"--respawn-limit", "0"},  {"--dont-skip-unavailable", "skip"},
+        {"--reset-skipped", "off"}};
 
     std::map<std::string, std::vector<const OptionInfo*>> groups;
     size_t width = 0;
@@ -194,7 +204,11 @@ void print_help(const char* prog) {
             flag += o->long_flag;
             if (std::strlen(o->arg))
                 flag += " " + std::string(o->arg);
-            std::cout << std::left << std::setw(static_cast<int>(width) + 2) << flag << o->desc
+            std::string desc = o->desc;
+            auto it = defaults.find(o->long_flag);
+            if (it != defaults.end())
+                desc += " (default: " + it->second + ")";
+            std::cout << std::left << std::setw(static_cast<int>(width) + 2) << flag << desc
                       << "\n";
         }
         std::cout << "\n";

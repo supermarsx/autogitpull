@@ -41,8 +41,8 @@ TEST_CASE("scan_repos memory stability") {
         running = true;
         scan_repos(repos, infos, skip, mtx, scanning, running, action, action_mtx, false,
                    "origin", fs::path(), true, true, 1, 0, 0, 0, 0, 0, false, false, false,
-                   true, false, std::chrono::seconds(0), false, std::chrono::seconds(0), false,
-                   {});
+                   true, true, false, std::chrono::seconds(0), false,
+                   std::chrono::seconds(0), false, false, {});
         size_t mem = procutil::get_memory_usage_mb();
         if (i == 0)
             baseline = mem;
