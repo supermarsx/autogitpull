@@ -19,7 +19,7 @@ if not exist dist mkdir dist
 
 cl /nologo /std:c++20 /EHsc /Zi /D YAML_CPP_STATIC_DEFINE ^
  /I "%INC%" /I include ^
- src\autogitpull.cpp src\scanner.cpp src\ui_loop.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp ^
+ src\autogitpull.cpp src\scanner.cpp src\ui_loop.cpp src\file_watch.cpp src\git_utils.cpp src\tui.cpp src\logger.cpp ^
  src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\config_utils.cpp src\debug_utils.cpp ^
  src\ignore_utils.cpp ^
  src\options.cpp src\parse_utils.cpp src\mutant_mode.cpp src\lock_utils_windows.cpp src\process_monitor.cpp src\help_text.cpp ^

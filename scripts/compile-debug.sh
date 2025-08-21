@@ -19,6 +19,7 @@ mkdir -p "${ROOT_DIR}/dist"
     ${ROOT_DIR}/src/autogitpull.cpp \
     ${ROOT_DIR}/src/scanner.cpp \
     ${ROOT_DIR}/src/ui_loop.cpp \
+    ${ROOT_DIR}/src/file_watch.cpp \
     ${ROOT_DIR}/src/git_utils.cpp \
     ${ROOT_DIR}/src/tui.cpp \
     ${ROOT_DIR}/src/logger.cpp \
