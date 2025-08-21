@@ -25,6 +25,7 @@ SRC = \
     src/debug_utils.cpp \
     src/scanner.cpp \
     src/ui_loop.cpp \
+    src/file_watch.cpp \
     src/options.cpp \
     src/parse_utils.cpp \
     src/history_utils.cpp \

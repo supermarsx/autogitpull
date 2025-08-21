@@ -34,6 +34,7 @@ if exist "%LIBSSH2_LIB%\libssh2.a" (
 
 %CXX% %CXXFLAGS% -I"%INC%" -I"%LIBGIT2_INC%" -I"%YAMLCPP_INC%" -I"%JSON_INC%" ^
     "%ROOT_DIR%\src\autogitpull.cpp" "%ROOT_DIR%\src\scanner.cpp" "%ROOT_DIR%\src\ui_loop.cpp" ^
+    "%ROOT_DIR%\src\file_watch.cpp" ^
     "%ROOT_DIR%\src\git_utils.cpp" "%ROOT_DIR%\src\tui.cpp" "%ROOT_DIR%\src\logger.cpp" ^
     "%ROOT_DIR%\src\resource_utils.cpp" "%ROOT_DIR%\src\system_utils.cpp" "%ROOT_DIR%\src\time_utils.cpp" ^
     "%ROOT_DIR%\src\config_utils.cpp" "%ROOT_DIR%\src\ignore_utils.cpp" "%ROOT_DIR%\src\debug_utils.cpp" "%ROOT_DIR%\src\options.cpp" ^
