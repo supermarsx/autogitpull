@@ -6,6 +6,7 @@
 #include <chrono>
 #include <map>
 #include <functional>
+#include <optional>
 #include "logger.hpp"
 #include "repo_options.hpp"
 #include "tui.hpp"
@@ -111,6 +112,8 @@ struct Options {
     bool show_commit_author = false;
     bool show_pull_author = false;
     bool show_repo_count = false;
+    std::string webhook_url;
+    std::optional<std::string> webhook_secret;
     bool censor_names = false;
     char censor_char = '*';
     bool session_dates_only = false;

@@ -476,6 +476,8 @@ Options parse_options(int argc, char* argv[]) {
                                       "--show-pull-author",
                                       "--censor-names",
                                       "--censor-char",
+                                      "--webhook-url",
+                                      "--webhook-secret",
                                       "--keep-first",
                                       "--hard-reset",
                                       "--confirm-reset",
@@ -662,6 +664,19 @@ Options parse_options(int argc, char* argv[]) {
         parser.has_flag("--session-dates-only") || cfg_flag("--session-dates-only");
     opts.cli_print_skipped = parser.has_flag("--print-skipped") || cfg_flag("--print-skipped");
     opts.show_pull_author = parser.has_flag("--show-pull-author") || cfg_flag("--show-pull-author");
+    if (parser.has_flag("--webhook-url") || cfg_opts.count("--webhook-url")) {
+        std::string val = parser.get_option("--webhook-url");
+        if (val.empty())
+            val = cfg_opt("--webhook-url");
+        opts.webhook_url = val;
+    }
+    if (parser.has_flag("--webhook-secret") || cfg_opts.count("--webhook-secret")) {
+        std::string val = parser.get_option("--webhook-secret");
+        if (val.empty())
+            val = cfg_opt("--webhook-secret");
+        if (!val.empty())
+            opts.webhook_secret = val;
+    }
     opts.censor_names = parser.has_flag("--censor-names") || cfg_flag("--censor-names");
     if (parser.has_flag("--censor-char") || cfg_opts.count("--censor-char")) {
         std::string val = parser.get_option("--censor-char");

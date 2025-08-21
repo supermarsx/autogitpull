@@ -179,6 +179,13 @@ These flags permanently alter data and require explicit confirmation:
 | `--syslog-facility` | 0 | Syslog facility |
 | `--verbose` | INFO | Shorthand for --log-level DEBUG |
 
+## Webhook
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--webhook-url` |  | POST repository status JSON to this URL after pulls |
+| `--webhook-secret` |  | Optional secret sent via `X-Webhook-Secret` header |
+
 ## Process
 
 | Option | Default | Description |

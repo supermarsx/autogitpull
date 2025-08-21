@@ -18,6 +18,7 @@
 #include "thread_compat.hpp"
 #include "ui_loop.hpp"
 #include "mutant_mode.hpp"
+#include "webhook_notifier.hpp"
 
 namespace fs = std::filesystem;
 
@@ -329,7 +330,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
                   bool skip_unavailable, bool skip_accessible_errors,
                   std::chrono::seconds updated_since, bool show_pull_author,
-                  std::chrono::seconds pull_timeout, bool mutant_mode) {
+                  std::chrono::seconds pull_timeout, bool mutant_mode, WebhookNotifier* notifier) {
     if (!running)
         return;
     if (logger_initialized())
@@ -381,6 +382,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         std::lock_guard<std::mutex> lk(action_mtx);
         action = "Checking " + p.filename().string();
     }
+    bool attempted_pull = false;
     try {
         if (!validate_repo(p, ri, skip_repos, include_private, prev_pulled, remote)) {
             std::lock_guard<std::mutex> lk(mtx);
@@ -417,6 +419,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
             determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos,
                                   was_accessible, skip_unavailable, skip_accessible_errors, remote);
         if (do_pull) {
+            attempted_pull = true;
             auto start_time = std::chrono::steady_clock::now();
             execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
                          include_private, remote, down_limit, up_limit, disk_limit, force_pull,
@@ -442,6 +445,8 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         std::lock_guard<std::mutex> lk(mtx);
         repo_infos[p] = ri;
     }
+    if (notifier && attempted_pull)
+        notifier->notify(ri);
     if (cli_mode && !silent && ri.pulled && !prev_pulled) {
         std::time_t now = std::time(nullptr);
         char buf[32];
@@ -472,8 +477,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool skip_unavailable, bool skip_accessible_errors,
                 std::chrono::seconds updated_since, bool show_pull_author,
                 std::chrono::seconds pull_timeout, bool retry_skipped, bool reset_skipped,
-                const std::map<std::filesystem::path, RepoOptions>& repo_settings,
-                bool mutant_mode) {
+                const std::map<std::filesystem::path, RepoOptions>& repo_settings, bool mutant_mode,
+                WebhookNotifier* notifier) {
     git::GitInitGuard guard;
     static size_t last_mem = 0;
     size_t mem_before = procutil::get_memory_usage_mb();
@@ -543,7 +548,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                              include_private, remote, log_dir, co, hash_check, dl, ul, disk, silent,
                              cli_mode, fp, skip_timeout, skip_unavailable, skip_accessible_errors,
-                             updated_since, show_pull_author, pt, mutant_mode);
+                             updated_since, show_pull_author, pt, mutant_mode, notifier);
                 if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                     log_error("Memory limit exceeded");
                     running = false;

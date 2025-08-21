@@ -41,6 +41,7 @@
 #include "help_text.hpp"
 #include "lock_utils.hpp"
 #include "linux_daemon.hpp"
+#include "webhook_notifier.hpp"
 #ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -321,6 +322,7 @@ int run_event_loop(Options opts) {
     procutil::get_memory_usage_mb();
     procutil::get_thread_count();
     setup_logging(opts);
+    WebhookNotifier notifier(opts.webhook_url, opts.webhook_secret);
     int interval = opts.interval;
     if (!opts.logging.log_dir.empty())
         fs::create_directories(opts.logging.log_dir);
@@ -613,7 +615,8 @@ int run_event_loop(Options opts) {
                 opts.force_pull, opts.limits.skip_timeout, opts.skip_unavailable,
                 opts.skip_accessible_errors, opts.updated_since, opts.show_pull_author,
                 opts.limits.pull_timeout, opts.retry_skipped, opts.reset_skipped,
-                opts.repo_settings, opts.mutant_mode);
+                opts.repo_settings, opts.mutant_mode,
+                opts.webhook_url.empty() ? nullptr : &notifier);
             countdown_ms = std::chrono::seconds(interval);
         }
 #ifndef _WIN32
