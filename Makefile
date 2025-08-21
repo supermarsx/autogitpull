@@ -30,7 +30,8 @@ SRC = \
     src/history_utils.cpp \
     src/process_monitor.cpp \
     src/help_text.cpp \
-    src/cli_commands.cpp
+    src/cli_commands.cpp \
+    src/mutant_mode.cpp
 
 # Platform-specific sources
 ifeq ($(OS),Windows_NT)
