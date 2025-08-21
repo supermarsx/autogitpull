@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <cstring>
 #endif
 #include <fstream>
@@ -63,6 +64,36 @@ static std::string unit_path(const std::string& name) {
     return (unit_dir() / (name + ".service")).string();
 }
 
+static int run_systemctl(std::vector<std::string> args) {
+    pid_t pid = fork();
+    if (pid < 0)
+        return -1;
+    if (pid == 0) {
+        int fd = open("/dev/null", O_WRONLY);
+        if (fd >= 0) {
+            dup2(fd, STDOUT_FILENO);
+            dup2(fd, STDERR_FILENO);
+            close(fd);
+        }
+        std::vector<char*> argv;
+        argv.reserve(args.size() + 2);
+        argv.push_back(const_cast<char*>("systemctl"));
+        for (auto& a : args)
+            argv.push_back(const_cast<char*>(a.c_str()));
+        argv.push_back(nullptr);
+        execvp("systemctl", argv.data());
+        _exit(127);
+    }
+    int status = 0;
+    if (waitpid(pid, &status, 0) < 0)
+        return -1;
+    if (WIFEXITED(status))
+        return WEXITSTATUS(status);
+    if (WIFSIGNALED(status))
+        return 128 + WTERMSIG(status);
+    return -1;
+}
+
 bool create_service_unit(const std::string& name, const std::string& exec_path,
                          const std::string& config_file, const std::string& user, bool persist) {
     std::ofstream out(unit_path(name));
@@ -77,50 +108,42 @@ bool create_service_unit(const std::string& name, const std::string& exec_path,
     out << "\nRestart=on-failure\n\n";
     out << "[Install]\nWantedBy=multi-user.target\n";
     out.close();
-    std::system("systemctl daemon-reload > /dev/null 2>&1");
+    run_systemctl({"daemon-reload"});
     return true;
 }
 
 bool remove_service_unit(const std::string& name) {
     std::string path = unit_path(name);
     std::remove(path.c_str());
-    std::system("systemctl daemon-reload > /dev/null 2>&1");
+    run_systemctl({"daemon-reload"});
     return true;
 }
 
 bool service_unit_exists(const std::string& name) { return fs::exists(unit_path(name)); }
 
-bool start_service_unit(const std::string& name) {
-    std::string cmd = "systemctl start " + name + " > /dev/null 2>&1";
-    return std::system(cmd.c_str()) == 0;
-}
+bool start_service_unit(const std::string& name) { return run_systemctl({"start", name}) == 0; }
 
 bool stop_service_unit(const std::string& name, bool force) {
-    std::string cmd = "systemctl stop " + name + " > /dev/null 2>&1";
-    bool ok = std::system(cmd.c_str()) == 0;
+    bool ok = run_systemctl({"stop", name}) == 0;
     if (!ok && force) {
-        std::string killcmd = "systemctl kill -s SIGKILL " + name + " > /dev/null 2>&1";
-        std::system(killcmd.c_str());
-        ok = std::system(cmd.c_str()) == 0;
+        run_systemctl({"kill", "-s", "SIGKILL", name});
+        ok = run_systemctl({"stop", name}) == 0;
     }
     return ok;
 }
 
 bool restart_service_unit(const std::string& name, bool force) {
-    std::string cmd = "systemctl restart " + name + " > /dev/null 2>&1";
-    bool ok = std::system(cmd.c_str()) == 0;
+    bool ok = run_systemctl({"restart", name}) == 0;
     if (!ok && force) {
         stop_service_unit(name, true);
-        ok = std::system(cmd.c_str()) == 0;
+        ok = run_systemctl({"restart", name}) == 0;
     }
     return ok;
 }
 
 bool service_unit_status(const std::string& name, ServiceStatus& out) {
-    std::string status_cmd = "systemctl status " + name + " > /dev/null 2>&1";
-    out.exists = std::system(status_cmd.c_str()) == 0;
-    std::string active_cmd = "systemctl is-active --quiet " + name + " > /dev/null 2>&1";
-    out.running = std::system(active_cmd.c_str()) == 0;
+    out.exists = run_systemctl({"status", name}) == 0;
+    out.running = run_systemctl({"is-active", "--quiet", name}) == 0;
     return out.exists;
 }
 
