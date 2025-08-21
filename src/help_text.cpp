@@ -83,6 +83,7 @@ void print_help(const char* prog) {
         {"--censor-names", "", "", "Mask repository names", "Display"},
         {"--censor-char", "", "<ch>", "Character for name masking", "Display"},
         {"--check-only", "-x", "", "Only check for updates", "Actions"},
+        {"--dry-run", "", "", "Skip network operations and pulls", "Actions"},
         {"--no-hash-check", "-N", "", "Always pull without hash check", "Actions"},
         {"--force-pull", "-f", "", "Reset repos to remote, losing uncommitted work", "Actions"},
         {"--discard-dirty", "", "", "Alias for --force-pull; same data loss", "Actions"},

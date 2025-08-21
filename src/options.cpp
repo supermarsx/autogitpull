@@ -747,6 +747,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.hash_check = !(parser.has_flag("--no-hash-check") || cfg_flag("--no-hash-check"));
     opts.force_pull = parser.has_flag("--force-pull") || parser.has_flag("--discard-dirty") ||
                       cfg_flag("--force-pull") || cfg_flag("--discard-dirty");
+    opts.dry_run = parser.has_flag("--dry-run") || cfg_flag("--dry-run");
     if (parser.has_flag("--verbose") || cfg_flag("--verbose"))
         opts.logging.log_level = LogLevel::DEBUG;
     if (parser.has_flag("--log-level") || cfg_opts.count("--log-level")) {

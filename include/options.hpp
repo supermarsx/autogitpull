@@ -94,6 +94,7 @@ struct Options {
     bool check_only = false;
     bool hash_check = true;
     bool force_pull = false;
+    bool dry_run = false;
     LoggingOptions logging;
     std::filesystem::path ssh_public_key;
     std::filesystem::path ssh_private_key;

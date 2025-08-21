@@ -26,6 +26,7 @@ overrides. Scalar keys outside this list are rejected.
 | `--confirm-reset` | false (disabled) | Confirm --hard-reset |
 | `--discard-dirty` | false (disabled) | Alias for --force-pull; resets repo to remote state |
 | `--force-pull` | false (disabled) | Reset repos to remote state, losing uncommitted work |
+| `--dry-run` | false (disabled) | Scan without contacting remotes or performing pulls |
 | `--hard-reset` | false (disabled) | Remove logs, configs, and lock files |
 | `--list-instances` | false (disabled) | List running instance names and PIDs |
 | `--no-hash-check` | false (feature enabled) | Always pull without hash check |

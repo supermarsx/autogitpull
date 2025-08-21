@@ -237,6 +237,12 @@ TEST_CASE("parse_options kill-on-sleep option") {
     REQUIRE(opts.service.kill_on_sleep);
 }
 
+TEST_CASE("parse_options dry-run option") {
+    const char* argv[] = {"prog", "path", "--dry-run"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.dry_run);
+}
+
 TEST_CASE("parse_options rescan-new option default") {
     const char* argv[] = {"prog", "path", "--rescan-new"};
     Options opts = parse_options(3, const_cast<char**>(argv));

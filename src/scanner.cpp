@@ -112,7 +112,8 @@ std::vector<fs::path> build_repo_list(const std::vector<fs::path>& roots, bool r
 }
 
 static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& skip_repos,
-                          bool include_private, bool prev_pulled, const std::string& remote) {
+                          bool include_private, bool prev_pulled, const std::string& remote,
+                          bool dry_run) {
     if (!fs::exists(p)) {
         ri.status = RS_ERROR;
         ri.message = "Missing";
@@ -148,7 +149,7 @@ static bool validate_repo(const fs::path& p, RepoInfo& ri, std::set<fs::path>& s
                 log_debug(p.string() + " skipped: non-GitHub repo");
             return false;
         }
-        if (!git::remote_accessible(p, remote)) {
+        if (!dry_run && !git::remote_accessible(p, remote)) {
             if (prev_pulled) {
                 ri.status = RS_TEMPFAIL;
                 ri.message = "Temporarily inaccessible";
@@ -329,7 +330,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
                   bool skip_unavailable, bool skip_accessible_errors,
                   std::chrono::seconds updated_since, bool show_pull_author,
-                  std::chrono::seconds pull_timeout, bool mutant_mode) {
+                  std::chrono::seconds pull_timeout, bool dry_run, bool mutant_mode) {
     if (!running)
         return;
     if (logger_initialized())
@@ -382,7 +383,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         action = "Checking " + p.filename().string();
     }
     try {
-        if (!validate_repo(p, ri, skip_repos, include_private, prev_pulled, remote)) {
+        if (!validate_repo(p, ri, skip_repos, include_private, prev_pulled, remote, dry_run)) {
             std::lock_guard<std::mutex> lk(mtx);
             repo_infos[p] = ri;
             return;
@@ -390,6 +391,13 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
         ri.commit_author = git::get_last_commit_author(p);
         ri.commit_date = git::get_last_commit_date(p);
         ri.commit_time = git::get_last_commit_time(p);
+        if (dry_run) {
+            ri.status = RS_SKIPPED;
+            ri.message = "Dry run";
+            std::lock_guard<std::mutex> lk(mtx);
+            repo_infos[p] = ri;
+            return;
+        }
         if (updated_since.count() > 0) {
             if (mutant_mode) {
                 if (!mutant_should_pull(p, ri, remote, include_private, updated_since)) {
@@ -471,7 +479,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
                 bool skip_unavailable, bool skip_accessible_errors,
                 std::chrono::seconds updated_since, bool show_pull_author,
-                std::chrono::seconds pull_timeout, bool retry_skipped, bool reset_skipped,
+                std::chrono::seconds pull_timeout, bool dry_run, bool retry_skipped,
+                bool reset_skipped,
                 const std::map<std::filesystem::path, RepoOptions>& repo_settings,
                 bool mutant_mode) {
     git::GitInitGuard guard;
@@ -543,7 +552,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                              include_private, remote, log_dir, co, hash_check, dl, ul, disk, silent,
                              cli_mode, fp, skip_timeout, skip_unavailable, skip_accessible_errors,
-                             updated_since, show_pull_author, pt, mutant_mode);
+                             updated_since, show_pull_author, pt, dry_run, mutant_mode);
                 if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                     log_error("Memory limit exceeded");
                     running = false;
