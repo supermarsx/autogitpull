@@ -610,7 +610,7 @@ int run_event_loop(Options opts) {
                 std::cref(opts.logging.log_dir), opts.check_only, opts.hash_check, concurrency,
                 opts.limits.cpu_percent_limit, opts.limits.mem_limit, opts.limits.download_limit,
                 opts.limits.upload_limit, opts.limits.disk_limit, opts.silent, opts.cli,
-                opts.force_pull, opts.limits.skip_timeout, opts.skip_unavailable,
+                opts.dry_run, opts.force_pull, opts.limits.skip_timeout, opts.skip_unavailable,
                 opts.skip_accessible_errors, opts.updated_since, opts.show_pull_author,
                 opts.limits.pull_timeout, opts.retry_skipped, opts.reset_skipped,
                 opts.repo_settings, opts.mutant_mode);

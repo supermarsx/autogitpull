@@ -77,6 +77,12 @@ TEST_CASE("parse_options service control flags") {
     REQUIRE(opts.service.restart_service_name == std::string("autogitpull"));
 }
 
+TEST_CASE("parse_options dry run flag") {
+    const char* argv[] = {"prog", "path", "--dry-run"};
+    Options opts = parse_options(3, const_cast<char**>(argv));
+    REQUIRE(opts.dry_run);
+}
+
 TEST_CASE("parse_options daemon control flags") {
     const char* argv[] = {"prog", "path", "--start-daemon", "--stop-daemon", "--restart-daemon"};
     Options opts = parse_options(5, const_cast<char**>(argv));

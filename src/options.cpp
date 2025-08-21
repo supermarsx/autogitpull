@@ -372,6 +372,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--concurrency",
                                       "--check-only",
                                       "--no-hash-check",
+                                      "--dry-run",
                                       "--log-level",
                                       "--verbose",
                                       "--max-threads",
@@ -745,6 +746,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.ignore_lock = parser.has_flag("--ignore-lock") || cfg_flag("--ignore-lock");
     opts.check_only = parser.has_flag("--check-only") || cfg_flag("--check-only");
     opts.hash_check = !(parser.has_flag("--no-hash-check") || cfg_flag("--no-hash-check"));
+    opts.dry_run = parser.has_flag("--dry-run") || cfg_flag("--dry-run");
     opts.force_pull = parser.has_flag("--force-pull") || parser.has_flag("--discard-dirty") ||
                       cfg_flag("--force-pull") || cfg_flag("--discard-dirty");
     if (parser.has_flag("--verbose") || cfg_flag("--verbose"))

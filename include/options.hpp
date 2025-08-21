@@ -93,6 +93,7 @@ struct Options {
     bool recursive_scan = false;
     bool check_only = false;
     bool hash_check = true;
+    bool dry_run = false;
     bool force_pull = false;
     LoggingOptions logging;
     std::filesystem::path ssh_public_key;
