@@ -1,8 +1,10 @@
 #include "mutant_mode.hpp"
-#include "git_utils.hpp"
+
 #include <fstream>
-#include <sstream>
 #include <map>
+#include <sstream>
+
+#include "git_utils.hpp"
 
 namespace fs = std::filesystem;
 
@@ -95,8 +97,7 @@ bool mutant_should_pull(const fs::path& repo, RepoInfo& ri, const std::string& r
     return true;
 }
 
-void mutant_record_result(const fs::path& repo, RepoStatus status,
-                          std::chrono::seconds duration) {
+void mutant_record_result(const fs::path& repo, RepoStatus status, std::chrono::seconds duration) {
     (void)repo;
     if (!current_opts)
         return;
