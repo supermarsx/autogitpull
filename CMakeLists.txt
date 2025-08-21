@@ -3,9 +3,29 @@ project(autogitpull)
 
 set(CMAKE_CXX_STANDARD 20)
 
+include(FetchContent)
+
 find_package(PkgConfig REQUIRED)
-find_package(yaml-cpp REQUIRED)
-find_package(nlohmann_json 3 REQUIRED)
+find_package(yaml-cpp CONFIG QUIET)
+if(NOT yaml-cpp_FOUND)
+    message(STATUS "yaml-cpp not found, fetching via FetchContent...")
+    FetchContent_Declare(
+        yaml-cpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+        GIT_TAG 0.8.0
+    )
+    FetchContent_MakeAvailable(yaml-cpp)
+endif()
+find_package(nlohmann_json 3 CONFIG QUIET)
+if(NOT nlohmann_json_FOUND)
+    message(STATUS "nlohmann_json not found, fetching via FetchContent...")
+    FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.2
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
 if(APPLE)
     set(PKG_CONFIG_USE_STATIC_LIBS OFF)
 else()
@@ -59,8 +79,6 @@ if(MINGW)
     target_link_libraries(autogitpull PRIVATE winhttp ole32 rpcrt4 crypt32)
 endif()
 
-include(FetchContent)
-
 enable_testing()
 find_package(Catch2 3 QUIET)
 if(NOT Catch2_FOUND)
@@ -108,5 +126,5 @@ target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)
 target_compile_options(memory_leak_test PRIVATE -fsanitize=address)
 target_link_options(memory_leak_test PRIVATE -fsanitize=address)
-target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain autogitpull_lib)
+target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain autogitpull_lib yaml-cpp nlohmann_json::nlohmann_json)
 add_test(NAME memory_leak_test COMMAND memory_leak_test)
