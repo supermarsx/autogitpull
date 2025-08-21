@@ -63,6 +63,7 @@ SRCS=(
     "${ROOT_DIR}/src/options.cpp"
     "${ROOT_DIR}/src/parse_utils.cpp"
     "${ROOT_DIR}/src/history_utils.cpp"
+    "${ROOT_DIR}/src/mutant_mode.cpp"
     "${ROOT_DIR}/src/lock_utils_posix.cpp"
     "${ROOT_DIR}/src/process_monitor.cpp"
     "${ROOT_DIR}/src/help_text.cpp"

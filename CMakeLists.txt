@@ -3,8 +3,19 @@ project(autogitpull)
 
 set(CMAKE_CXX_STANDARD 20)
 
+include(FetchContent)
+
 find_package(PkgConfig REQUIRED)
-find_package(yaml-cpp REQUIRED)
+find_package(yaml-cpp QUIET)
+if(NOT yaml-cpp_FOUND)
+    message(STATUS "yaml-cpp not found, fetching via FetchContent...")
+    FetchContent_Declare(
+        yamlcpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+        GIT_TAG yaml-cpp-0.8.0
+    )
+    FetchContent_MakeAvailable(yamlcpp)
+endif()
 find_package(nlohmann_json 3 REQUIRED)
 if(APPLE)
     set(PKG_CONFIG_USE_STATIC_LIBS OFF)
@@ -58,8 +69,6 @@ endif()
 if(MINGW)
     target_link_libraries(autogitpull PRIVATE winhttp ole32 rpcrt4 crypt32)
 endif()
-
-include(FetchContent)
 
 enable_testing()
 find_package(Catch2 3 QUIET)
