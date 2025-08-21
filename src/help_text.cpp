@@ -84,6 +84,7 @@ void print_help(const char* prog) {
         {"--censor-char", "", "<ch>", "Character for name masking", "Display"},
         {"--check-only", "-x", "", "Only check for updates", "Actions"},
         {"--no-hash-check", "-N", "", "Always pull without hash check", "Actions"},
+        {"--dry-run", "", "", "Simulate pulls without network operations", "Actions"},
         {"--force-pull", "-f", "", "Reset repos to remote, losing uncommitted work", "Actions"},
         {"--discard-dirty", "", "", "Alias for --force-pull; same data loss", "Actions"},
         {"--install-daemon", "", "", "Install background daemon", "Daemon"},

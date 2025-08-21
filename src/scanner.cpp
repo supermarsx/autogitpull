@@ -326,7 +326,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   std::string& action, std::mutex& action_mtx, bool include_private,
                   const std::string& remote, const fs::path& log_dir, bool check_only,
                   bool hash_check, size_t down_limit, size_t up_limit, size_t disk_limit,
-                  bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
+                  bool silent, bool cli_mode, bool dry_run, bool force_pull, bool skip_timeout,
                   bool skip_unavailable, bool skip_accessible_errors,
                   std::chrono::seconds updated_since, bool show_pull_author,
                   std::chrono::seconds pull_timeout, bool mutant_mode) {
@@ -417,16 +417,24 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
             determine_pull_action(p, ri, check_only, hash_check, include_private, skip_repos,
                                   was_accessible, skip_unavailable, skip_accessible_errors, remote);
         if (do_pull) {
-            auto start_time = std::chrono::steady_clock::now();
-            execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
-                         include_private, remote, down_limit, up_limit, disk_limit, force_pull,
-                         was_accessible, skip_timeout, skip_unavailable, skip_accessible_errors,
-                         cli_mode, silent, effective_timeout);
-            auto end_time = std::chrono::steady_clock::now();
-            if (mutant_mode)
-                mutant_record_result(
-                    p, ri.status,
-                    std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time));
+            if (dry_run) {
+                ri.status = RS_REMOTE_AHEAD;
+                ri.message = "Dry run";
+                ri.commit = git::get_local_hash(p).value_or("");
+                if (ri.commit.size() > 7)
+                    ri.commit = ri.commit.substr(0, 7);
+            } else {
+                auto start_time = std::chrono::steady_clock::now();
+                execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
+                             include_private, remote, down_limit, up_limit, disk_limit, force_pull,
+                             was_accessible, skip_timeout, skip_unavailable, skip_accessible_errors,
+                             cli_mode, silent, effective_timeout);
+                auto end_time = std::chrono::steady_clock::now();
+                if (mutant_mode)
+                    mutant_record_result(
+                        p, ri.status,
+                        std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time));
+            }
         }
     } catch (const fs::filesystem_error& e) {
         ri.status = RS_ERROR;
@@ -468,7 +476,7 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 bool include_private, const std::string& remote, const fs::path& log_dir,
                 bool check_only, bool hash_check, size_t concurrency, double cpu_percent_limit,
                 size_t mem_limit, size_t down_limit, size_t up_limit, size_t disk_limit,
-                bool silent, bool cli_mode, bool force_pull, bool skip_timeout,
+                bool silent, bool cli_mode, bool dry_run, bool force_pull, bool skip_timeout,
                 bool skip_unavailable, bool skip_accessible_errors,
                 std::chrono::seconds updated_since, bool show_pull_author,
                 std::chrono::seconds pull_timeout, bool retry_skipped, bool reset_skipped,
@@ -542,8 +550,9 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 std::chrono::seconds pt = ro.pull_timeout.value_or(pull_timeout);
                 process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                              include_private, remote, log_dir, co, hash_check, dl, ul, disk, silent,
-                             cli_mode, fp, skip_timeout, skip_unavailable, skip_accessible_errors,
-                             updated_since, show_pull_author, pt, mutant_mode);
+                             cli_mode, dry_run, fp, skip_timeout, skip_unavailable,
+                             skip_accessible_errors, updated_since, show_pull_author, pt,
+                             mutant_mode);
                 if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                     log_error("Memory limit exceeded");
                     running = false;

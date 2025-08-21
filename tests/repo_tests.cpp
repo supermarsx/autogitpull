@@ -271,8 +271,8 @@ TEST_CASE("scan_repos respects concurrency limit") {
     std::thread t([&]() {
         scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false,
                    "origin", fs::path(), true, true, concurrency, 0, 0, 0, 0, 0, true,
-                   false, false, true, true, false, std::chrono::seconds(0), false,
-                   std::chrono::seconds(0), false, false, {}, false);
+                   false, false, false, true, true, false, std::chrono::seconds(0),
+                   false, std::chrono::seconds(0), false, false, {}, false);
     });
     while (scanning) {
         max_seen = std::max(max_seen, read_thread_count());
@@ -353,8 +353,9 @@ TEST_CASE("scan_repos resets statuses to pending") {
     std::mutex act_mtx;
 
     scan_repos({}, infos, skip, mtx, scanning, running, act, act_mtx, false, "origin",
-               fs::path(), true, true, 1, 0, 0, 0, 0, 0, true, false, false, true, true, false,
-               std::chrono::seconds(0), false, std::chrono::seconds(0), false, false, {}, false);
+               fs::path(), true, true, 1, 0, 0, 0, 0, 0, true, false, false, false, true,
+               true, false, std::chrono::seconds(0), false, std::chrono::seconds(0), false,
+               false, {}, false);
 
     REQUIRE(infos[p].status == RS_PENDING);
     REQUIRE(infos[p].progress == 0);

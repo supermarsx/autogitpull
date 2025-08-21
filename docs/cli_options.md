@@ -22,6 +22,7 @@ overrides. Scalar keys outside this list are rejected.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--check-only` | false (disabled) | Only check for updates |
+| `--dry-run` | false (disabled) | Simulate pull operations without network access |
 | `--confirm-alert` | false (disabled) | Confirm unsafe options |
 | `--confirm-reset` | false (disabled) | Confirm --hard-reset |
 | `--discard-dirty` | false (disabled) | Alias for --force-pull; resets repo to remote state |
