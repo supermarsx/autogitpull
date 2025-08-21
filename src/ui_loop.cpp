@@ -40,6 +40,7 @@
 #include "options.hpp"
 #include "help_text.hpp"
 #include "lock_utils.hpp"
+#include "file_watch.hpp"
 #include "linux_daemon.hpp"
 #ifndef _WIN32
 #include <sys/socket.h>
@@ -327,12 +328,15 @@ int run_event_loop(Options opts) {
     std::vector<fs::path> all_repos;
     std::map<fs::path, RepoInfo> repo_infos;
     std::set<fs::path> first_validated;
-    std::filesystem::file_time_type config_mtime{};
+    std::atomic<bool> config_changed{false};
+    std::unique_ptr<FileWatcher> config_watcher;
     if (opts.auto_reload_config && !opts.config_file.empty()) {
-        std::error_code ec;
-        config_mtime = fs::last_write_time(opts.config_file, ec);
-        if (ec)
+        try {
+            config_watcher = std::make_unique<FileWatcher>(
+                opts.config_file, [&config_changed]() { config_changed.store(true); });
+        } catch (...) {
             opts.config_file.clear();
+        }
     }
     prepare_repos(opts, all_repos, repo_infos);
     size_t valid_count = 0;
@@ -446,42 +450,37 @@ int run_event_loop(Options opts) {
 #endif
     while (running) {
         auto now = std::chrono::steady_clock::now();
-        if (opts.auto_reload_config && !opts.config_file.empty()) {
-            std::error_code ec;
-            auto mtime = fs::last_write_time(opts.config_file, ec);
-            if (!ec && mtime != config_mtime && !scanning) {
-                try {
-                    std::vector<std::string> args = opts.original_args;
-                    std::vector<char*> argv;
-                    argv.reserve(args.size());
-                    for (auto& s : args)
-                        argv.push_back(s.data());
-                    Options new_opts = parse_options(static_cast<int>(argv.size()), argv.data());
-                    if (new_opts.limits.pull_timeout.count() > 0)
-                        git::set_libgit_timeout(
-                            static_cast<unsigned int>(new_opts.limits.pull_timeout.count()));
-                    {
-                        std::lock_guard<std::mutex> lk(mtx);
-                        opts = new_opts;
-                        all_repos.clear();
-                        repo_infos.clear();
-                        prepare_repos(opts, all_repos, repo_infos);
-                        skip_repos.clear();
-                        first_validated.clear();
-                        first_cycle = true;
-                    }
-                    interval = opts.interval;
-                    concurrency = opts.limits.concurrency;
-                    if (opts.limits.max_threads > 0 && concurrency > opts.limits.max_threads)
-                        concurrency = opts.limits.max_threads;
-                    rescan_countdown_ms =
-                        opts.rescan_new ? opts.rescan_interval : std::chrono::milliseconds(0);
-                    setup_environment(opts);
-                    config_mtime = mtime;
-                } catch (const std::exception& e) {
-                    log_error(std::string("Failed to reload config: ") + e.what());
-                    config_mtime = mtime;
+        if (config_changed.exchange(false) && opts.auto_reload_config &&
+            !opts.config_file.empty() && !scanning) {
+            try {
+                std::vector<std::string> args = opts.original_args;
+                std::vector<char*> argv;
+                argv.reserve(args.size());
+                for (auto& s : args)
+                    argv.push_back(s.data());
+                Options new_opts = parse_options(static_cast<int>(argv.size()), argv.data());
+                if (new_opts.limits.pull_timeout.count() > 0)
+                    git::set_libgit_timeout(
+                        static_cast<unsigned int>(new_opts.limits.pull_timeout.count()));
+                {
+                    std::lock_guard<std::mutex> lk(mtx);
+                    opts = new_opts;
+                    all_repos.clear();
+                    repo_infos.clear();
+                    prepare_repos(opts, all_repos, repo_infos);
+                    skip_repos.clear();
+                    first_validated.clear();
+                    first_cycle = true;
                 }
+                interval = opts.interval;
+                concurrency = opts.limits.concurrency;
+                if (opts.limits.max_threads > 0 && concurrency > opts.limits.max_threads)
+                    concurrency = opts.limits.max_threads;
+                rescan_countdown_ms =
+                    opts.rescan_new ? opts.rescan_interval : std::chrono::milliseconds(0);
+                setup_environment(opts);
+            } catch (const std::exception& e) {
+                log_error(std::string("Failed to reload config: ") + e.what());
             }
         }
         if (scanning && poll_timed_out(opts, scan_start, now)) {
