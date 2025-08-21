@@ -23,7 +23,7 @@ cl /nologo /std:c++20 /EHsc /Zi /D YAML_CPP_STATIC_DEFINE ^
  src\resource_utils.cpp src\system_utils.cpp src\time_utils.cpp src\config_utils.cpp src\debug_utils.cpp ^
  src\ignore_utils.cpp ^
  src\options.cpp src\parse_utils.cpp src\lock_utils_windows.cpp src\process_monitor.cpp src\help_text.cpp ^
- src\cli_commands.cpp src\linux_daemon.cpp src\windows_service.cpp ^
+ src\cli_commands.cpp src\mutant_mode.cpp src\linux_daemon.cpp src\windows_service.cpp ^
  src\linux_commands.cpp src\windows_commands.cpp ^
  "%LIB%\git2.lib" advapi32.lib Ws2_32.lib Shell32.lib Ole32.lib Rpcrt4.lib Crypt32.lib winhttp.lib Psapi.lib yaml-cpp.lib /fsanitize:address ^
  /Fedist\autogitpull_debug.exe
