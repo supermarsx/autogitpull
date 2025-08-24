@@ -21,6 +21,17 @@ static bool g_syslog = false;
 static int g_facility = LOG_USER;
 #endif
 
+/**
+ * @brief Initialize file-based logging.
+ *
+ * Opens @p path for append, sets the minimum @ref LogLevel, and
+ * configures size-based log rotation.
+ *
+ * @param path      Filesystem location of the log file.
+ * @param level     Minimum severity to record.
+ * @param max_size  Maximum file size in bytes before rotation.
+ * @param max_files Number of rotated files to retain.
+ */
 void init_logger(const std::string& path, LogLevel level, size_t max_size, size_t max_files) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     if (g_log_ofs.is_open()) {
@@ -41,6 +52,14 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
 }
 
 #ifdef __linux__
+/**
+ * @brief Enable syslog integration.
+ *
+ * Configures the syslog facility and opens a connection so future
+ * messages are mirrored to the system log.
+ *
+ * @param facility Syslog facility identifier.
+ */
 void init_syslog(int facility) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     g_facility = facility;
@@ -51,11 +70,26 @@ void init_syslog(int facility) {
 void init_syslog(int) {}
 #endif
 
+/**
+ * @brief Set the minimum log level.
+ *
+ * Adjusts the severity threshold below which messages are discarded.
+ *
+ * @param level New minimum @ref LogLevel.
+ */
 void set_log_level(LogLevel level) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     g_min_level = level;
 }
 
+/**
+ * @brief Toggle JSON formatted logging.
+ *
+ * When enabled, log entries are serialized as JSON objects instead of
+ * plain text.
+ *
+ * @param enable `true` to emit JSON logs.
+ */
 void set_json_logging(bool enable) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     g_json_log = enable;
@@ -113,6 +147,17 @@ static std::string format_extra_json(const std::map<std::string, std::string>& f
     return out;
 }
 
+/**
+ * @brief Core logging routine.
+ *
+ * Formats the message, writes it to the file sink, and optionally
+ * forwards it to syslog. Supports structured fields and JSON output.
+ *
+ * @param level  Severity of the message.
+ * @param label  Text label for the level (e.g., "INFO").
+ * @param msg    Human-readable message body.
+ * @param fields Additional key/value fields to serialize.
+ */
 static void log_impl(LogLevel level, const std::string& label, const std::string& msg,
                      const std::map<std::string, std::string>& fields) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
@@ -121,6 +166,7 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
     std::string line;
     std::string ts = timestamp();
     if (g_json_log) {
+        // Escape special characters so the output remains valid JSON.
         line = "{\"timestamp\":\"" + json_escape(ts) + "\",\"level\":\"" + label + "\",\"msg\":\"" +
                json_escape(msg) + "\"";
         std::string extras = format_extra_json(fields);
@@ -134,6 +180,8 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
     }
     g_log_ofs << line << std::endl;
     if (g_max_size > 0) {
+        // Check the rotation threshold and rotate files when the active log
+        // exceeds @p g_max_size bytes.
         g_log_ofs.flush();
         std::error_code ec;
         if (std::filesystem::file_size(g_log_path, ec) > g_max_size && !ec) {
@@ -157,6 +205,7 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
     }
 #ifdef __linux__
     if (g_syslog) {
+        // Mirror the message to syslog using the selected facility.
         int pri = LOG_INFO;
         switch (level) {
         case LogLevel::DEBUG:
