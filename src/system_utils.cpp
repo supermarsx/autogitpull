@@ -1,18 +1,29 @@
 #include "system_utils.hpp"
 #include <sstream>
-#ifdef __linux__
+#ifdef __linux__ // Use POSIX sched_* APIs for affinity control
 #include <sched.h>
-#elif defined(_WIN32)
+#elif defined(_WIN32) // Rely on Win32 API for process affinity
 #include <windows.h>
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) // macOS provides Mach thread affinity primitives
 #include <mach/mach.h>
 #include <mach/thread_policy.h>
 #endif
 
 namespace procutil {
 
+/**
+ * @brief Set CPU affinity for the current process.
+ *
+ * - Linux: calls sched_setaffinity with the provided mask.
+ * - Windows: uses SetProcessAffinityMask via Win32 API.
+ * - macOS: maps the first set bit to a Mach thread affinity tag.
+ * - Other platforms: no portable API; always fails.
+ *
+ * @param mask Bitmask specifying CPUs; bit 0 selects CPU 0.
+ * @return true on success, false otherwise.
+ */
 bool set_cpu_affinity(unsigned long long mask) {
-#ifdef __linux__
+#ifdef __linux__ // sched_setaffinity controls CPU mask on Linux
     if (mask == 0)
         return false;
     cpu_set_t set;
@@ -22,11 +33,11 @@ bool set_cpu_affinity(unsigned long long mask) {
             CPU_SET(i, &set);
     }
     return sched_setaffinity(0, sizeof(set), &set) == 0;
-#elif defined(_WIN32)
+#elif defined(_WIN32)    // Windows requires SetProcessAffinityMask
     if (mask == 0)
         return false;
     return SetProcessAffinityMask(GetCurrentProcess(), static_cast<DWORD_PTR>(mask)) != 0;
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) // macOS lacks sched_setaffinity; use Mach thread tags
     if (mask == 0)
         return false;
     unsigned core = 0;
@@ -40,14 +51,24 @@ bool set_cpu_affinity(unsigned long long mask) {
     policy.affinity_tag = static_cast<integer_t>(core + 1);
     return thread_policy_set(mach_thread_self(), THREAD_AFFINITY_POLICY,
                              reinterpret_cast<thread_policy_t>(&policy), 1) == KERN_SUCCESS;
-#else
+#else                    // Unsupported platform
     (void)mask;
     return false;
 #endif
 }
 
+/**
+ * @brief Retrieve CPU affinity for the current process.
+ *
+ * Returns a comma-separated list of CPU indices
+ * the process is allowed to run on.
+ * - Linux: queries sched_getaffinity.
+ * - Windows: uses GetProcessAffinityMask.
+ * - macOS: reads Mach task affinity tags.
+ * - Other platforms: returns an empty string.
+ */
 std::string get_cpu_affinity() {
-#ifdef __linux__
+#ifdef __linux__ // Query sched_getaffinity for allowed CPUs
     cpu_set_t set;
     if (sched_getaffinity(0, sizeof(set), &set) != 0)
         return "";
@@ -62,7 +83,7 @@ std::string get_cpu_affinity() {
         }
     }
     return oss.str();
-#elif defined(_WIN32)
+#elif defined(_WIN32)    // Use GetProcessAffinityMask on Windows
     DWORD_PTR process_mask = 0, system_mask = 0;
     if (!GetProcessAffinityMask(GetCurrentProcess(), &process_mask, &system_mask))
         return "";
@@ -77,7 +98,7 @@ std::string get_cpu_affinity() {
         }
     }
     return oss.str();
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) // Obtain affinity via Mach task info on macOS
     task_affinity_tag_info_data_t info;
     mach_msg_type_number_t count = TASK_AFFINITY_TAG_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_AFFINITY_TAG_INFO, reinterpret_cast<task_info_t>(&info),
@@ -92,7 +113,7 @@ std::string get_cpu_affinity() {
         oss << (tag - 1);
     }
     return oss.str();
-#else
+#else                    // Unsupported platform
     return "";
 #endif
 }
