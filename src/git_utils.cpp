@@ -15,6 +15,17 @@ namespace git {
 
 static unsigned int g_libgit_timeout = 0;
 
+/**
+ * @brief Read credentials from a file.
+ *
+ * The file is expected to contain the username on the first line and the
+ * password on the second line.
+ *
+ * @param path Path to the credential file.
+ * @param user Output parameter receiving the username.
+ * @param pass Output parameter receiving the password.
+ * @return True if both username and password were read.
+ */
 static bool read_credential_file(const fs::path& path, std::string& user, std::string& pass) {
     std::ifstream ifs(path);
     if (!ifs)
@@ -24,6 +35,15 @@ static bool read_credential_file(const fs::path& path, std::string& user, std::s
     return !user.empty() && !pass.empty();
 }
 
+/**
+ * @brief Configure the global libgit2 network timeout.
+ *
+ * When supported by the linked libgit2, this sets a timeout applied to
+ * network operations initiated by the library.
+ *
+ * @param seconds Timeout value in seconds.
+ * @return None.
+ */
 void set_libgit_timeout(unsigned int seconds) {
     g_libgit_timeout = seconds;
 #ifdef GIT_OPT_SET_TIMEOUT
@@ -42,6 +62,16 @@ struct ProgressData {
     size_t disk_limit;
 };
 
+/**
+ * @brief Build a transfer progress callback with rate limiting support.
+ *
+ * The callback reports percentage progress and throttles network and disk
+ * usage according to the provided limits.
+ *
+ * @param cb Optional user callback receiving progress percentage.
+ * @param pd Structure tracking rate limits and start time.
+ * @return libgit2 transfer progress callback or `nullptr` if unused.
+ */
 static git_transfer_progress_cb make_progress_callback(const std::function<void(int)>* cb,
                                                        ProgressData& pd) {
     pd.cb = cb;
@@ -55,6 +85,7 @@ static git_transfer_progress_cb make_progress_callback(const std::function<void(
             int pct = 0;
             if (stats->total_objects > 0)
                 pct = static_cast<int>(100 * stats->received_objects / stats->total_objects);
+            // Report progress percentage to the user callback
             (*pd->cb)(pct);
         }
         double expected_ms = 0.0;
@@ -65,22 +96,23 @@ static git_transfer_progress_cb make_progress_callback(const std::function<void(
             double ms =
                 static_cast<double>(stats->received_bytes) / (pd->down_limit * 1024.0) * 1000.0;
             if (ms > expected_ms)
-                expected_ms = ms;
+                expected_ms = ms; // enforce download rate limit
         }
         if (pd->up_limit > 0) {
             auto net = procutil::get_network_usage();
             double ms = static_cast<double>(net.upload_bytes) / (pd->up_limit * 1024.0) * 1000.0;
             if (ms > expected_ms)
-                expected_ms = ms;
+                expected_ms = ms; // enforce upload rate limit
         }
         if (pd->disk_limit > 0) {
             auto du = procutil::get_disk_usage();
             double ms = static_cast<double>(du.read_bytes + du.write_bytes) /
                         (pd->disk_limit * 1024.0) * 1000.0;
             if (ms > expected_ms)
-                expected_ms = ms;
+                expected_ms = ms; // enforce disk I/O rate limit
         }
         if (expected_ms > elapsed) {
+            // Sleep to throttle throughput when exceeding rate limits
             std::this_thread::sleep_for(
                 std::chrono::milliseconds(static_cast<int>(expected_ms - elapsed)));
         }
@@ -88,6 +120,24 @@ static git_transfer_progress_cb make_progress_callback(const std::function<void(
     };
 }
 
+/**
+ * @brief libgit2 credential callback implementing precedence rules.
+ *
+ * Credentials are chosen in the following order:
+ *  1. Explicit SSH key provided via options.
+ *  2. Username only.
+ *  3. SSH agent.
+ *  4. Username/password from file.
+ *  5. Username/password from environment variables.
+ *  6. Default credential helper.
+ *
+ * @param out             Output credential pointer for libgit2.
+ * @param url             Remote URL being accessed.
+ * @param username_from_url Username parsed from the URL, if any.
+ * @param allowed_types   Bitmask of credential types libgit2 will accept.
+ * @param payload         Pointer to Options providing credential data.
+ * @return 0 on success or a libgit2 error code.
+ */
 int credential_cb(git_credential** out, const char* url, const char* username_from_url,
                   unsigned int allowed_types, void* payload) {
     GitInitGuard guard;
@@ -97,9 +147,11 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
     std::string file_user;
     std::string file_pass;
     if (opts && !opts->credential_file.empty())
-        read_credential_file(opts->credential_file, file_user, file_pass);
+        read_credential_file(opts->credential_file, file_user,
+                             file_pass); // load file credentials when provided
     const char* user =
-        username_from_url ? username_from_url : (!file_user.empty() ? file_user.c_str() : env_user);
+        username_from_url ? username_from_url
+                          : (!file_user.empty() ? file_user.c_str() : env_user); // URL > file > env
     if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && opts && !opts->ssh_private_key.empty() &&
         user) {
         const char* pub = nullptr;
@@ -110,25 +162,32 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
         }
         if (git_credential_ssh_key_new(out, user, pub, opts->ssh_private_key.string().c_str(),
                                        "") == 0)
-            return 0;
+            return 0; // prefer explicit SSH key
     }
     if ((allowed_types & GIT_CREDENTIAL_USERNAME) && user) {
         if (git_credential_username_new(out, user) == 0)
-            return 0;
+            return 0; // fallback to username-only auth
     }
     if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && user) {
         if (git_credential_ssh_key_from_agent(out, user) == 0)
-            return 0;
+            return 0; // try SSH agent next
     }
     if (allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) {
         if (!file_user.empty() && !file_pass.empty())
-            return git_credential_userpass_plaintext_new(out, file_user.c_str(), file_pass.c_str());
+            return git_credential_userpass_plaintext_new(
+                out, file_user.c_str(),
+                file_pass.c_str()); // file credentials take precedence over env
         if (env_user && env_pass)
-            return git_credential_userpass_plaintext_new(out, env_user, env_pass);
+            return git_credential_userpass_plaintext_new(out, env_user,
+                                                         env_pass); // finally, use environment
     }
-    return git_credential_default_new(out);
+    return git_credential_default_new(out); // fall back to system credential helper
 }
 
+/**
+ * @brief Construct the RAII guard and initialize libgit2.
+ * @return None.
+ */
 GitInitGuard::GitInitGuard() {
     git_libgit2_init();
 #ifdef GIT_OPT_SET_TIMEOUT
@@ -137,18 +196,40 @@ GitInitGuard::GitInitGuard() {
 #endif
 }
 
+/**
+ * @brief Destroy the RAII guard and shutdown libgit2.
+ * @return None.
+ */
 GitInitGuard::~GitInitGuard() { git_libgit2_shutdown(); }
 
+/**
+ * @brief Determine whether a path is a Git repository.
+ *
+ * @param p Filesystem path to inspect.
+ * @return True if a `.git` directory exists.
+ */
 bool is_git_repo(const fs::path& p) {
     return fs::exists(p / ".git") && fs::is_directory(p / ".git");
 }
 
+/**
+ * @brief Convert a libgit2 object ID to a hexadecimal string.
+ *
+ * @param oid Object identifier to convert.
+ * @return Hexadecimal representation of @a oid.
+ */
 static string oid_to_hex(const git_oid& oid) {
     char buf[GIT_OID_HEXSZ + 1];
     git_oid_tostr(buf, sizeof(buf), &oid);
     return string(buf);
 }
 
+/**
+ * @brief Populate an error string with the last libgit2 error message.
+ *
+ * @param error Output string receiving the error description.
+ * @return None.
+ */
 static void set_error(std::string* error) {
     if (!error)
         return;
@@ -159,6 +240,13 @@ static void set_error(std::string* error) {
         *error = "Unknown libgit2 error";
 }
 
+/**
+ * @brief Obtain the commit hash pointed to by HEAD.
+ *
+ * @param repo  Path to an existing repository.
+ * @param error Optional output string receiving an error description.
+ * @return Hash string on success or `std::nullopt` on failure.
+ */
 optional<string> get_local_hash(const fs::path& repo, string* error) {
     git_repository* raw = nullptr;
     if (git_repository_open(&raw, repo.string().c_str()) != 0) {
@@ -174,6 +262,13 @@ optional<string> get_local_hash(const fs::path& repo, string* error) {
     return oid_to_hex(oid);
 }
 
+/**
+ * @brief Determine the currently checked-out branch.
+ *
+ * @param repo  Path to an existing repository.
+ * @param error Optional output string receiving an error description.
+ * @return Branch name or `std::nullopt` if it cannot be determined.
+ */
 optional<string> get_current_branch(const fs::path& repo, string* error) {
     git_repository* raw = nullptr;
     if (git_repository_open(&raw, repo.string().c_str()) != 0) {
@@ -196,6 +291,16 @@ optional<string> get_current_branch(const fs::path& repo, string* error) {
     return branch;
 }
 
+/**
+ * @brief Open a repository and fetch a remote.
+ *
+ * @param repo           Path to repository.
+ * @param remote         Name of remote to fetch.
+ * @param use_credentials Whether to use credential callback.
+ * @param auth_failed    Output flag set when authentication fails.
+ * @param error          Optional output string for error details.
+ * @return Pointer to opened repository or `nullptr` on failure.
+ */
 static git_repository* open_and_fetch_remote(const fs::path& repo, const string& remote,
                                              bool use_credentials, bool* auth_failed,
                                              string* error) {
@@ -213,7 +318,7 @@ static git_repository* open_and_fetch_remote(const fs::path& repo, const string&
     remote_ptr remote_handle(raw_remote);
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
     if (use_credentials)
-        fetch_opts.callbacks.credentials = credential_cb;
+        fetch_opts.callbacks.credentials = credential_cb; // provide credentials when requested
     int err = git_remote_fetch(remote_handle.get(), nullptr, &fetch_opts, nullptr);
     if (err != 0) {
         const git_error* e = git_error_last();
@@ -225,6 +330,17 @@ static git_repository* open_and_fetch_remote(const fs::path& repo, const string&
     return raw_repo;
 }
 
+/**
+ * @brief Fetch remote branch and return its commit hash.
+ *
+ * @param repo           Path to repository.
+ * @param remote         Name of remote.
+ * @param branch         Branch name on remote.
+ * @param use_credentials Whether to use credential callback.
+ * @param auth_failed    Optional output flag set on auth failure.
+ * @param error          Optional output string receiving error details.
+ * @return Remote commit hash or `std::nullopt` on error.
+ */
 optional<string> get_remote_hash(const fs::path& repo, const string& remote, const string& branch,
                                  bool use_credentials, bool* auth_failed, string* error) {
     git_repository* raw_repo =
@@ -241,6 +357,16 @@ optional<string> get_remote_hash(const fs::path& repo, const string& remote, con
     return oid_to_hex(oid);
 }
 
+/**
+ * @brief Retrieve the commit time of a remote branch.
+ *
+ * @param repo           Path to repository.
+ * @param remote         Name of remote.
+ * @param branch         Branch name on remote.
+ * @param use_credentials Whether to use credential callback.
+ * @param auth_failed    Optional output flag set on auth failure.
+ * @return Commit timestamp or 0 on error.
+ */
 std::time_t get_remote_commit_time(const fs::path& repo, const std::string& remote,
                                    const std::string& branch, bool use_credentials,
                                    bool* auth_failed) {
@@ -261,6 +387,14 @@ std::time_t get_remote_commit_time(const fs::path& repo, const std::string& remo
     return static_cast<std::time_t>(t);
 }
 
+/**
+ * @brief Retrieve the configured URL for a remote.
+ *
+ * @param repo  Path to repository.
+ * @param remote Remote name.
+ * @param error Optional output string receiving error details.
+ * @return Remote URL or `std::nullopt` on error.
+ */
 optional<string> get_remote_url(const fs::path& repo, const string& remote, string* error) {
     git_repository* raw_repo = nullptr;
     if (git_repository_open(&raw_repo, repo.string().c_str()) != 0) {
@@ -282,8 +416,21 @@ optional<string> get_remote_url(const fs::path& repo, const string& remote, stri
     return string(url);
 }
 
+/**
+ * @brief Check whether a URL targets GitHub.
+ *
+ * @param url URL string to test.
+ * @return True if the URL contains "github.com".
+ */
 bool is_github_url(const string& url) { return url.find("github.com") != string::npos; }
 
+/**
+ * @brief Test connectivity to a remote.
+ *
+ * @param repo   Path to repository.
+ * @param remote Remote name to check.
+ * @return True if the remote can be connected to.
+ */
 bool remote_accessible(const fs::path& repo, const string& remote) {
     git_repository* raw_repo = nullptr;
     if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
@@ -301,6 +448,12 @@ bool remote_accessible(const fs::path& repo, const string& remote) {
     return ok;
 }
 
+/**
+ * @brief Determine whether the repository has uncommitted changes.
+ *
+ * @param repo Path to repository.
+ * @return True if the working tree is dirty.
+ */
 bool has_uncommitted_changes(const fs::path& repo) {
     git_repository* raw_repo = nullptr;
     if (git_repository_open(&raw_repo, repo.string().c_str()) != 0)
@@ -316,6 +469,19 @@ bool has_uncommitted_changes(const fs::path& repo) {
     return git_status_list_entrycount(list.get()) > 0;
 }
 
+/**
+ * @brief Clone a repository while enforcing optional rate limits.
+ *
+ * @param dest            Destination path for clone.
+ * @param url             Remote URL.
+ * @param progress_cb     Optional callback receiving progress percent.
+ * @param use_credentials Whether to use credential callback.
+ * @param auth_failed     Output flag set if authentication fails.
+ * @param down_limit_kbps Download rate limit in KiB/s.
+ * @param up_limit_kbps   Upload rate limit in KiB/s.
+ * @param disk_limit_kbps Disk I/O rate limit in KiB/s.
+ * @return True on success, false otherwise.
+ */
 bool clone_repo(const fs::path& dest, const std::string& url,
                 const std::function<void(int)>* progress_cb, bool use_credentials,
                 bool* auth_failed, size_t down_limit_kbps, size_t up_limit_kbps,
@@ -325,13 +491,13 @@ bool clone_repo(const fs::path& dest, const std::string& url,
     ProgressData progress{nullptr, std::chrono::steady_clock::now(), down_limit_kbps, up_limit_kbps,
                           disk_limit_kbps};
     if (up_limit_kbps > 0)
-        procutil::init_network_usage();
+        procutil::init_network_usage(); // track upload usage for rate limiting
     auto transfer_cb = make_progress_callback(progress_cb, progress);
     if (transfer_cb) {
         if (disk_limit_kbps > 0)
-            procutil::init_disk_usage();
+            procutil::init_disk_usage(); // track disk I/O for throttling
         callbacks.payload = &progress;
-        callbacks.transfer_progress = transfer_cb;
+        callbacks.transfer_progress = transfer_cb; // enable progress reporting and limits
     }
     if (use_credentials)
         callbacks.credentials = credential_cb;
@@ -349,16 +515,32 @@ bool clone_repo(const fs::path& dest, const std::string& url,
     return true;
 }
 
+/**
+ * @brief Fast-forward pull from a remote with retry on rate limiting.
+ *
+ * @param repo             Path to repository.
+ * @param remote_name      Name of remote.
+ * @param out_pull_log     Receives textual description of the action.
+ * @param progress_cb      Optional progress callback.
+ * @param use_credentials  Whether to use credential callback.
+ * @param auth_failed      Output flag set if authentication fails.
+ * @param down_limit_kbps  Download rate limit in KiB/s.
+ * @param up_limit_kbps    Upload rate limit in KiB/s.
+ * @param disk_limit_kbps  Disk I/O rate limit in KiB/s.
+ * @param force_pull       Ignore local changes and force reset.
+ * @return Status code: 0 success, 2 failure, TRY_PULL_* constants for
+ *         specific error cases.
+ */
 int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_log,
              const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed,
              size_t down_limit_kbps, size_t up_limit_kbps, size_t disk_limit_kbps,
              bool force_pull) {
 
     if (progress_cb)
-        (*progress_cb)(0);
+        (*progress_cb)(0); // begin progress reporting
     auto finalize = [&]() {
         if (progress_cb)
-            (*progress_cb)(100);
+            (*progress_cb)(100); // ensure 100% on completion
     };
 
     git_repository* raw_repo = nullptr;
@@ -392,13 +574,13 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
     ProgressData progress{nullptr, std::chrono::steady_clock::now(), down_limit_kbps, up_limit_kbps,
                           disk_limit_kbps};
     if (up_limit_kbps > 0)
-        procutil::init_network_usage();
+        procutil::init_network_usage(); // capture initial network usage for rate limiting
     auto transfer_cb = make_progress_callback(progress_cb, progress);
     if (transfer_cb) {
         if (disk_limit_kbps > 0)
-            procutil::init_disk_usage();
+            procutil::init_disk_usage(); // start tracking disk I/O
         callbacks.payload = &progress;
-        callbacks.transfer_progress = transfer_cb;
+        callbacks.transfer_progress = transfer_cb; // enable progress and throttling
     }
     if (use_credentials)
         callbacks.credentials = credential_cb;
@@ -418,7 +600,7 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
                              msg_lower.find("429") != std::string::npos;
         if (is_rate_limit) {
             finalize();
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+            std::this_thread::sleep_for(std::chrono::seconds(2)); // back off before retrying
             err = git_remote_fetch(remote_handle.get(), nullptr, &fetch_opts, nullptr);
             if (err != 0) {
                 e = git_error_last();
@@ -489,6 +671,12 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
     return 0;
 }
 
+/**
+ * @brief Return formatted date of the last commit.
+ *
+ * @param repo Path to repository.
+ * @return Timestamp string or empty string on error.
+ */
 string get_last_commit_date(const fs::path& repo) {
     git_repository* raw = nullptr;
     if (git_repository_open(&raw, repo.string().c_str()) != 0)
@@ -514,6 +702,12 @@ string get_last_commit_date(const fs::path& repo) {
     return string(buf);
 }
 
+/**
+ * @brief Obtain the timestamp of the last commit.
+ *
+ * @param repo Path to repository.
+ * @return time_t of last commit or 0 on error.
+ */
 std::time_t get_last_commit_time(const fs::path& repo) {
     git_repository* raw = nullptr;
     if (git_repository_open(&raw, repo.string().c_str()) != 0)
@@ -530,6 +724,12 @@ std::time_t get_last_commit_time(const fs::path& repo) {
     return static_cast<std::time_t>(t);
 }
 
+/**
+ * @brief Retrieve the author name of the last commit.
+ *
+ * @param repo Path to repository.
+ * @return Author name or empty string on error.
+ */
 string get_last_commit_author(const fs::path& repo) {
     git_repository* raw = nullptr;
     if (git_repository_open(&raw, repo.string().c_str()) != 0)
