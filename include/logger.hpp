@@ -35,6 +35,16 @@ void set_log_level(LogLevel level);
 void set_json_logging(bool enable);
 
 /**
+ * @brief Enable or disable gzip compression of rotated log files.
+ *
+ * When enabled, files produced during log rotation will be compressed
+ * using zlib and stored with a `.gz` extension.
+ *
+ * @param enable Set to `true` to compress rotated logs.
+ */
+void set_log_compression(bool enable);
+
+/**
  * @brief Configure how many rotated log files are retained.
  *
  * @param max_files Number of historical log files to keep after rotation.

@@ -457,6 +457,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--syslog",
                                       "--syslog-facility",
                                       "--json-log",
+                                      "--compress-logs",
                                       "--pull-timeout",
                                       "--exit-on-timeout",
                                       "--dont-skip-timeouts",
@@ -975,6 +976,7 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("Invalid value for --row-order");
     }
     opts.logging.json_log = parser.has_flag("--json-log") || cfg_flag("--json-log");
+    opts.logging.compress_logs = parser.has_flag("--compress-logs") || cfg_flag("--compress-logs");
     opts.logging.use_syslog = parser.has_flag("--syslog") || cfg_flag("--syslog");
     if (parser.has_flag("--syslog-facility") || cfg_opts.count("--syslog-facility")) {
         std::string val = parser.get_option("--syslog-facility");

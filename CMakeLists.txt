@@ -35,6 +35,7 @@ pkg_check_modules(LIBGIT2 QUIET IMPORTED_TARGET libgit2)
 if(NOT LIBGIT2_FOUND)
     message(FATAL_ERROR "libgit2 not found. Install the libgit2 development package or run ./scripts/install_deps.sh")
 endif()
+find_package(ZLIB REQUIRED)
 
 add_library(autogitpull_lib STATIC
     src/git_utils.cpp
@@ -63,12 +64,12 @@ else()
     target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 endif()
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread)
+target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread ZLIB::ZLIB)
 
 add_executable(autogitpull
     src/autogitpull.cpp
     src/tui.cpp)
-target_link_libraries(autogitpull PRIVATE autogitpull_lib)
+target_link_libraries(autogitpull PRIVATE autogitpull_lib ZLIB::ZLIB)
 if(MSVC)
     target_link_options(autogitpull PRIVATE /MT)
 elseif(APPLE)
@@ -96,7 +97,7 @@ add_executable(autogitpull_tests
 target_sources(autogitpull_tests PRIVATE tests/file_watch_tests.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
-target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib)
+target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib ZLIB::ZLIB)
 add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
 
 # Address sanitizer memory leak test
@@ -129,5 +130,5 @@ target_include_directories(memory_leak_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(memory_leak_test PRIVATE AUTOGITPULL_NO_MAIN)
 target_compile_options(memory_leak_test PRIVATE -fsanitize=address)
 target_link_options(memory_leak_test PRIVATE -fsanitize=address)
-target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain autogitpull_lib yaml-cpp nlohmann_json::nlohmann_json)
+target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain autogitpull_lib yaml-cpp nlohmann_json::nlohmann_json ZLIB::ZLIB)
 add_test(NAME memory_leak_test COMMAND memory_leak_test)

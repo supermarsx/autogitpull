@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <zlib.h>
 #include "test_common.hpp"
 #ifdef __linux__
 static std::vector<std::string> g_syslog_messages;
@@ -48,6 +49,39 @@ TEST_CASE("Logger rotates and limits files") {
     fs::remove(log);
     fs::remove(log1);
     fs::remove(log2);
+}
+
+TEST_CASE("Logger compresses rotated files") {
+    fs::path log = fs::temp_directory_path() / "logger_compress.log";
+    fs::path log1 = log;
+    log1 += ".1.gz";
+    fs::path log2 = log;
+    log2 += ".2.gz";
+    fs::remove(log);
+    fs::remove(log1);
+    fs::remove(log2);
+
+    set_log_compression(true);
+    init_logger(log.string(), LogLevel::INFO, 100, 2);
+    for (int i = 0; i < 200; ++i)
+        log_info("entry " + std::to_string(i));
+    shutdown_logger();
+
+    REQUIRE(std::filesystem::exists(log));
+    REQUIRE(std::filesystem::exists(log1));
+    REQUIRE(std::filesystem::exists(log2));
+
+    gzFile zf = gzopen(log1.c_str(), "rb");
+    REQUIRE(zf != nullptr);
+    char buf[32];
+    int n = gzread(zf, buf, sizeof(buf));
+    gzclose(zf);
+    REQUIRE(n > 0);
+
+    fs::remove(log);
+    fs::remove(log1);
+    fs::remove(log2);
+    set_log_compression(false);
 }
 
 TEST_CASE("Logger switches between JSON and plain") {

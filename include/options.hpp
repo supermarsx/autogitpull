@@ -16,6 +16,7 @@ struct LoggingOptions {
     std::string log_file;
     size_t max_log_size = 0;
     bool json_log = false;
+    bool compress_logs = false;
     bool use_syslog = false;
     int syslog_facility = 0;
 };
