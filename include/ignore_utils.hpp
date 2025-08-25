@@ -28,6 +28,15 @@ std::vector<std::filesystem::path> read_ignore_file(const std::filesystem::path&
  */
 void write_ignore_file(const std::filesystem::path& file,
                        const std::vector<std::filesystem::path>& entries);
+
+/**
+ * Check if a path matches any ignore patterns.
+ *
+ * Patterns may include glob wildcards such as '*', '?', and '**'. Patterns
+ * without directory separators are matched against the filename component
+ * only. A match returns true, otherwise false.
+ */
+bool matches(const std::filesystem::path& path, const std::vector<std::filesystem::path>& patterns);
 } // namespace ignore
 
 #endif // IGNORE_UTILS_HPP

@@ -6,7 +6,6 @@
 #include <map>
 #include <mutex>
 #include <set>
-#include <unordered_set>
 #include <string>
 #include <vector>
 #include <chrono>
@@ -14,9 +13,10 @@
 #include "repo.hpp"
 #include "repo_options.hpp"
 
-std::vector<std::filesystem::path>
-build_repo_list(const std::vector<std::filesystem::path>& roots, bool recursive,
-                const std::unordered_set<std::filesystem::path>& ignore, size_t max_depth);
+std::vector<std::filesystem::path> build_repo_list(const std::vector<std::filesystem::path>& roots,
+                                                   bool recursive,
+                                                   const std::vector<std::filesystem::path>& ignore,
+                                                   size_t max_depth);
 
 void process_repo(const std::filesystem::path& p,
                   std::map<std::filesystem::path, RepoInfo>& repo_infos,

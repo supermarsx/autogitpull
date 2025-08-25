@@ -28,3 +28,10 @@ TEST_CASE("write_ignore_file skips blanks and preserves newline") {
     REQUIRE(read == expected);
     fs::remove_all(dir);
 }
+
+TEST_CASE("ignore pattern matching supports wildcards") {
+    std::vector<fs::path> patterns{"**/build/*", "*.tmp"};
+    REQUIRE(ignore::matches(fs::path("foo/build/output.o"), patterns));
+    REQUIRE(ignore::matches(fs::path("dir/file.tmp"), patterns));
+    REQUIRE_FALSE(ignore::matches(fs::path("src/main.cpp"), patterns));
+}

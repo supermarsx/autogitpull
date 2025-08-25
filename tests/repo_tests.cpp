@@ -1,6 +1,5 @@
 #include "test_common.hpp"
 #include <chrono>
-#include <unordered_set>
 #include <vector>
 
 TEST_CASE("get_local_hash surfaces error for missing repo") {
@@ -114,7 +113,7 @@ TEST_CASE("build_repo_list ignores directories") {
     fs::create_directories(root / "b");
     fs::create_directories(root / "c");
 
-    std::unordered_set<fs::path> ignore{root / "b", root / "c"};
+    std::vector<fs::path> ignore{root / "b", root / "c"};
     std::vector<fs::path> repos = build_repo_list({root}, false, ignore, 0);
     REQUIRE(std::find(repos.begin(), repos.end(), root / "a") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "b") == repos.end());
@@ -129,7 +128,7 @@ TEST_CASE("build_repo_list skips files") {
     fs::create_directories(root / "repo");
     std::ofstream(root / "file.txt") << "ignore";
 
-    std::unordered_set<fs::path> ignore;
+    std::vector<fs::path> ignore;
     std::vector<fs::path> repos = build_repo_list({root}, false, ignore, 0);
     REQUIRE(std::find(repos.begin(), repos.end(), root / "repo") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "file.txt") == repos.end());
@@ -148,7 +147,7 @@ TEST_CASE("build_repo_list ignores symlinks outside root") {
     fs::path link = root / "outside_link";
     fs::create_directory_symlink(outside, link);
 
-    std::unordered_set<fs::path> ignore;
+    std::vector<fs::path> ignore;
     std::vector<fs::path> repos = build_repo_list({root}, false, ignore, 0);
     REQUIRE(std::find(repos.begin(), repos.end(), root / "repo") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), link) == repos.end());
@@ -190,7 +189,7 @@ TEST_CASE("build_repo_list respects max depth") {
     fs::remove_all(root);
     fs::create_directories(root / "a/b/c");
 
-    std::unordered_set<fs::path> ignore;
+    std::vector<fs::path> ignore;
     std::vector<fs::path> repos = build_repo_list({root}, true, ignore, 2);
     REQUIRE(std::find(repos.begin(), repos.end(), root / "a") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), root / "a/b") != repos.end());
@@ -207,7 +206,7 @@ TEST_CASE("build_repo_list scans multiple roots") {
     fs::create_directories(r1 / "a");
     fs::create_directories(r2 / "b");
 
-    std::unordered_set<fs::path> ignore;
+    std::vector<fs::path> ignore;
     std::vector<fs::path> repos = build_repo_list({r1, r2}, false, ignore, 0);
     REQUIRE(std::find(repos.begin(), repos.end(), r1 / "a") != repos.end());
     REQUIRE(std::find(repos.begin(), repos.end(), r2 / "b") != repos.end());
@@ -228,8 +227,8 @@ TEST_CASE("build_repo_list handles large ignore set") {
         fs::create_directory(d);
         dirs.push_back(d);
     }
-    std::unordered_set<fs::path> ignore(dirs.begin(), dirs.end());
-    ignore.erase(dirs.back());
+    std::vector<fs::path> ignore(dirs.begin(), dirs.end());
+    ignore.pop_back();
     auto start = std::chrono::steady_clock::now();
     std::vector<fs::path> repos = build_repo_list({root}, false, ignore, 0);
     auto dur = std::chrono::steady_clock::now() - start;
