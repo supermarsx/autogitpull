@@ -12,6 +12,7 @@ following keys:
 | `cli` | boolean | Maps to `--cli` |
 | `root` | string | Maps to `--root` |
 | `credential-file` | string | Maps to `--credential-file` |
+| `proxy` | string | Maps to `--proxy` |
 | `repositories` | object | Map of repository paths to option maps |
 
 All other top-level mappings are treated as option categories or repository
@@ -71,6 +72,12 @@ These flags permanently alter data and require explicit confirmation:
 | `--ssh-public-key` |  | Path to SSH public key |
 | `--ssh-private-key` |  | Path to SSH private key |
 | `--credential-file` |  | Read username and password from file |
+
+## Network
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--proxy` |  | HTTP(S) proxy for Git network operations |
 
 ## Concurrency
 
