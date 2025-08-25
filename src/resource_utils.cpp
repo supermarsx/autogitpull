@@ -34,6 +34,15 @@ namespace procutil {
 
 #ifdef __linux__
 
+/**
+ * @brief Read accumulated user and system jiffies for this process.
+ *
+ * The Linux `/proc/self/stat` file exposes CPU time in so-called jiffies.
+ * Parsing the 14th and 15th fields yields user and kernel time consumed by
+ * the process. The value is cached by callers to avoid repeated file reads.
+ *
+ * @return Sum of user and system jiffies, or zero on failure.
+ */
 static long read_proc_jiffies() {
     std::ifstream stat("/proc/self/stat");
     if (!stat.is_open())
@@ -46,6 +55,12 @@ static long read_proc_jiffies() {
     return utime + stime;
 }
 
+/**
+ * @brief Extract a numeric entry from `/proc/self/status`.
+ *
+ * @param key Field name (including trailing colon) to search for.
+ * @return Parsed value on success, or zero if the key is absent.
+ */
 static std::size_t read_status_value(const std::string& key) {
     std::ifstream status("/proc/self/status");
     std::string k;
@@ -61,6 +76,12 @@ static std::size_t read_status_value(const std::string& key) {
     return val;
 }
 
+/**
+ * @brief Count threads by enumerating `/proc/self/task` entries.
+ *
+ * The directory contains one subdirectory per thread, providing an efficient
+ * way to obtain the thread count without additional system calls.
+ */
 static std::size_t count_task_threads() {
     namespace fs = std::filesystem;
     try {
@@ -88,7 +109,13 @@ static ULONGLONG get_process_time() {
 /**
  * @brief Try to obtain the thread count using the NtQuerySystemInformation API.
  *
- * Falls back to Toolhelp32 if the call fails.
+ * Querying `NtQuerySystemInformation(SystemProcessInformation, ...)` provides
+ * a snapshot of all processes and their thread counts without creating a
+ * snapshot handle. This is preferred over the slower Toolhelp32 interface.
+ *
+ * @return Number of threads in the current process or `0` on failure. The
+ *         caller will fall back to Toolhelp32 iteration if this function
+ *         returns `0`.
  */
 static std::size_t query_thread_count_ntapi() {
     using NtQuerySystemInformationPtr =
@@ -121,23 +148,28 @@ static std::size_t query_thread_count_ntapi() {
 static long read_proc_jiffies() { return 0; }
 #endif
 
-static long prev_jiffies = 0;
+// Cached CPU time counters used to compute deltas between polls.
+static long prev_jiffies = 0; ///< Last sampled jiffies on Linux.
 #ifdef _WIN32
-static ULONGLONG prev_proc_time = 0;
+static ULONGLONG prev_proc_time = 0; ///< Last sampled process time on Windows.
 #endif
 #ifdef __APPLE__
-static uint64_t prev_user = 0;
-static uint64_t prev_system = 0;
+static uint64_t prev_user = 0;   ///< Previous user time in microseconds.
+static uint64_t prev_system = 0; ///< Previous system time in microseconds.
 #endif
-static auto prev_time = std::chrono::steady_clock::now();
-static std::chrono::seconds cpu_poll_interval(5);
-static double last_cpu_percent = 0.0;
-static auto prev_mem_time = std::chrono::steady_clock::now();
-static std::chrono::seconds mem_poll_interval(5);
-static std::size_t last_mem_usage = 0;
-static auto prev_thread_time = std::chrono::steady_clock::now();
-static std::chrono::seconds thread_poll_interval(5);
-static std::size_t last_thread_count = 0;
+
+// Timestamps and intervals gate how often expensive system queries run.
+static auto prev_time = std::chrono::steady_clock::now(); ///< Last CPU poll time.
+static std::chrono::seconds cpu_poll_interval(5);         ///< Minimum gap between CPU polls.
+static double last_cpu_percent = 0.0;                     ///< Cached CPU usage result.
+
+static auto prev_mem_time = std::chrono::steady_clock::now(); ///< Last memory poll time.
+static std::chrono::seconds mem_poll_interval(5);             ///< Minimum gap between memory polls.
+static std::size_t last_mem_usage = 0;                        ///< Cached resident memory usage.
+
+static auto prev_thread_time = std::chrono::steady_clock::now(); ///< Last thread count poll time.
+static std::chrono::seconds thread_poll_interval(5); ///< Minimum gap between thread polls.
+static std::size_t last_thread_count = 0;            ///< Cached thread count.
 #ifdef __linux__
 static std::pair<std::size_t, std::size_t> read_net_bytes() {
     std::ifstream net("/proc/self/net/dev");
@@ -182,32 +214,51 @@ static std::pair<std::size_t, std::size_t> read_net_bytes() {
 static std::pair<std::size_t, std::size_t> read_net_bytes() { return {0, 0}; }
 #endif
 
-static std::size_t base_down = 0;
-static std::size_t base_up = 0;
+static std::size_t base_down = 0; ///< Baseline download counter.
+static std::size_t base_up = 0;   ///< Baseline upload counter.
 
+/**
+ * @brief Configure how often CPU usage is recomputed.
+ *
+ * Polling too frequently would require repeatedly parsing `/proc` or calling
+ * platform APIs. Values below one second are clamped to keep the load low.
+ */
 void set_cpu_poll_interval(unsigned int seconds) {
     cpu_poll_interval = std::chrono::seconds(seconds);
     if (cpu_poll_interval.count() < 1)
         cpu_poll_interval = std::chrono::seconds(1);
 }
 
+/**
+ * @brief Configure how often resident memory usage is sampled.
+ *
+ * The interval prevents hitting `/proc` or equivalent APIs on every call.
+ */
 void set_memory_poll_interval(unsigned int seconds) {
     mem_poll_interval = std::chrono::seconds(seconds);
     if (mem_poll_interval.count() < 1)
         mem_poll_interval = std::chrono::seconds(1);
 }
 
+/**
+ * @brief Configure how often thread counts are recomputed.
+ */
 void set_thread_poll_interval(unsigned int seconds) {
     thread_poll_interval = std::chrono::seconds(seconds);
     if (thread_poll_interval.count() < 1)
         thread_poll_interval = std::chrono::seconds(1);
 }
 
+/**
+ * @brief Reset cached CPU statistics so the next poll starts fresh.
+ */
 void reset_cpu_usage() {
     prev_time = std::chrono::steady_clock::now();
 #ifdef __linux__
+    // Capture baseline jiffies from /proc for later delta computation.
     prev_jiffies = read_proc_jiffies();
 #elif defined(_WIN32)
+    // On Windows, GetProcessTimes yields 100-ns units of CPU time.
     prev_proc_time = get_process_time();
 #elif defined(__APPLE__)
     mach_msg_type_number_t count = 0;
@@ -222,6 +273,7 @@ void reset_cpu_usage() {
 #endif
     if (task_info(mach_task_self(), flavor, reinterpret_cast<task_info_t>(&info), &count) ==
         KERN_SUCCESS) {
+        // Convert to microseconds to align with std::chrono conversions.
         prev_user = static_cast<uint64_t>(info.user_time.seconds) * 1000000ULL +
                     info.user_time.microseconds;
         prev_system = static_cast<uint64_t>(info.system_time.seconds) * 1000000ULL +
@@ -234,11 +286,19 @@ void reset_cpu_usage() {
     last_cpu_percent = 0.0;
 }
 
+/**
+ * @brief Return the process CPU usage percentage.
+ *
+ * Results are cached for @c cpu_poll_interval to avoid hitting the operating
+ * system on every call.
+ */
 double get_cpu_percent() {
 #ifdef __linux__
     auto now = std::chrono::steady_clock::now();
     if (now - prev_time < cpu_poll_interval)
-        return last_cpu_percent;
+        return last_cpu_percent; // Respect polling interval.
+
+    // Linux: compute usage based on jiffy deltas read from /proc/self/stat.
     long jiff = read_proc_jiffies();
     long diff_jiff = jiff - prev_jiffies;
     double diff_time =
@@ -254,7 +314,9 @@ double get_cpu_percent() {
 #elif defined(_WIN32)
     auto now = std::chrono::steady_clock::now();
     if (now - prev_time < cpu_poll_interval)
-        return last_cpu_percent;
+        return last_cpu_percent; // Respect polling interval.
+
+    // Windows: GetProcessTimes returns 100-ns units; convert and normalize by core count.
     ULONGLONG proc = get_process_time();
     ULONGLONG diff_proc = proc - prev_proc_time;
     double diff_time =
@@ -271,7 +333,9 @@ double get_cpu_percent() {
 #elif defined(__APPLE__)
     auto now = std::chrono::steady_clock::now();
     if (now - prev_time < cpu_poll_interval)
-        return last_cpu_percent;
+        return last_cpu_percent; // Respect polling interval.
+
+    // macOS: query Mach task info for user/system times.
     mach_msg_type_number_t count = 0;
     task_flavor_t flavor = MACH_TASK_BASIC_INFO;
 #ifdef TASK_BASIC_INFO_64
@@ -300,28 +364,38 @@ double get_cpu_percent() {
     last_cpu_percent = 100.0 * static_cast<double>(diff_us) / diff_time;
     return last_cpu_percent;
 #else
+    // Other platforms: return cached value as no implementation is provided.
     return last_cpu_percent;
 #endif
 }
 
+/**
+ * @brief Return resident memory usage in megabytes.
+ *
+ * The value is cached for @c mem_poll_interval to avoid hitting the OS on every
+ * call.
+ */
 std::size_t get_memory_usage_mb() {
     auto now = std::chrono::steady_clock::now();
     if (now - prev_mem_time < mem_poll_interval)
-        return last_mem_usage;
+        return last_mem_usage; // Respect polling interval.
     prev_mem_time = now;
 #ifdef __linux__
+    // Parse VmRSS from /proc/self/status (value reported in kB).
     std::size_t rss_kb = read_status_value("VmRSS:");
     if (rss_kb > 0)
         last_mem_usage = rss_kb / 1024;
     else
         last_mem_usage = 0;
 #elif defined(_WIN32)
+    // Windows: use GetProcessMemoryInfo to get working set size.
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
         last_mem_usage = static_cast<std::size_t>(pmc.WorkingSetSize / (1024 * 1024));
     else
         last_mem_usage = 0;
 #elif defined(__APPLE__)
+    // macOS: query Mach task info for resident size.
     mach_msg_type_number_t count = 0;
     task_flavor_t flavor = MACH_TASK_BASIC_INFO;
 #ifdef TASK_BASIC_INFO_64
@@ -343,8 +417,12 @@ std::size_t get_memory_usage_mb() {
     return last_mem_usage;
 }
 
+/**
+ * @brief Return virtual memory usage in kilobytes.
+ */
 std::size_t get_virtual_memory_kb() {
 #ifdef __linux__
+    // Read page count from /proc/self/statm and multiply by page size.
     std::ifstream statm("/proc/self/statm");
     std::size_t pages = 0;
     if (!(statm >> pages))
@@ -352,12 +430,14 @@ std::size_t get_virtual_memory_kb() {
     long page_size = sysconf(_SC_PAGESIZE);
     return pages * static_cast<std::size_t>(page_size) / 1024;
 #elif defined(_WIN32)
+    // Windows: PrivateUsage reports committed virtual memory in bytes.
     PROCESS_MEMORY_COUNTERS_EX pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmc),
                              sizeof(pmc)))
         return static_cast<std::size_t>(pmc.PrivateUsage / 1024);
     return 0;
 #elif defined(__APPLE__)
+    // macOS: use Mach task info to read virtual_size.
     mach_msg_type_number_t count = 0;
     task_flavor_t flavor = MACH_TASK_BASIC_INFO;
 #ifdef TASK_BASIC_INFO_64
@@ -377,19 +457,27 @@ std::size_t get_virtual_memory_kb() {
 #endif
 }
 
+/**
+ * @brief Return the number of threads in the current process.
+ *
+ * Thread counts are cached for @c thread_poll_interval to reduce system calls.
+ */
 std::size_t get_thread_count() {
     auto now = std::chrono::steady_clock::now();
     if (now - prev_thread_time < thread_poll_interval)
-        return last_thread_count;
+        return last_thread_count; // Respect polling interval.
     prev_thread_time = now;
 #ifdef __linux__
+    // Prefer fast /proc enumeration but fall back to parsing /proc/self/status.
     std::size_t count = count_task_threads();
     if (count == 0)
         count = read_status_value("Threads:");
     last_thread_count = count;
 #elif defined(_WIN32)
+    // Try the native NtQuerySystemInformation path first for efficiency.
     std::size_t count = query_thread_count_ntapi();
     if (count == 0) {
+        // Fallback: enumerate threads with the Toolhelp32 snapshot API.
         DWORD pid = GetCurrentProcessId();
         UniqueHandle snap(CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0));
         if (!snap) {
@@ -410,6 +498,7 @@ std::size_t get_thread_count() {
         last_thread_count = count;
     }
 #elif defined(__APPLE__)
+    // macOS: task_threads returns an array of thread ports.
     thread_act_array_t threads;
     mach_msg_type_number_t count;
     if (task_threads(mach_task_self(), &threads, &count) != KERN_SUCCESS) {
@@ -424,13 +513,18 @@ std::size_t get_thread_count() {
 #endif
     return last_thread_count;
 }
-
+/**
+ * @brief Establish a baseline for network I/O counters.
+ */
 void init_network_usage() {
     auto bytes = read_net_bytes();
     base_down = bytes.first;
     base_up = bytes.second;
 }
 
+/**
+ * @brief Return bytes sent/received since @ref init_network_usage.
+ */
 NetUsage get_network_usage() {
     auto bytes = read_net_bytes();
     NetUsage u;
@@ -439,6 +533,9 @@ NetUsage get_network_usage() {
     return u;
 }
 
+/**
+ * @brief Reset network usage counters to the current values.
+ */
 void reset_network_usage() { init_network_usage(); }
 
 #ifdef __linux__
@@ -499,10 +596,13 @@ static std::pair<std::size_t, std::size_t> read_io_bytes() {
 }
 #endif
 
-static std::size_t base_read = 0;
-static std::size_t base_write = 0;
-static std::uintmax_t base_dir_size = 0;
+static std::size_t base_read = 0;        ///< Baseline disk read counter.
+static std::size_t base_write = 0;       ///< Baseline disk write counter.
+static std::uintmax_t base_dir_size = 0; ///< Baseline temp directory size.
 
+/**
+ * @brief Return the total size of regular files within a directory.
+ */
 static std::uintmax_t directory_size(const std::filesystem::path& p) {
     std::uintmax_t total = 0;
     std::error_code ec;
@@ -513,6 +613,9 @@ static std::uintmax_t directory_size(const std::filesystem::path& p) {
     return total;
 }
 
+/**
+ * @brief Establish a baseline for disk I/O and temporary directory size.
+ */
 void init_disk_usage() {
     auto b = read_io_bytes();
     base_read = b.first;
@@ -520,6 +623,9 @@ void init_disk_usage() {
     base_dir_size = directory_size(std::filesystem::temp_directory_path());
 }
 
+/**
+ * @brief Return disk bytes read/written since @ref init_disk_usage.
+ */
 DiskUsage get_disk_usage() {
     auto b = read_io_bytes();
     DiskUsage u;
@@ -533,6 +639,9 @@ DiskUsage get_disk_usage() {
     return u;
 }
 
+/**
+ * @brief Reset disk usage counters to the current values.
+ */
 void reset_disk_usage() { init_disk_usage(); }
 
 } // namespace procutil
