@@ -99,6 +99,7 @@ struct Options {
     std::filesystem::path ssh_public_key;
     std::filesystem::path ssh_private_key;
     std::filesystem::path credential_file;
+    std::string proxy_url;
     int interval = 30;
     std::chrono::milliseconds refresh_ms{250};
     ResourceLimits limits;

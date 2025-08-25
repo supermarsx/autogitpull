@@ -368,6 +368,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--ssh-public-key",
                                       "--ssh-private-key",
                                       "--credential-file",
+                                      "--proxy",
                                       "--max-log-size",
                                       "--concurrency",
                                       "--check-only",
@@ -917,6 +918,14 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty())
             throw std::runtime_error("--credential-file requires a path");
         opts.credential_file = val;
+    }
+    if (parser.has_flag("--proxy") || cfg_opts.count("--proxy")) {
+        std::string val = parser.get_option("--proxy");
+        if (val.empty())
+            val = cfg_opt("--proxy");
+        if (val.empty())
+            throw std::runtime_error("--proxy requires a URL");
+        opts.proxy_url = val;
     }
     if (parser.has_flag("--max-log-size") || cfg_opts.count("--max-log-size")) {
         std::string val = parser.get_option("--max-log-size");

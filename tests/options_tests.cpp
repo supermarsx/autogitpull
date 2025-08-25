@@ -1,4 +1,5 @@
 #include "test_common.hpp"
+#include "git_utils.hpp"
 
 namespace git {
 int credential_cb(git_credential** out, const char* url, const char* username_from_url,
@@ -594,4 +595,22 @@ TEST_CASE("credential callback file") {
     REQUIRE(std::string(up->password) == "pass");
     git_credential_free(cred_out);
     fs::remove(cred);
+}
+
+TEST_CASE("parse_options proxy flag") {
+    const char* argv[] = {"prog", "/tmp", "--proxy", "http://proxy:8080"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.proxy_url == std::string("http://proxy:8080"));
+}
+
+TEST_CASE("set_proxy applies libgit2 option") {
+    git::GitInitGuard guard;
+    git::set_proxy("http://proxy:8080");
+#ifdef GIT_OPT_GET_PROXY
+    const char* proxy = nullptr;
+    git_libgit2_opts(GIT_OPT_GET_PROXY, &proxy);
+    REQUIRE(proxy != nullptr);
+    REQUIRE(std::string(proxy) == "http://proxy:8080");
+#endif
+    git::set_proxy("");
 }

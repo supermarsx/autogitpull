@@ -255,6 +255,7 @@ int run_event_loop(Options opts) {
     debugMemory = opts.debug_memory;
     dumpState = opts.dump_state;
     dumpThreshold = opts.dump_threshold;
+    git::set_proxy(opts.proxy_url);
 #ifndef _WIN32
     if (opts.service.reattach) {
         int fd = procutil::connect_status_socket(opts.service.attach_name);

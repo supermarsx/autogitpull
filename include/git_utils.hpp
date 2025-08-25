@@ -23,6 +23,7 @@ struct GitInitGuard {
 };
 
 void set_libgit_timeout(unsigned int seconds);
+void set_proxy(const std::string& url);
 
 // RAII wrappers for libgit2 resources
 template <typename T, void (*Free)(T*)> struct GitHandle {

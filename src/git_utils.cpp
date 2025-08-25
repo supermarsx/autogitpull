@@ -54,6 +54,14 @@ void set_libgit_timeout(unsigned int seconds) {
 #endif
 }
 
+void set_proxy(const std::string& url) {
+#ifdef GIT_OPT_SET_PROXY
+    git_libgit2_opts(GIT_OPT_SET_PROXY, url.empty() ? nullptr : url.c_str());
+#else
+    (void)url;
+#endif
+}
+
 struct ProgressData {
     const std::function<void(int)>* cb;
     std::chrono::steady_clock::time_point start;

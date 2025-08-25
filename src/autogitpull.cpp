@@ -37,6 +37,7 @@ int main(int argc, char* argv[]) {
     git::GitInitGuard git_guard;
     try {
         Options opts = parse_options(argc, argv); // Parse CLI options.
+        git::set_proxy(opts.proxy_url);
         apply_mutant_mode(opts);
         if (opts.enable_history) {
             std::string cmd;
