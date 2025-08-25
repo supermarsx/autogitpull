@@ -10,7 +10,17 @@
 
 namespace fs = std::filesystem;
 
-TEST_CASE("FileWatcher detects file modifications") {
+#if defined(__linux__)
+#define WATCH_BACKEND "inotify"
+#elif defined(__APPLE__)
+#define WATCH_BACKEND "fsevents"
+#elif defined(_WIN32)
+#define WATCH_BACKEND "windows-api"
+#else
+#define WATCH_BACKEND "polling"
+#endif
+
+TEST_CASE("FileWatcher detects file modifications using " WATCH_BACKEND) {
     auto tmp = fs::temp_directory_path() / "watch_test.txt";
     {
         std::ofstream os(tmp);
