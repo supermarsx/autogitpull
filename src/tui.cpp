@@ -17,6 +17,12 @@
 namespace fs = std::filesystem;
 
 #ifdef _WIN32
+/**
+ * @brief Enable ANSI escape sequence processing on Windows consoles.
+ *
+ * Adjusts the console mode so that emitted ANSI color codes are interpreted
+ * correctly. The function takes no parameters and returns no value.
+ */
 void enable_win_ansi() {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hOut == INVALID_HANDLE_VALUE)
@@ -24,13 +30,25 @@ void enable_win_ansi() {
     DWORD dwMode = 0;
     if (!GetConsoleMode(hOut, &dwMode))
         return;
+    // Enable processing of ANSI escape sequences
     dwMode |= 0x0004; // ENABLE_VIRTUAL_TERMINAL_PROCESSING
     SetConsoleMode(hOut, dwMode);
 }
 #else
+/**
+ * @brief Stub for non-Windows platforms where ANSI sequences already work.
+ */
 void enable_win_ansi() {}
 #endif
 
+/**
+ * @brief Convert a byte count into a human-readable string.
+ *
+ * Values ≥1 MB are formatted in megabytes, otherwise in kilobytes.
+ *
+ * @param b Number of bytes to format.
+ * @return Size string such as "10 MB" or "512 KB".
+ */
 static std::string format_bytes(std::size_t b) {
     std::ostringstream ss;
     if (b >= 1024 * 1024)
@@ -40,8 +58,19 @@ static std::string format_bytes(std::size_t b) {
     return ss.str();
 }
 
+/**
+ * @brief Build the ANSI color palette used by the TUI.
+ *
+ * @param no_colors When true, all color codes are suppressed.
+ * @param custom_color ANSI escape sequence that overrides theme defaults if
+ *                     not empty.
+ * @param theme Default set of color codes.
+ * @return Struct containing the escape sequences to use for each color.
+ */
 TuiColors make_tui_colors(bool no_colors, const std::string& custom_color, const TuiTheme& theme) {
     auto choose = [&](const std::string& def) {
+        // If colors are disabled, return an empty string; otherwise prefer a
+        // custom color when provided and fall back to the theme default.
         return no_colors ? std::string() : (custom_color.empty() ? def : custom_color);
     };
     return {no_colors ? std::string() : theme.reset,
@@ -54,14 +83,31 @@ TuiColors make_tui_colors(bool no_colors, const std::string& custom_color, const
             choose(theme.magenta)};
 }
 
+/**
+ * @brief Render the top header section of the TUI.
+ *
+ * @param all_repos       List of repositories being monitored.
+ * @param repo_infos      Map of repository information keyed by path.
+ * @param interval        Polling interval in seconds.
+ * @param seconds_left    Seconds remaining until the next scan.
+ * @param scanning        Whether a scan is currently in progress.
+ * @param action          Text describing the current action.
+ * @param show_version    Display program version when true.
+ * @param show_repo_count Include repository counts in output.
+ * @param status_msg      Additional status message to display.
+ * @param runtime_sec     Application runtime in seconds, or -1 to hide.
+ * @param show_datetime_line Show current date/time line when true.
+ * @param c               ANSI color palette.
+ * @return Formatted header string ready for terminal output.
+ */
 std::string render_header(const std::vector<fs::path>& all_repos,
                           const std::map<fs::path, RepoInfo>& repo_infos, int interval,
                           int seconds_left, bool scanning, const std::string& action,
                           bool show_version, bool show_repo_count, const std::string& status_msg,
                           int runtime_sec, bool show_datetime_line, const TuiColors& c) {
     std::ostringstream out;
-    out << "\033[2J\033[H";
-    out << c.bold << "AutoGitPull TUI";
+    out << "\033[2J\033[H";             // Clear screen and move cursor to home
+    out << c.bold << "AutoGitPull TUI"; // Program title in bold
     if (show_version)
         out << " v" << AUTOGITPULL_VERSION;
     out << c.reset << "\n";
@@ -82,7 +128,7 @@ std::string render_header(const std::vector<fs::path>& all_repos,
     out << "Interval: " << interval << "s    (Ctrl+C to exit)\n";
     out << "Status: ";
     if (scanning || action != "Idle")
-        out << c.yellow << action << c.reset;
+        out << c.yellow << action << c.reset; // Highlight active operations
     else
         out << c.green << "Idle" << c.reset;
     out << " - Next scan in " << seconds_left << "s";
@@ -94,10 +140,23 @@ std::string render_header(const std::vector<fs::path>& all_repos,
     return out.str();
 }
 
+/**
+ * @brief Render process resource usage statistics.
+ *
+ * @param track_cpu      Include CPU percentage when true.
+ * @param track_mem      Include resident memory usage.
+ * @param track_threads  Include thread count.
+ * @param track_net      Include network I/O statistics.
+ * @param show_affinity  Include CPU affinity mask.
+ * @param track_vmem     Include virtual memory usage.
+ * @param c              ANSI color palette (unused but reserved for future styling).
+ * @return Formatted statistics string.
+ */
 std::string render_stats(bool track_cpu, bool track_mem, bool track_threads, bool track_net,
                          bool show_affinity, bool track_vmem, const TuiColors& c) {
     std::ostringstream out;
     if (track_cpu || track_mem || track_threads || show_affinity || track_vmem) {
+        // Layout: CPU, memory, optional virtual memory, thread count and core affinity
         out << "CPU: ";
         if (track_cpu)
             out << std::fixed << std::setprecision(1) << procutil::get_cpu_percent() << "% ";
@@ -124,19 +183,37 @@ std::string render_stats(bool track_cpu, bool track_mem, bool track_threads, boo
     }
     if (track_net) {
         auto usage = procutil::get_network_usage();
+        // Display cumulative download (D) and upload (U) usage
         out << "Net: D " << format_bytes(usage.download_bytes) << "  U "
             << format_bytes(usage.upload_bytes) << "\n";
     }
     return out.str();
 }
 
+/**
+ * @brief Render a single repository entry for the status table.
+ *
+ * @param p                Path to the repository.
+ * @param ri               Status information for the repository.
+ * @param show_skipped     Include repositories marked as skipped.
+ * @param show_notgit      Include paths that are not Git repositories.
+ * @param show_commit_date Display last commit date when true.
+ * @param show_commit_author Display commit author when true.
+ * @param session_dates_only Show commit date only for repos pulled this session.
+ * @param censor_names     Obfuscate repository names.
+ * @param censor_char      Replacement character for censored names.
+ * @param c                ANSI color palette for highlighting.
+ * @return Formatted table row or empty string if filtered out.
+ */
 std::string render_repo_entry(const fs::path& p, const RepoInfo& ri, bool show_skipped,
                               bool show_notgit, bool show_commit_date, bool show_commit_author,
                               bool session_dates_only, bool censor_names, char censor_char,
                               const TuiColors& c) {
     if ((ri.status == RS_SKIPPED && !show_skipped) || (ri.status == RS_NOT_GIT && !show_notgit))
         return "";
+    // Default to a gray "Pending" state
     std::string color = c.gray, status_s = "Pending ";
+    // Map repository status to color and display label
     switch (ri.status) {
     case RS_PENDING:
         color = c.gray;
@@ -203,8 +280,10 @@ std::string render_repo_entry(const fs::path& p, const RepoInfo& ri, bool show_s
     std::string name = p.filename().string();
     if (censor_names)
         name.assign(name.size(), censor_char);
+    // Status column uses a fixed width for alignment
     out << color << " [" << std::left << std::setw(9) << status_s << "]  " << name << c.reset;
     if (!ri.branch.empty()) {
+        // Append branch and optional commit hash
         out << "  (" << ri.branch;
         if (!ri.commit.empty())
             out << "@" << ri.commit;
@@ -227,7 +306,7 @@ std::string render_repo_entry(const fs::path& p, const RepoInfo& ri, bool show_s
     if (!ri.message.empty())
         out << " - " << ri.message;
     if (ri.auth_failed)
-        out << c.red << " [AUTH]" << c.reset;
+        out << c.red << " [AUTH]" << c.reset; // Highlight authentication problems
     if (ri.status == RS_PULLING)
         out << " (" << ri.progress << "%)";
     out << "\n";
@@ -243,6 +322,7 @@ void draw_tui(const std::vector<fs::path>& all_repos,
               const TuiTheme& theme, const std::string& status_msg, int runtime_sec,
               bool show_datetime_line, bool show_header, bool show_repo_count, bool censor_names,
               char censor_char) {
+    // Determine which ANSI color codes to use based on options
     TuiColors colors = make_tui_colors(no_colors, custom_color, theme);
     std::ostringstream out;
     out << render_header(all_repos, repo_infos, interval, seconds_left, scanning, action,
@@ -251,12 +331,13 @@ void draw_tui(const std::vector<fs::path>& all_repos,
     out << render_stats(track_cpu, track_mem, track_threads, track_net, show_affinity, track_vmem,
                         colors);
     if (show_header) {
+        // Draw table header with a fixed-width status column
         out << "--------------------------------------------------------------";
-        out << "-------------------\n";
+        out << "-------------------\n"; // Top border
         out << colors.bold << " [" << std::left << std::setw(9) << "Status" << "]  Repo"
-            << colors.reset << "\n";
+            << colors.reset << "\n"; // Column titles
         out << "--------------------------------------------------------------";
-        out << "-------------------\n";
+        out << "-------------------\n"; // Bottom border
     }
     for (const auto& p : all_repos) {
         RepoInfo ri;
