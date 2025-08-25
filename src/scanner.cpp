@@ -7,7 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <ctime>
-#include <unordered_set>
+#include <vector>
 
 #include "git_utils.hpp"
 #include "logger.hpp"
@@ -18,12 +18,12 @@
 #include "thread_compat.hpp"
 #include "ui_loop.hpp"
 #include "mutant_mode.hpp"
+#include "ignore_utils.hpp"
 
 namespace fs = std::filesystem;
 
 std::vector<fs::path> build_repo_list(const std::vector<fs::path>& roots, bool recursive,
-                                      const std::unordered_set<fs::path>& ignore,
-                                      size_t max_depth) {
+                                      const std::vector<fs::path>& ignore, size_t max_depth) {
     std::vector<fs::path> result;
     for (const auto& root : roots) {
         if (root.empty())
@@ -73,7 +73,7 @@ std::vector<fs::path> build_repo_list(const std::vector<fs::path>& roots, bool r
                         ec.clear();
                     continue;
                 }
-                if (ignore.count(p)) {
+                if (ignore::matches(p, ignore)) {
                     it.disable_recursion_pending();
                     continue;
                 }
@@ -102,7 +102,7 @@ std::vector<fs::path> build_repo_list(const std::vector<fs::path>& roots, bool r
                         ec.clear();
                     continue;
                 }
-                if (ignore.count(p))
+                if (ignore::matches(p, ignore))
                     continue;
                 result.push_back(p);
             }
