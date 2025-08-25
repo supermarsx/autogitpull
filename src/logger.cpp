@@ -1,4 +1,5 @@
 #include "logger.hpp"
+#include <zlib.h>
 #include <fstream>
 #include <mutex>
 #include <iostream>
@@ -16,6 +17,7 @@ static std::string g_log_path; // NOLINT(runtime/string)
 static size_t g_max_size = 0;
 static size_t g_max_files = 1;
 static bool g_json_log = false;
+static bool g_compress_logs = false;
 #ifdef __linux__
 static bool g_syslog = false;
 static int g_facility = LOG_USER;
@@ -95,6 +97,11 @@ void set_json_logging(bool enable) {
     g_json_log = enable;
 }
 
+void set_log_compression(bool enable) {
+    std::lock_guard<std::mutex> lk(g_log_mtx);
+    g_compress_logs = enable;
+}
+
 void set_log_rotation(size_t max_files) {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     g_max_files = max_files;
@@ -103,6 +110,25 @@ void set_log_rotation(size_t max_files) {
 bool logger_initialized() {
     std::lock_guard<std::mutex> lk(g_log_mtx);
     return g_log_ofs.is_open();
+}
+
+static bool gzip_file(const std::string& src, const std::string& dst) {
+    std::ifstream in(src, std::ios::binary);
+    gzFile out = gzopen(dst.c_str(), "wb");
+    if (!in.is_open() || out == nullptr) {
+        if (out)
+            gzclose(out);
+        return false;
+    }
+    char buf[8192];
+    while (in) {
+        in.read(buf, sizeof(buf));
+        std::streamsize n = in.gcount();
+        if (n > 0)
+            gzwrite(out, buf, static_cast<unsigned int>(n));
+    }
+    gzclose(out);
+    return true;
 }
 
 static std::string json_escape(const std::string& in) {
@@ -188,17 +214,35 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
             g_log_ofs.close();
             if (g_max_files > 0) {
                 namespace fs = std::filesystem;
-                for (size_t i = g_max_files; i > 0; --i) {
-                    fs::path src = g_log_path + "." + std::to_string(i);
-                    if (i == g_max_files) {
-                        fs::remove(src, ec);
-                    } else {
-                        fs::path dst = g_log_path + "." + std::to_string(i + 1);
-                        fs::rename(src, dst, ec);
+                if (g_compress_logs) {
+                    for (size_t i = g_max_files; i > 0; --i) {
+                        fs::path src = g_log_path + "." + std::to_string(i) + ".gz";
+                        if (i == g_max_files) {
+                            fs::remove(src, ec);
+                        } else {
+                            fs::path dst = g_log_path + "." + std::to_string(i + 1) + ".gz";
+                            fs::rename(src, dst, ec);
+                        }
                     }
+                    fs::path first = g_log_path + ".1";
+                    fs::rename(g_log_path, first, ec);
+                    fs::path gz = first;
+                    gz += ".gz";
+                    if (gzip_file(first.string(), gz.string()))
+                        fs::remove(first, ec);
+                } else {
+                    for (size_t i = g_max_files; i > 0; --i) {
+                        fs::path src = g_log_path + "." + std::to_string(i);
+                        if (i == g_max_files) {
+                            fs::remove(src, ec);
+                        } else {
+                            fs::path dst = g_log_path + "." + std::to_string(i + 1);
+                            fs::rename(src, dst, ec);
+                        }
+                    }
+                    fs::path first = g_log_path + ".1";
+                    fs::rename(g_log_path, first, ec);
                 }
-                fs::path first = g_log_path + ".1";
-                fs::rename(g_log_path, first, ec);
             }
             g_log_ofs.open(g_log_path, std::ios::trunc);
         }

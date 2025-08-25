@@ -183,6 +183,7 @@ These flags permanently alter data and require explicit confirmation:
 | `--log-level` | INFO | Set log verbosity |
 | `--max-log-size` | 0 | Rotate --log-file when over this size |
 | `--json-log` | false (disabled) | Emit logs in JSON format |
+| `--compress-logs` | false (disabled) | Gzip rotated log files |
 | `--syslog` | false (disabled) | Log to syslog |
 | `--syslog-facility` | 0 | Syslog facility |
 | `--verbose` | INFO | Shorthand for --log-level DEBUG |
