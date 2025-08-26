@@ -77,7 +77,8 @@
         "hard-reset": false,
         "confirm-reset": false,
         "confirm-alert": false,
-        "sudo-su": false
+        "sudo-su": false,
+        "post-pull-hook": ""
     },
     "Daemon": {
         "install-daemon": false,

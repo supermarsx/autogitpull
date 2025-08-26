@@ -405,6 +405,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--force-pull",
                                       "--exclude",
                                       "--discard-dirty",
+                                      "--post-pull-hook",
                                       "--debug-memory",
                                       "--dump-state",
                                       "--dump-large",
@@ -928,6 +929,14 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("--proxy requires a URL");
         opts.proxy_url = val;
     }
+    if (parser.has_flag("--post-pull-hook") || cfg_opts.count("--post-pull-hook")) {
+        std::string val = parser.get_option("--post-pull-hook");
+        if (val.empty())
+            val = cfg_opt("--post-pull-hook");
+        if (val.empty())
+            throw std::runtime_error("--post-pull-hook requires a path");
+        opts.post_pull_hook = val;
+    }
     if (parser.has_flag("--max-log-size") || cfg_opts.count("--max-log-size")) {
         std::string val = parser.get_option("--max-log-size");
         if (val.empty())
@@ -1103,6 +1112,9 @@ Options parse_options(int argc, char* argv[]) {
             if (!ok || dur.count() < 1 || dur.count() > INT_MAX)
                 throw std::runtime_error("Invalid per-repo pull-timeout");
             ro.pull_timeout = dur;
+        }
+        if (values.count("--post-pull-hook")) {
+            ro.post_pull_hook = fs::path(ropt("--post-pull-hook"));
         }
         opts.repo_settings[fs::path(repo)] = ro;
     }

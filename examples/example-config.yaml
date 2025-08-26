@@ -72,6 +72,7 @@ Actions:
   confirm-reset: False
   confirm-alert: False
   sudo-su: False
+  post-pull-hook:
 Daemon:
   install-daemon: False
   uninstall-daemon: False

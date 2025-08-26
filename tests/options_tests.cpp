@@ -401,7 +401,7 @@ TEST_CASE("parse_options repo overrides") {
         std::ofstream ofs(cfg);
         ofs << "{\n  \"root\": \"/tmp\",\n  \"repositories\": {\n    \"/tmp/repo\": {\n      "
                "\"force-pull\": true,\n      \"exclude\": true,\n      \"check-only\": true,\n     "
-               " \"cpu-limit\": 25.5\n    }\n  }\n}";
+               " \"cpu-limit\": 25.5,\n      \"post-pull-hook\": \"/tmp/hook\"\n    }\n  }\n}";
     }
     std::string p = cfg.string();
     char* path_c = strdup(p.c_str());
@@ -415,7 +415,14 @@ TEST_CASE("parse_options repo overrides") {
     REQUIRE(ro.exclude.value_or(false));
     REQUIRE(ro.check_only.value_or(false));
     REQUIRE(ro.cpu_limit.value_or(0.0) == 25.5);
+    REQUIRE(ro.post_pull_hook.value() == fs::path("/tmp/hook"));
     fs::remove(cfg);
+}
+
+TEST_CASE("parse_options post pull hook flag") {
+    const char* argv[] = {"prog", "path", "--post-pull-hook", "/tmp/hook"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.post_pull_hook == fs::path("/tmp/hook"));
 }
 
 struct DirGuard {

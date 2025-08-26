@@ -4,6 +4,7 @@
 #include <optional>
 #include <chrono>
 #include <cstddef>
+#include <filesystem>
 
 struct RepoOptions {
     std::optional<bool> force_pull;
@@ -15,6 +16,7 @@ struct RepoOptions {
     std::optional<size_t> disk_limit;
     std::optional<std::chrono::seconds> max_runtime;
     std::optional<std::chrono::seconds> pull_timeout;
+    std::optional<std::filesystem::path> post_pull_hook;
 };
 
 #endif // REPO_OPTIONS_HPP
