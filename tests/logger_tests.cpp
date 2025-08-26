@@ -110,6 +110,23 @@ TEST_CASE("Logger switches between JSON and plain") {
     fs::remove(log);
 }
 
+TEST_CASE("shutdown_logger drains queued messages") {
+    fs::path log = fs::temp_directory_path() / "logger_drain.log";
+    fs::remove(log);
+    init_logger(log.string());
+    for (int i = 0; i < 50; ++i)
+        log_info("queued " + std::to_string(i));
+    shutdown_logger();
+    std::ifstream ifs(log);
+    REQUIRE(ifs.good());
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(ifs, line))
+        lines.push_back(line);
+    REQUIRE(lines.size() == 50);
+    fs::remove(log);
+}
+
 #ifdef __linux__
 TEST_CASE("init_syslog routes messages") {
     fs::path log = fs::temp_directory_path() / "logger_syslog.log";

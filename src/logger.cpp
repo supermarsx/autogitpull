@@ -5,23 +5,41 @@
 #include <iostream>
 #include <filesystem>
 #include <map>
+#include <thread>
+#include <atomic>
+#include <vector>
+#include <chrono>
+#include <boost/lockfree/queue.hpp>
 #include "time_utils.hpp"
 #ifdef __linux__
 #include <syslog.h>
 #endif
 
 static std::ofstream g_log_ofs;
-static std::mutex g_log_mtx;
-static LogLevel g_min_level = LogLevel::INFO;
 static std::string g_log_path; // NOLINT(runtime/string)
-static size_t g_max_size = 0;
-static size_t g_max_files = 1;
-static bool g_json_log = false;
-static bool g_compress_logs = false;
+static std::atomic<LogLevel> g_min_level{LogLevel::INFO};
+static std::atomic<size_t> g_max_size{0};
+static std::atomic<size_t> g_max_files{1};
+static std::atomic<bool> g_json_log{false};
+static std::atomic<bool> g_compress_logs{false};
 #ifdef __linux__
-static bool g_syslog = false;
-static int g_facility = LOG_USER;
+static std::atomic<bool> g_syslog{false};
+static std::atomic<int> g_facility{LOG_USER};
 #endif
+
+struct LogMessage {
+    LogLevel level;
+    std::string label;
+    std::string msg;
+    std::map<std::string, std::string> fields;
+};
+
+static boost::lockfree::queue<LogMessage*> g_log_queue(1024);
+static std::atomic<bool> g_running{false};
+static std::thread g_log_thread;
+static std::mutex g_init_mtx;
+
+static void log_worker();
 
 /**
  * @brief Initialize file-based logging.
@@ -35,7 +53,7 @@ static int g_facility = LOG_USER;
  * @param max_files Number of rotated files to retain.
  */
 void init_logger(const std::string& path, LogLevel level, size_t max_size, size_t max_files) {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
+    std::lock_guard<std::mutex> lk(g_init_mtx);
     if (g_log_ofs.is_open()) {
         g_log_ofs.flush();
         g_log_ofs.close();
@@ -43,14 +61,16 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
         g_log_ofs.clear();
     }
     g_log_path = path;
-    g_max_size = max_size;
-    g_max_files = max_files;
+    g_max_size.store(max_size);
+    g_max_files.store(max_files);
     g_log_ofs.open(path, std::ios::app);
     if (!g_log_ofs.is_open()) {
         std::cerr << "Failed to open log file: " << path << std::endl;
         return;
     }
-    g_min_level = level;
+    g_min_level.store(level);
+    g_running.store(true);
+    g_log_thread = std::thread(log_worker);
 }
 
 #ifdef __linux__
@@ -63,9 +83,9 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
  * @param facility Syslog facility identifier.
  */
 void init_syslog(int facility) {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
-    g_facility = facility;
-    g_syslog = true;
+    std::lock_guard<std::mutex> lk(g_init_mtx);
+    g_facility.store(facility);
+    g_syslog.store(true);
     openlog("autogitpull", LOG_PID | LOG_CONS, facility);
 }
 #else
@@ -79,10 +99,7 @@ void init_syslog(int) {}
  *
  * @param level New minimum @ref LogLevel.
  */
-void set_log_level(LogLevel level) {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
-    g_min_level = level;
-}
+void set_log_level(LogLevel level) { g_min_level.store(level); }
 
 /**
  * @brief Toggle JSON formatted logging.
@@ -92,23 +109,14 @@ void set_log_level(LogLevel level) {
  *
  * @param enable `true` to emit JSON logs.
  */
-void set_json_logging(bool enable) {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
-    g_json_log = enable;
-}
+void set_json_logging(bool enable) { g_json_log.store(enable); }
 
-void set_log_compression(bool enable) {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
-    g_compress_logs = enable;
-}
+void set_log_compression(bool enable) { g_compress_logs.store(enable); }
 
-void set_log_rotation(size_t max_files) {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
-    g_max_files = max_files;
-}
+void set_log_rotation(size_t max_files) { g_max_files.store(max_files); }
 
 bool logger_initialized() {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
+    std::lock_guard<std::mutex> lk(g_init_mtx);
     return g_log_ofs.is_open();
 }
 
@@ -184,14 +192,13 @@ static std::string format_extra_json(const std::map<std::string, std::string>& f
  * @param msg    Human-readable message body.
  * @param fields Additional key/value fields to serialize.
  */
-static void log_impl(LogLevel level, const std::string& label, const std::string& msg,
-                     const std::map<std::string, std::string>& fields) {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
-    if (!g_log_ofs.is_open() || level < g_min_level)
+static void write_log_entry(LogLevel level, const std::string& label, const std::string& msg,
+                            const std::map<std::string, std::string>& fields) {
+    if (!g_log_ofs.is_open() || level < g_min_level.load())
         return;
     std::string line;
     std::string ts = timestamp();
-    if (g_json_log) {
+    if (g_json_log.load()) {
         // Escape special characters so the output remains valid JSON.
         line = "{\"timestamp\":\"" + json_escape(ts) + "\",\"level\":\"" + label + "\",\"msg\":\"" +
                json_escape(msg) + "\"";
@@ -205,17 +212,17 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
             line += " " + k + "=" + v;
     }
     g_log_ofs << line << std::endl;
-    if (g_max_size > 0) {
+    if (g_max_size.load() > 0) {
         // Check the rotation threshold and rotate files when the active log
         // exceeds @p g_max_size bytes.
         g_log_ofs.flush();
         std::error_code ec;
-        if (std::filesystem::file_size(g_log_path, ec) > g_max_size && !ec) {
+        if (std::filesystem::file_size(g_log_path, ec) > g_max_size.load() && !ec) {
             g_log_ofs.close();
-            if (g_max_files > 0) {
+            if (g_max_files.load() > 0) {
                 namespace fs = std::filesystem;
-                if (g_compress_logs) {
-                    for (size_t i = g_max_files; i > 0; --i) {
+                if (g_compress_logs.load()) {
+                    for (size_t i = g_max_files.load(); i > 0; --i) {
                         fs::path src = g_log_path + "." + std::to_string(i) + ".gz";
                         if (i == g_max_files) {
                             fs::remove(src, ec);
@@ -231,7 +238,7 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
                     if (gzip_file(first.string(), gz.string()))
                         fs::remove(first, ec);
                 } else {
-                    for (size_t i = g_max_files; i > 0; --i) {
+                    for (size_t i = g_max_files.load(); i > 0; --i) {
                         fs::path src = g_log_path + "." + std::to_string(i);
                         if (i == g_max_files) {
                             fs::remove(src, ec);
@@ -248,7 +255,7 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
         }
     }
 #ifdef __linux__
-    if (g_syslog) {
+    if (g_syslog.load()) {
         // Mirror the message to syslog using the selected facility.
         int pri = LOG_INFO;
         switch (level) {
@@ -270,22 +277,33 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
 #endif
 }
 
+static void enqueue_message(LogLevel level, const std::string& label, const std::string& msg,
+                            const std::map<std::string, std::string>& fields) {
+    auto* entry = new LogMessage{level, label, msg, fields};
+    if (!g_log_queue.push(entry))
+        delete entry;
+}
+
 static void log(LogLevel level, const std::string& label, const std::string& msg) {
-    log_impl(level, label, msg, {});
+    if (level < g_min_level.load())
+        return;
+    enqueue_message(level, label, msg, {});
 }
 
 static void log(LogLevel level, const std::string& label, const std::string& msg,
                 const std::string& data) {
     if (data.empty()) {
-        log_impl(level, label, msg, {});
+        log(level, label, msg);
     } else {
-        log_impl(level, label, msg, {{"data", data}});
+        enqueue_message(level, label, msg, std::map<std::string, std::string>{{"data", data}});
     }
 }
 
 static void log(LogLevel level, const std::string& label, const std::string& msg,
                 const std::map<std::string, std::string>& fields) {
-    log_impl(level, label, msg, fields);
+    if (level < g_min_level.load())
+        return;
+    enqueue_message(level, label, msg, fields);
 }
 
 void log_event(LogLevel level, const std::string& message) {
@@ -377,24 +395,46 @@ void log_error(const std::string& msg, const std::map<std::string, std::string>&
     log(LogLevel::ERR, "ERROR", msg, fields);
 }
 
-#ifdef __linux__
-static void close_logger() {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
-    if (g_log_ofs.is_open()) {
+static void log_worker() {
+    std::vector<LogMessage*> batch;
+    batch.reserve(16);
+    while (g_running.load() || !g_log_queue.empty()) {
+        LogMessage* msg;
+        while (g_log_queue.pop(msg)) {
+            batch.push_back(msg);
+            if (batch.size() >= 16)
+                break;
+        }
+        if (batch.empty()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+        for (LogMessage* m : batch) {
+            write_log_entry(m->level, m->label, m->msg, m->fields);
+            delete m;
+        }
+        batch.clear();
         g_log_ofs.flush();
-        g_log_ofs.close();
     }
-    if (g_syslog)
-        closelog();
+    g_log_ofs.flush();
 }
-#else
-static void close_logger() {
-    std::lock_guard<std::mutex> lk(g_log_mtx);
-    if (g_log_ofs.is_open()) {
-        g_log_ofs.flush();
-        g_log_ofs.close();
-    }
-}
-#endif
 
-void shutdown_logger() { close_logger(); }
+void shutdown_logger() {
+    g_running.store(false);
+    if (g_log_thread.joinable())
+        g_log_thread.join();
+    std::lock_guard<std::mutex> lk(g_init_mtx);
+    if (g_log_ofs.is_open()) {
+        g_log_ofs.flush();
+        g_log_ofs.close();
+    }
+#ifdef __linux__
+    if (g_syslog.load()) {
+        closelog();
+        g_syslog.store(false);
+    }
+#endif
+    LogMessage* m;
+    while (g_log_queue.pop(m))
+        delete m;
+}
