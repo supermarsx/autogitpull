@@ -8,7 +8,8 @@ enum class LogLevel { DEBUG = 0, INFO, WARNING, ERR };
 /**
  * @brief Initialize the file logger.
  *
- * Opens the log file at @p path and configures log rotation parameters.
+ * Opens the log file at @p path, configures log rotation parameters, and
+ * starts a background thread that processes log entries asynchronously.
  *
  * @param path      Filesystem path where the log file will be written.
  * @param level     Minimum @ref LogLevel severity to record.
@@ -186,6 +187,8 @@ void init_syslog(int facility = 0);
 
 /**
  * @brief Shut down the logging subsystem and release resources.
+ *
+ * Flushes any pending messages and joins the logging thread.
  */
 void shutdown_logger();
 

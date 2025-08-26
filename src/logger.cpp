@@ -5,13 +5,28 @@
 #include <iostream>
 #include <filesystem>
 #include <map>
+#include <queue>
+#include <condition_variable>
+#include <thread>
 #include "time_utils.hpp"
 #ifdef __linux__
 #include <syslog.h>
 #endif
 
+struct LogItem {
+    LogLevel level;
+    std::string label;
+    std::string message;
+    std::map<std::string, std::string> fields;
+};
+
 static std::ofstream g_log_ofs;
 static std::mutex g_log_mtx;
+static std::mutex g_queue_mtx;
+static std::condition_variable g_log_cv;
+static std::queue<LogItem> g_log_queue;
+static std::thread g_log_thread;
+static bool g_log_running = false;
 static LogLevel g_min_level = LogLevel::INFO;
 static std::string g_log_path; // NOLINT(runtime/string)
 static size_t g_max_size = 0;
@@ -22,6 +37,23 @@ static bool g_compress_logs = false;
 static bool g_syslog = false;
 static int g_facility = LOG_USER;
 #endif
+
+static void log_impl(LogLevel level, const std::string& label, const std::string& msg,
+                     const std::map<std::string, std::string>& fields);
+
+static void log_worker() {
+    std::unique_lock<std::mutex> qlk(g_queue_mtx);
+    while (g_log_running || !g_log_queue.empty()) {
+        g_log_cv.wait(qlk, [] { return !g_log_running || !g_log_queue.empty(); });
+        while (!g_log_queue.empty()) {
+            auto item = std::move(g_log_queue.front());
+            g_log_queue.pop();
+            qlk.unlock();
+            log_impl(item.level, item.label, item.message, item.fields);
+            qlk.lock();
+        }
+    }
+}
 
 /**
  * @brief Initialize file-based logging.
@@ -51,6 +83,17 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
         return;
     }
     g_min_level = level;
+    bool start_thread = false;
+    {
+        std::lock_guard<std::mutex> qlk(g_queue_mtx);
+        if (!g_log_running) {
+            g_log_running = true;
+            start_thread = true;
+        }
+    }
+    if (start_thread) {
+        g_log_thread = std::thread(log_worker);
+    }
 }
 
 #ifdef __linux__
@@ -270,22 +313,35 @@ static void log_impl(LogLevel level, const std::string& label, const std::string
 #endif
 }
 
-static void log(LogLevel level, const std::string& label, const std::string& msg) {
-    log_impl(level, label, msg, {});
-}
-
-static void log(LogLevel level, const std::string& label, const std::string& msg,
-                const std::string& data) {
-    if (data.empty()) {
-        log_impl(level, label, msg, {});
+static void enqueue_log(LogLevel level, const std::string& label, const std::string& msg,
+                        const std::map<std::string, std::string>& fields) {
+    bool direct = false;
+    {
+        std::lock_guard<std::mutex> qlk(g_queue_mtx);
+        if (g_log_running) {
+            g_log_queue.push({level, label, msg, fields});
+        } else {
+            direct = true;
+        }
+    }
+    if (direct) {
+        log_impl(level, label, msg, fields);
     } else {
-        log_impl(level, label, msg, {{"data", data}});
+        g_log_cv.notify_one();
     }
 }
 
-static void log(LogLevel level, const std::string& label, const std::string& msg,
-                const std::map<std::string, std::string>& fields) {
-    log_impl(level, label, msg, fields);
+static void enqueue_log(LogLevel level, const std::string& label, const std::string& msg) {
+    enqueue_log(level, label, msg, {});
+}
+
+static void enqueue_log(LogLevel level, const std::string& label, const std::string& msg,
+                        const std::string& data) {
+    if (data.empty()) {
+        enqueue_log(level, label, msg, {});
+    } else {
+        enqueue_log(level, label, msg, {{"data", data}});
+    }
 }
 
 void log_event(LogLevel level, const std::string& message) {
@@ -304,7 +360,7 @@ void log_event(LogLevel level, const std::string& message) {
         label = "ERROR";
         break;
     }
-    log(level, label, message);
+    enqueue_log(level, label, message);
 }
 
 void log_event(LogLevel level, const std::string& message, const std::string& data) {
@@ -323,7 +379,7 @@ void log_event(LogLevel level, const std::string& message, const std::string& da
         label = "ERROR";
         break;
     }
-    log(level, label, message, data);
+    enqueue_log(level, label, message, data);
 }
 
 void log_event(LogLevel level, const std::string& message,
@@ -343,38 +399,38 @@ void log_event(LogLevel level, const std::string& message,
         label = "ERROR";
         break;
     }
-    log(level, label, message, fields);
+    enqueue_log(level, label, message, fields);
 }
 
-void log_debug(const std::string& msg) { log(LogLevel::DEBUG, "DEBUG", msg); }
+void log_debug(const std::string& msg) { enqueue_log(LogLevel::DEBUG, "DEBUG", msg); }
 void log_debug(const std::string& msg, const std::string& data) {
-    log(LogLevel::DEBUG, "DEBUG", msg, data);
+    enqueue_log(LogLevel::DEBUG, "DEBUG", msg, data);
 }
 void log_debug(const std::string& msg, const std::map<std::string, std::string>& fields) {
-    log(LogLevel::DEBUG, "DEBUG", msg, fields);
+    enqueue_log(LogLevel::DEBUG, "DEBUG", msg, fields);
 }
-void log_info(const std::string& msg) { log(LogLevel::INFO, "INFO", msg); }
+void log_info(const std::string& msg) { enqueue_log(LogLevel::INFO, "INFO", msg); }
 void log_info(const std::string& msg, const std::string& data) {
-    log(LogLevel::INFO, "INFO", msg, data);
+    enqueue_log(LogLevel::INFO, "INFO", msg, data);
 }
 void log_info(const std::string& msg, const std::map<std::string, std::string>& fields) {
-    log(LogLevel::INFO, "INFO", msg, fields);
+    enqueue_log(LogLevel::INFO, "INFO", msg, fields);
 }
 
-void log_warning(const std::string& msg) { log(LogLevel::WARNING, "WARNING", msg); }
+void log_warning(const std::string& msg) { enqueue_log(LogLevel::WARNING, "WARNING", msg); }
 void log_warning(const std::string& msg, const std::string& data) {
-    log(LogLevel::WARNING, "WARNING", msg, data);
+    enqueue_log(LogLevel::WARNING, "WARNING", msg, data);
 }
 void log_warning(const std::string& msg, const std::map<std::string, std::string>& fields) {
-    log(LogLevel::WARNING, "WARNING", msg, fields);
+    enqueue_log(LogLevel::WARNING, "WARNING", msg, fields);
 }
 
-void log_error(const std::string& msg) { log(LogLevel::ERR, "ERROR", msg); }
+void log_error(const std::string& msg) { enqueue_log(LogLevel::ERR, "ERROR", msg); }
 void log_error(const std::string& msg, const std::string& data) {
-    log(LogLevel::ERR, "ERROR", msg, data);
+    enqueue_log(LogLevel::ERR, "ERROR", msg, data);
 }
 void log_error(const std::string& msg, const std::map<std::string, std::string>& fields) {
-    log(LogLevel::ERR, "ERROR", msg, fields);
+    enqueue_log(LogLevel::ERR, "ERROR", msg, fields);
 }
 
 #ifdef __linux__
@@ -397,4 +453,14 @@ static void close_logger() {
 }
 #endif
 
-void shutdown_logger() { close_logger(); }
+void shutdown_logger() {
+    {
+        std::lock_guard<std::mutex> qlk(g_queue_mtx);
+        g_log_running = false;
+    }
+    g_log_cv.notify_one();
+    if (g_log_thread.joinable()) {
+        g_log_thread.join();
+    }
+    close_logger();
+}
