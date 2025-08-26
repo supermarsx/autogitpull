@@ -153,6 +153,7 @@ struct Options {
     bool retry_skipped = false;
     bool reset_skipped = false;
     bool cli_print_skipped = false;
+    std::filesystem::path post_pull_hook;
     bool show_help = false;
     bool print_version = false;
     bool hard_reset = false;

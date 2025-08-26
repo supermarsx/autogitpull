@@ -120,6 +120,7 @@ void print_help(const char* prog) {
         {"--confirm-alert", "", "", "Confirm unsafe options", "Actions"},
         {"--confirm-mutant", "", "", "Confirm enabling mutant mode", "Actions"},
         {"--sudo-su", "", "", "Suppress confirmation alerts", "Actions"},
+        {"--post-pull-hook", "", "<file>", "Run command after successful pull", "Actions"},
         {"--add-ignore", "", "<repo>", "Add path to .autogitpull.ignore", "Ignores"},
         {"--remove-ignore", "", "<repo>", "Remove path from ignore file", "Ignores"},
         {"--clear-ignores", "", "", "Delete all ignore entries", "Ignores"},

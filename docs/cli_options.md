@@ -32,6 +32,7 @@ overrides. Scalar keys outside this list are rejected.
 | `--list-instances` | false (disabled) | List running instance names and PIDs |
 | `--no-hash-check` | false (feature enabled) | Always pull without hash check |
 | `--sudo-su` | false (disabled) | Suppress confirmation alerts |
+| `--post-pull-hook` |  | Command to execute after successful pull |
 | `--confirm-mutant` | false (disabled) | Confirm enabling mutant mode |
 
 ### Destructive Actions

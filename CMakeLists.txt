@@ -94,6 +94,7 @@ if(NOT Catch2_FOUND)
 endif()
 add_executable(autogitpull_tests
   tests/arg_parser_tests.cpp tests/utils_tests.cpp tests/options_tests.cpp tests/config_tests.cpp tests/repo_tests.cpp tests/process_tests.cpp tests/ui_output_tests.cpp tests/history_tests.cpp tests/ignore_utils_tests.cpp tests/timeout_tests.cpp tests/git_remote_tests.cpp tests/mutant_timeout_tests.cpp tests/windows_attach_tests.cpp tests/macos_daemon_tests.cpp tests/cli_commands_tests.cpp tests/resource_limit_tests.cpp tests/logger_tests.cpp tests/dry_run_tests.cpp src/autogitpull.cpp src/tui.cpp src/ignore_utils.cpp)
+target_sources(autogitpull_tests PRIVATE tests/post_pull_hook_tests.cpp)
 target_sources(autogitpull_tests PRIVATE tests/file_watch_tests.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
