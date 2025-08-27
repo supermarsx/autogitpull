@@ -27,6 +27,14 @@ class FileWatcher {
     FileWatcher(const std::filesystem::path& path, std::function<void()> callback);
     ~FileWatcher();
 
+    /**
+     * @brief Invoke the user-provided callback.
+     *
+     * Exposed for platform-specific hooks that cannot access private
+     * members directly (e.g., macOS FSEvents callbacks).
+     */
+    void notify_change();
+
     FileWatcher(const FileWatcher&) = delete;
     FileWatcher& operator=(const FileWatcher&) = delete;
 

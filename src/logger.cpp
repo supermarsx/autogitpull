@@ -9,7 +9,8 @@
 #include <atomic>
 #include <vector>
 #include <chrono>
-#include <boost/lockfree/queue.hpp>
+#include <condition_variable>
+#include <queue>
 #include "time_utils.hpp"
 #ifdef __linux__
 #include <syslog.h>
@@ -34,7 +35,9 @@ struct LogMessage {
     std::map<std::string, std::string> fields;
 };
 
-static boost::lockfree::queue<LogMessage*> g_log_queue(1024);
+static std::queue<LogMessage*> g_log_queue;
+static std::mutex g_queue_mtx;
+static std::condition_variable g_queue_cv;
 static std::atomic<bool> g_running{false};
 static std::thread g_log_thread;
 static std::mutex g_init_mtx;
@@ -121,8 +124,11 @@ bool logger_initialized() {
 }
 
 void flush_logger() {
+    std::unique_lock<std::mutex> lk(g_queue_mtx);
     while (!g_log_queue.empty()) {
+        lk.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        lk.lock();
     }
     g_log_ofs.flush();
 }
@@ -287,8 +293,11 @@ static void write_log_entry(LogLevel level, const std::string& label, const std:
 static void enqueue_message(LogLevel level, const std::string& label, const std::string& msg,
                             const std::map<std::string, std::string>& fields) {
     auto* entry = new LogMessage{level, label, msg, fields};
-    if (!g_log_queue.push(entry))
-        delete entry;
+    {
+        std::lock_guard<std::mutex> lk(g_queue_mtx);
+        g_log_queue.push(entry);
+    }
+    g_queue_cv.notify_one();
 }
 
 static void log(LogLevel level, const std::string& label, const std::string& msg) {
@@ -405,17 +414,16 @@ void log_error(const std::string& msg, const std::map<std::string, std::string>&
 static void log_worker() {
     std::vector<LogMessage*> batch;
     batch.reserve(16);
-    while (g_running.load() || !g_log_queue.empty()) {
-        LogMessage* msg;
-        while (g_log_queue.pop(msg)) {
-            batch.push_back(msg);
-            if (batch.size() >= 16)
-                break;
+    while (true) {
+        std::unique_lock<std::mutex> lk(g_queue_mtx);
+        g_queue_cv.wait(lk, [] { return !g_log_queue.empty() || !g_running.load(); });
+        if (!g_running.load() && g_log_queue.empty())
+            break;
+        while (!g_log_queue.empty() && batch.size() < 16) {
+            batch.push_back(g_log_queue.front());
+            g_log_queue.pop();
         }
-        if (batch.empty()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            continue;
-        }
+        lk.unlock();
         for (LogMessage* m : batch) {
             write_log_entry(m->level, m->label, m->msg, m->fields);
             delete m;
@@ -441,7 +449,9 @@ void shutdown_logger() {
         g_syslog.store(false);
     }
 #endif
-    LogMessage* m;
-    while (g_log_queue.pop(m))
-        delete m;
+    std::lock_guard<std::mutex> qlk(g_queue_mtx);
+    while (!g_log_queue.empty()) {
+        delete g_log_queue.front();
+        g_log_queue.pop();
+    }
 }
