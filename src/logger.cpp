@@ -120,6 +120,13 @@ bool logger_initialized() {
     return g_log_ofs.is_open();
 }
 
+void flush_logger() {
+    while (!g_log_queue.empty()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    g_log_ofs.flush();
+}
+
 static bool gzip_file(const std::string& src, const std::string& dst) {
     std::ifstream in(src, std::ios::binary);
     gzFile out = gzopen(dst.c_str(), "wb");

@@ -191,13 +191,19 @@ TEST_CASE("th_compat::jthread fallback works") {
 #endif
 }
 
+struct LoggerGuard {
+    ~LoggerGuard() { shutdown_logger(); }
+};
+
 TEST_CASE("Logger appends messages") {
     fs::path log = fs::temp_directory_path() / "autogitpull_logger_test.log";
     fs::remove(log);
     init_logger(log.string());
+    LoggerGuard guard;
     REQUIRE(logger_initialized());
     log_info("first entry");
     log_error("second entry");
+    flush_logger();
     {
         std::ifstream ifs(log);
         REQUIRE(ifs.good());
@@ -219,6 +225,7 @@ TEST_CASE("Logger appends messages") {
         count_before = lines.size();
     }
     log_info("third entry");
+    flush_logger();
     {
         std::ifstream ifs(log);
         std::vector<std::string> lines;
@@ -228,7 +235,6 @@ TEST_CASE("Logger appends messages") {
         REQUIRE(lines.size() == count_before + 1);
         REQUIRE(lines.back().find("third entry") != std::string::npos);
     }
-    shutdown_logger();
 }
 
 TEST_CASE("Logger rotates when exceeding max size") {
@@ -238,9 +244,11 @@ TEST_CASE("Logger rotates when exceeding max size") {
     log1 += ".1";
     fs::remove(log1);
     init_logger(log.string(), LogLevel::INFO, 200, 1);
+    LoggerGuard guard;
     REQUIRE(logger_initialized());
     for (int i = 0; i < 50; ++i)
         log_info("entry " + std::to_string(i));
+    flush_logger();
     shutdown_logger();
     std::error_code ec;
     REQUIRE(std::filesystem::file_size(log, ec) <= 200);

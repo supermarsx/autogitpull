@@ -59,6 +59,15 @@ void set_log_rotation(size_t max_files);
 bool logger_initialized();
 
 /**
+ * @brief Flush pending log messages to disk.
+ *
+ * Waits for the background logging thread to drain its queue and
+ * flushes the underlying file stream, ensuring that earlier log calls
+ * are visible to other readers.
+ */
+void flush_logger();
+
+/**
  * @brief Log a message with the specified severity.
  *
  * @param level   Severity level for the event.
