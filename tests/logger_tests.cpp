@@ -8,6 +8,7 @@
 #include <vector>
 #include <zlib.h>
 #include "test_common.hpp"
+#include <filesystem>
 #ifdef __linux__
 static std::vector<std::string> g_syslog_messages;
 extern "C" void openlog(const char*, int, int) {}
@@ -21,6 +22,10 @@ extern "C" void syslog(int, const char* fmt, ...) {
 }
 extern "C" void closelog() {}
 #endif
+
+struct LoggerGuard {
+    ~LoggerGuard() { shutdown_logger(); }
+};
 
 TEST_CASE("Logger rotates and limits files") {
     fs::path log = fs::temp_directory_path() / "logger_rotate.log";
@@ -36,11 +41,12 @@ TEST_CASE("Logger rotates and limits files") {
     fs::remove(log3);
 
     init_logger(log.string(), LogLevel::INFO, 100, 2);
+    LoggerGuard guard;
     REQUIRE(logger_initialized());
     for (int i = 0; i < 200; ++i)
         log_info("entry " + std::to_string(i));
+    flush_logger();
     shutdown_logger();
-
     REQUIRE(std::filesystem::exists(log));
     REQUIRE(std::filesystem::exists(log1));
     REQUIRE(std::filesystem::exists(log2));
@@ -63,6 +69,7 @@ TEST_CASE("Logger compresses rotated files") {
 
     set_log_compression(true);
     init_logger(log.string(), LogLevel::INFO, 100, 2);
+    LoggerGuard guard;
     for (int i = 0; i < 200; ++i)
         log_info("entry " + std::to_string(i));
     shutdown_logger();
@@ -88,10 +95,13 @@ TEST_CASE("Logger switches between JSON and plain") {
     fs::path log = fs::temp_directory_path() / "logger_format.log";
     fs::remove(log);
     init_logger(log.string());
+    LoggerGuard guard;
     set_json_logging(true);
     log_info("json entry", {{"k", "v"}});
+    flush_logger();
     set_json_logging(false);
     log_info("plain entry");
+    flush_logger();
     shutdown_logger();
 
     std::ifstream ifs(log);
