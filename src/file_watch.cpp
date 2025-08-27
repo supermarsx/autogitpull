@@ -18,7 +18,7 @@ namespace {
 void fsevent_cb(ConstFSEventStreamRef, void* user_data, size_t, void*,
                 const FSEventStreamEventFlags*, const FSEventStreamEventId*) {
     auto* self = static_cast<FileWatcher*>(user_data);
-    self->callback_();
+    self->notify_change();
 }
 #endif
 } // namespace
@@ -41,7 +41,7 @@ FileWatcher::FileWatcher(const std::filesystem::path& path, std::function<void()
                 while (i < len) {
                     auto* ev = reinterpret_cast<inotify_event*>(buf.data() + i);
                     if (ev->wd == watch_desc_) {
-                        callback_();
+                        notify_change();
                     }
                     i += sizeof(inotify_event) + ev->len;
                 }
@@ -80,7 +80,7 @@ FileWatcher::FileWatcher(const std::filesystem::path& path, std::function<void()
         while (running_) {
             DWORD status = WaitForSingleObject(change_handle_, 500);
             if (status == WAIT_OBJECT_0) {
-                callback_();
+                notify_change();
                 FindNextChangeNotification(change_handle_);
             }
         }
@@ -93,12 +93,18 @@ FileWatcher::FileWatcher(const std::filesystem::path& path, std::function<void()
             auto cur = std::filesystem::last_write_time(path_, ec);
             if (!ec && cur != prev) {
                 prev = cur;
-                callback_();
+                notify_change();
             }
             std::this_thread::sleep_for(500ms);
         }
     });
 #endif
+}
+
+void FileWatcher::notify_change() {
+    if (callback_) {
+        callback_();
+    }
 }
 
 FileWatcher::~FileWatcher() {
