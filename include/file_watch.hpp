@@ -35,6 +35,11 @@ class FileWatcher {
      */
     void notify_change();
 
+    /**
+     * @brief Check if the watcher thread is active.
+     */
+    bool active() const;
+
     FileWatcher(const FileWatcher&) = delete;
     FileWatcher& operator=(const FileWatcher&) = delete;
 

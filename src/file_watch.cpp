@@ -4,6 +4,8 @@
 #include <system_error>
 #include <array>
 
+#include "logger.hpp"
+
 #if defined(__linux__)
 #include <sys/inotify.h>
 #include <unistd.h>
@@ -25,31 +27,38 @@ void fsevent_cb(ConstFSEventStreamRef, void* user_data, size_t, void*,
 
 FileWatcher::FileWatcher(const std::filesystem::path& path, std::function<void()> callback)
     : path_(path), callback_(std::move(callback)) {
-    running_.store(true);
 #if defined(__linux__)
     inotify_fd_ = inotify_init1(IN_NONBLOCK);
     if (inotify_fd_ >= 0) {
         watch_desc_ =
             inotify_add_watch(inotify_fd_, path.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO);
-    }
-    thread_ = std::thread([this]() {
-        std::array<char, 4096> buf{};
-        while (running_) {
-            int len = read(inotify_fd_, buf.data(), static_cast<int>(buf.size()));
-            if (len > 0) {
-                int i = 0;
-                while (i < len) {
-                    auto* ev = reinterpret_cast<inotify_event*>(buf.data() + i);
-                    if (ev->wd == watch_desc_) {
-                        notify_change();
+        if (watch_desc_ >= 0) {
+            running_.store(true);
+            thread_ = std::thread([this]() {
+                std::array<char, 4096> buf{};
+                while (running_) {
+                    int len = read(inotify_fd_, buf.data(), static_cast<int>(buf.size()));
+                    if (len > 0) {
+                        int i = 0;
+                        while (i < len) {
+                            auto* ev = reinterpret_cast<inotify_event*>(buf.data() + i);
+                            if (ev->wd == watch_desc_) {
+                                notify_change();
+                            }
+                            i += sizeof(inotify_event) + ev->len;
+                        }
                     }
-                    i += sizeof(inotify_event) + ev->len;
+                    std::this_thread::sleep_for(200ms);
                 }
-            }
-            std::this_thread::sleep_for(200ms);
+            });
+        } else {
+            log_warning("inotify_add_watch failed; monitoring disabled");
         }
-    });
+    } else {
+        log_warning("inotify_init1 failed; monitoring disabled");
+    }
 #elif defined(__APPLE__)
+    running_.store(true);
     FSEventStreamContext ctx{};
     ctx.info = this;
     CFStringRef cpath = CFStringCreateWithCString(nullptr, path_.c_str(), kCFStringEncodingUTF8);
@@ -68,6 +77,7 @@ FileWatcher::FileWatcher(const std::filesystem::path& path, std::function<void()
         FSEventStreamInvalidate(stream_);
     });
 #elif defined(_WIN32)
+    running_.store(true);
     std::wstring dir = path_.parent_path().wstring();
     dir_handle_ = CreateFileW(dir.c_str(), FILE_LIST_DIRECTORY,
                               FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
@@ -86,6 +96,7 @@ FileWatcher::FileWatcher(const std::filesystem::path& path, std::function<void()
         }
     });
 #else
+    running_.store(true);
     auto prev = std::filesystem::last_write_time(path_);
     thread_ = std::thread([this, prev]() mutable {
         while (running_) {
@@ -106,6 +117,8 @@ void FileWatcher::notify_change() {
         callback_();
     }
 }
+
+bool FileWatcher::active() const { return running_.load(); }
 
 FileWatcher::~FileWatcher() {
     running_.store(false);

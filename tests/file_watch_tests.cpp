@@ -11,6 +11,18 @@
 namespace fs = std::filesystem;
 
 #if defined(__linux__)
+#include <dlfcn.h>
+static bool g_fail_inotify = false;
+extern "C" int inotify_init1(int flags) {
+    if (g_fail_inotify)
+        return -1;
+    using func_t = int (*)(int);
+    static func_t real_func = reinterpret_cast<func_t>(dlsym(RTLD_NEXT, "inotify_init1"));
+    return real_func ? real_func(flags) : -1;
+}
+#endif
+
+#if defined(__linux__)
 #define WATCH_BACKEND "inotify"
 #elif defined(__APPLE__)
 #define WATCH_BACKEND "fsevents"
@@ -40,3 +52,28 @@ TEST_CASE("FileWatcher detects file modifications using " WATCH_BACKEND) {
     fs::remove(tmp);
     REQUIRE(hits.load() > 0);
 }
+
+#if defined(__linux__)
+TEST_CASE("FileWatcher does not spawn thread on inotify failure") {
+    auto tmp = fs::temp_directory_path() / "watch_fail.txt";
+    {
+        std::ofstream os(tmp);
+        os << "initial";
+    }
+    std::atomic<int> hits{0};
+    g_fail_inotify = true;
+    {
+        FileWatcher watcher(tmp, [&]() { ++hits; });
+        REQUIRE_FALSE(watcher.active());
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        {
+            std::ofstream os(tmp);
+            os << "changed";
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+    g_fail_inotify = false;
+    fs::remove(tmp);
+    REQUIRE(hits.load() == 0);
+}
+#endif
