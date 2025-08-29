@@ -37,6 +37,12 @@ if(NOT LIBGIT2_FOUND)
 endif()
 find_package(ZLIB REQUIRED)
 
+if(APPLE)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+    find_library(CORESERVICES_FRAMEWORK CoreServices REQUIRED)
+    find_library(FSEVENTS_FRAMEWORK FSEvents REQUIRED)
+endif()
+
 add_library(autogitpull_lib STATIC
     src/git_utils.cpp
     src/logger.cpp
@@ -68,9 +74,10 @@ target_link_libraries(autogitpull_lib
     PUBLIC PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json ZLIB::ZLIB
     PRIVATE pthread)
 if(APPLE)
-    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
-    find_library(CORESERVICES_FRAMEWORK CoreServices)
-    target_link_libraries(autogitpull_lib PUBLIC ${COREFOUNDATION_FRAMEWORK} ${CORESERVICES_FRAMEWORK})
+    target_link_libraries(autogitpull_lib PUBLIC
+        ${COREFOUNDATION_FRAMEWORK}
+        ${CORESERVICES_FRAMEWORK}
+        ${FSEVENTS_FRAMEWORK})
 endif()
 
 add_executable(autogitpull
@@ -80,6 +87,10 @@ target_link_libraries(autogitpull PRIVATE autogitpull_lib ZLIB::ZLIB)
 if(MSVC)
     target_link_options(autogitpull PRIVATE /MT)
 elseif(APPLE)
+    target_link_libraries(autogitpull PRIVATE
+        ${COREFOUNDATION_FRAMEWORK}
+        ${CORESERVICES_FRAMEWORK}
+        ${FSEVENTS_FRAMEWORK})
     # macOS does not support fully static binaries
 else()
     # Link dynamically on platforms where static libgit2 is unavailable
@@ -108,6 +119,12 @@ target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
 target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib ZLIB::ZLIB)
 if(UNIX AND NOT APPLE)
     target_link_libraries(autogitpull_tests PRIVATE dl)
+endif()
+if(APPLE)
+    target_link_libraries(autogitpull_tests PRIVATE
+        ${COREFOUNDATION_FRAMEWORK}
+        ${CORESERVICES_FRAMEWORK}
+        ${FSEVENTS_FRAMEWORK})
 endif()
 add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
 
@@ -143,3 +160,9 @@ target_compile_options(memory_leak_test PRIVATE -fsanitize=address)
 target_link_options(memory_leak_test PRIVATE -fsanitize=address)
 target_link_libraries(memory_leak_test PRIVATE Catch2::Catch2WithMain autogitpull_lib yaml-cpp nlohmann_json::nlohmann_json ZLIB::ZLIB)
 add_test(NAME memory_leak_test COMMAND memory_leak_test)
+if(APPLE)
+    target_link_libraries(memory_leak_test PRIVATE
+        ${COREFOUNDATION_FRAMEWORK}
+        ${CORESERVICES_FRAMEWORK}
+        ${FSEVENTS_FRAMEWORK})
+endif()
