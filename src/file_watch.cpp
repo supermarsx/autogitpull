@@ -11,6 +11,8 @@
 #include <unistd.h>
 #elif defined(_WIN32)
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <dispatch/dispatch.h>
 #endif
 
 using namespace std::chrono_literals;
@@ -68,13 +70,16 @@ FileWatcher::FileWatcher(const std::filesystem::path& path, std::function<void()
     CFRelease(cpath);
     CFRelease(paths);
     thread_ = std::thread([this]() {
-        FSEventStreamScheduleWithRunLoop(stream_, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
+        dispatch_queue_t queue =
+            dispatch_queue_create("autogitpull.fsevents", DISPATCH_QUEUE_SERIAL);
+        FSEventStreamSetDispatchQueue(stream_, queue);
         FSEventStreamStart(stream_);
         while (running_) {
-            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.5, true);
+            std::this_thread::sleep_for(500ms);
         }
         FSEventStreamStop(stream_);
         FSEventStreamInvalidate(stream_);
+        dispatch_release(queue);
     });
 #elif defined(_WIN32)
     running_.store(true);
