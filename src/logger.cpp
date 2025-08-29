@@ -436,6 +436,7 @@ static void log_worker() {
 
 void shutdown_logger() {
     g_running.store(false);
+    g_queue_cv.notify_all();
     if (g_log_thread.joinable())
         g_log_thread.join();
     std::lock_guard<std::mutex> lk(g_init_mtx);
