@@ -137,6 +137,19 @@ TEST_CASE("shutdown_logger drains queued messages") {
     fs::remove(log);
 }
 
+TEST_CASE("shutdown_logger exits cleanly with no messages") {
+    fs::path log = fs::temp_directory_path() / "logger_noop.log";
+    fs::remove(log);
+    init_logger(log.string());
+    LoggerGuard guard;
+    REQUIRE(logger_initialized());
+    shutdown_logger();
+    REQUIRE_FALSE(logger_initialized());
+    REQUIRE(fs::exists(log));
+    REQUIRE(fs::file_size(log) == 0);
+    fs::remove(log);
+}
+
 #ifdef __linux__
 TEST_CASE("init_syslog routes messages") {
     fs::path log = fs::temp_directory_path() / "logger_syslog.log";
