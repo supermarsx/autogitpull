@@ -333,7 +333,9 @@ static git_repository* open_and_fetch_remote(const fs::path& repo, const string&
         if (auth_failed && e && e->message &&
             std::string(e->message).find("auth") != std::string::npos)
             *auth_failed = true;
+        git_repository_free(raw_repo);
         set_error(error);
+        return nullptr;
     }
     return raw_repo;
 }
