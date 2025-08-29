@@ -99,6 +99,9 @@ target_sources(autogitpull_tests PRIVATE tests/file_watch_tests.cpp)
 target_include_directories(autogitpull_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(autogitpull_tests PRIVATE AUTOGITPULL_NO_MAIN)
 target_link_libraries(autogitpull_tests PRIVATE Catch2::Catch2WithMain autogitpull_lib ZLIB::ZLIB)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(autogitpull_tests PRIVATE dl)
+endif()
 add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
 
 # Address sanitizer memory leak test
