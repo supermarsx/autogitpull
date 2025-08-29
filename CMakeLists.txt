@@ -64,7 +64,14 @@ else()
     target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 endif()
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(autogitpull_lib PRIVATE PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json pthread ZLIB::ZLIB)
+target_link_libraries(autogitpull_lib
+    PUBLIC PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json ZLIB::ZLIB
+    PRIVATE pthread)
+if(APPLE)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
+    find_library(CORESERVICES_FRAMEWORK CoreServices)
+    target_link_libraries(autogitpull_lib PUBLIC ${COREFOUNDATION_FRAMEWORK} ${CORESERVICES_FRAMEWORK})
+endif()
 
 add_executable(autogitpull
     src/autogitpull.cpp
