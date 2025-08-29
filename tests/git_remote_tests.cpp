@@ -91,6 +91,42 @@ TEST_CASE("get_remote_commit_time handles authentication options") {
     fs::remove_all(remote);
 }
 
+TEST_CASE("remote queries fail fast on fetch error") {
+    git::GitInitGuard guard;
+    fs::path repo = fs::temp_directory_path() / "fetch_fail_repo";
+    fs::path bogus = fs::temp_directory_path() / "not_a_repo";
+    fs::remove_all(repo);
+    fs::remove_all(bogus);
+    fs::create_directory(repo);
+    fs::create_directory(bogus);
+    REQUIRE(
+        std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
+    std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    std::ofstream(repo / "file.txt") << "hello";
+    std::system(("git -C " + repo.string() + " add file.txt").c_str());
+    std::system(("git -C " + repo.string() +
+                 " commit -m init > /dev/null 2>&1").c_str());
+    REQUIRE(std::system(("git -C " + repo.string() + " remote add origin " +
+                         bogus.string() +
+                         " > /dev/null 2>&1").c_str()) == 0);
+
+    bool auth_failed = false;
+    std::string err;
+    auto hash = git::get_remote_hash(repo, "origin", "master", false, &auth_failed, &err);
+    REQUIRE_FALSE(hash);
+    REQUIRE(!err.empty());
+    REQUIRE_FALSE(auth_failed);
+
+    auth_failed = false;
+    auto t = git::get_remote_commit_time(repo, "origin", "master", false, &auth_failed);
+    REQUIRE(t == 0);
+    REQUIRE_FALSE(auth_failed);
+
+    fs::remove_all(repo);
+    fs::remove_all(bogus);
+}
+
 TEST_CASE("mutant_should_pull skips unchanged repos") {
     git::GitInitGuard guard;
     fs::path repo, remote;
