@@ -215,8 +215,7 @@ TEST_CASE("init_logger skips worker when file cannot be opened") {
     std::string line;
     while (std::getline(ifs, line))
         lines.push_back(line);
-    REQUIRE(lines.size() == 1);
-    REQUIRE(lines[0].find("queued") != std::string::npos);
+    REQUIRE(lines.empty());
     fs::remove(good);
 }
 
