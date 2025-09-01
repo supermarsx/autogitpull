@@ -57,6 +57,7 @@ static void log_worker();
  */
 void init_logger(const std::string& path, LogLevel level, size_t max_size, size_t max_files) {
     std::lock_guard<std::mutex> lk(g_init_mtx);
+    std::string prev_path = g_log_path;
     if (g_log_thread.joinable()) {
         {
             std::lock_guard<std::mutex> qlk(g_queue_mtx);
@@ -76,14 +77,17 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
     } else {
         g_log_ofs.clear();
     }
-    g_log_path = path;
     g_max_size.store(max_size);
     g_max_files.store(max_files);
-    g_log_ofs.open(path, std::ios::app);
+    std::string target = path;
+    g_log_ofs.open(target, std::ios::app);
     if (!g_log_ofs.is_open()) {
         std::cerr << "Failed to open log file: " << path << std::endl;
-        return;
+        target = prev_path;
+        if (!target.empty())
+            g_log_ofs.open(target, std::ios::app);
     }
+    g_log_path = target;
     g_min_level.store(level);
     g_running.store(true);
     g_log_thread = std::thread(log_worker);

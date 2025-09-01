@@ -168,6 +168,25 @@ TEST_CASE("init_logger can be called twice") {
     fs::remove(log);
 }
 
+TEST_CASE("init_logger restores thread on failed reopen") {
+    fs::path log = fs::temp_directory_path() / "logger_fail_reinit.log";
+    fs::remove(log);
+    init_logger(log.string());
+    log_info("before");
+    fs::path bad = log.parent_path() / "missing" / "logger.log";
+    init_logger(bad.string());
+    log_info("after");
+    shutdown_logger();
+    std::ifstream ifs(log);
+    REQUIRE(ifs.good());
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(ifs, line))
+        lines.push_back(line);
+    REQUIRE(lines.size() >= 2);
+    fs::remove(log);
+}
+
 #ifdef __linux__
 TEST_CASE("init_syslog routes messages") {
     fs::path log = fs::temp_directory_path() / "logger_syslog.log";
