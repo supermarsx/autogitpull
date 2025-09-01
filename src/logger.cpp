@@ -84,10 +84,14 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
         if (!target.empty())
             g_log_ofs.open(target, std::ios::app);
     }
-    g_log_path = target;
-    g_min_level.store(level);
-    g_running.store(true);
-    g_log_thread = std::thread(log_worker);
+    if (g_log_ofs.is_open()) {
+        g_log_path = target;
+        g_min_level.store(level);
+        g_running.store(true);
+        g_log_thread = std::thread(log_worker);
+    } else {
+        g_log_path.clear();
+    }
 }
 
 #ifdef __linux__

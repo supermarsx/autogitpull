@@ -200,6 +200,26 @@ TEST_CASE("init_logger preserves queued messages during reinit") {
     fs::remove(log);
 }
 
+TEST_CASE("init_logger skips worker when file cannot be opened") {
+    fs::path good = fs::temp_directory_path() / "logger_skip_worker.log";
+    fs::path bad = good.parent_path() / "missing" / "logger.log";
+    fs::remove(good);
+    init_logger(bad.string());
+    log_info("queued");
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    init_logger(good.string());
+    shutdown_logger();
+    std::ifstream ifs(good);
+    REQUIRE(ifs.good());
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(ifs, line))
+        lines.push_back(line);
+    REQUIRE(lines.size() == 1);
+    REQUIRE(lines[0].find("queued") != std::string::npos);
+    fs::remove(good);
+}
+
 TEST_CASE("init_logger restores thread on failed reopen") {
     fs::path log = fs::temp_directory_path() / "logger_fail_reinit.log";
     fs::remove(log);
