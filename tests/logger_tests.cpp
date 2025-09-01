@@ -11,6 +11,7 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <future>
 #include "test_common.hpp"
 #ifdef __linux__
 static std::vector<std::string> g_syslog_messages;
@@ -216,6 +217,32 @@ TEST_CASE("init_logger restores thread on failed reopen") {
         lines.push_back(line);
     REQUIRE(lines.size() >= 2);
     fs::remove(log);
+}
+
+TEST_CASE("init_logger and shutdown_logger can run concurrently") {
+    fs::path log1 = fs::temp_directory_path() / "logger_race1.log";
+    fs::path log2 = fs::temp_directory_path() / "logger_race2.log";
+    fs::remove(log1);
+    fs::remove(log2);
+    init_logger(log1.string());
+    std::promise<void> go;
+    auto ready = go.get_future().share();
+    std::thread t1([&] {
+        ready.wait();
+        init_logger(log2.string());
+    });
+    std::thread t2([&] {
+        ready.wait();
+        shutdown_logger();
+    });
+    go.set_value();
+    t1.join();
+    t2.join();
+    if (logger_initialized())
+        shutdown_logger();
+    fs::remove(log1);
+    fs::remove(log2);
+    REQUIRE(true);
 }
 
 #ifdef __linux__

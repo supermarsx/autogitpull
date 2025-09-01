@@ -43,6 +43,15 @@ static std::thread g_log_thread;
 static std::mutex g_init_mtx;
 
 static void log_worker();
+static void stop_log_thread() {
+    {
+        std::lock_guard<std::mutex> qlk(g_queue_mtx);
+        g_running.store(false);
+    }
+    g_queue_cv.notify_all();
+    if (g_log_thread.joinable())
+        g_log_thread.join();
+}
 
 /**
  * @brief Initialize file-based logging.
@@ -58,14 +67,7 @@ static void log_worker();
 void init_logger(const std::string& path, LogLevel level, size_t max_size, size_t max_files) {
     std::lock_guard<std::mutex> lk(g_init_mtx);
     std::string prev_path = g_log_path;
-    if (g_log_thread.joinable()) {
-        {
-            std::lock_guard<std::mutex> qlk(g_queue_mtx);
-            g_running.store(false);
-        }
-        g_queue_cv.notify_all();
-        g_log_thread.join();
-    }
+    stop_log_thread();
     if (g_log_ofs.is_open()) {
         g_log_ofs.flush();
         g_log_ofs.close();
@@ -447,14 +449,8 @@ static void log_worker() {
 }
 
 void shutdown_logger() {
-    {
-        std::lock_guard<std::mutex> lk(g_queue_mtx);
-        g_running.store(false);
-    }
-    g_queue_cv.notify_all();
-    if (g_log_thread.joinable())
-        g_log_thread.join();
     std::lock_guard<std::mutex> lk(g_init_mtx);
+    stop_log_thread();
     if (g_log_ofs.is_open()) {
         g_log_ofs.flush();
         g_log_ofs.close();
