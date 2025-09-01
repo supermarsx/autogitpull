@@ -1,3 +1,4 @@
+#include <zlib.h>
 #include <cstdarg>
 #include <cstdio>
 #ifdef __linux__
@@ -6,9 +7,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <zlib.h>
-#include "test_common.hpp"
 #include <filesystem>
+#include "test_common.hpp"
 #ifdef __linux__
 static std::vector<std::string> g_syslog_messages;
 extern "C" void openlog(const char*, int, int) {}
@@ -147,6 +147,24 @@ TEST_CASE("shutdown_logger exits cleanly with no messages") {
     REQUIRE_FALSE(logger_initialized());
     REQUIRE(fs::exists(log));
     REQUIRE(fs::file_size(log) == 0);
+    fs::remove(log);
+}
+
+TEST_CASE("init_logger can be called twice") {
+    fs::path log = fs::temp_directory_path() / "logger_reinit.log";
+    fs::remove(log);
+    init_logger(log.string());
+    log_info("first entry");
+    init_logger(log.string());
+    log_info("second entry");
+    shutdown_logger();
+    std::ifstream ifs(log);
+    REQUIRE(ifs.good());
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(ifs, line))
+        lines.push_back(line);
+    REQUIRE(lines.size() >= 2);
     fs::remove(log);
 }
 
