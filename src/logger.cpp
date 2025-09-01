@@ -65,11 +65,6 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
         }
         g_queue_cv.notify_all();
         g_log_thread.join();
-        std::lock_guard<std::mutex> qlk(g_queue_mtx);
-        while (!g_log_queue.empty()) {
-            delete g_log_queue.front();
-            g_log_queue.pop();
-        }
     }
     if (g_log_ofs.is_open()) {
         g_log_ofs.flush();

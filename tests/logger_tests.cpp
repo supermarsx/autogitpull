@@ -8,6 +8,9 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <thread>
+#include <atomic>
+#include <chrono>
 #include "test_common.hpp"
 #ifdef __linux__
 static std::vector<std::string> g_syslog_messages;
@@ -165,6 +168,34 @@ TEST_CASE("init_logger can be called twice") {
     while (std::getline(ifs, line))
         lines.push_back(line);
     REQUIRE(lines.size() >= 2);
+    fs::remove(log);
+}
+
+TEST_CASE("init_logger preserves queued messages during reinit") {
+    fs::path log = fs::temp_directory_path() / "logger_reinit_queue.log";
+    fs::remove(log);
+    init_logger(log.string());
+    std::atomic<bool> run{true};
+    std::atomic<int> produced{0};
+    std::thread t([&] {
+        while (run.load()) {
+            log_info("entry " + std::to_string(produced.fetch_add(1)));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    init_logger(log.string());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    run.store(false);
+    t.join();
+    shutdown_logger();
+    std::ifstream ifs(log);
+    REQUIRE(ifs.good());
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(ifs, line))
+        lines.push_back(line);
+    REQUIRE(lines.size() >= static_cast<size_t>(produced.load()));
     fs::remove(log);
 }
 
