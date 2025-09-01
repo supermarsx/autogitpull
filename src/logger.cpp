@@ -91,6 +91,12 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
         g_log_thread = std::thread(log_worker);
     } else {
         g_log_path.clear();
+        // Drop any messages queued during reinitialization since no worker will drain them.
+        std::lock_guard<std::mutex> qlk(g_queue_mtx);
+        while (!g_log_queue.empty()) {
+            delete g_log_queue.front();
+            g_log_queue.pop();
+        }
     }
 }
 
@@ -310,8 +316,8 @@ static void write_log_entry(LogLevel level, const std::string& label, const std:
 
 static void enqueue_message(LogLevel level, const std::string& label, const std::string& msg,
                             const std::map<std::string, std::string>& fields) {
-    // Drop messages if the worker thread isn't running to avoid unbounded queue growth
-    if (!g_running.load())
+    // If no file sink is configured, drop messages immediately to avoid queue buildup.
+    if (g_log_path.empty())
         return;
 
     auto* entry = new LogMessage{level, label, msg, fields};
