@@ -310,6 +310,10 @@ static void write_log_entry(LogLevel level, const std::string& label, const std:
 
 static void enqueue_message(LogLevel level, const std::string& label, const std::string& msg,
                             const std::map<std::string, std::string>& fields) {
+    // Drop messages if the worker thread isn't running to avoid unbounded queue growth
+    if (!g_running.load())
+        return;
+
     auto* entry = new LogMessage{level, label, msg, fields};
     {
         std::lock_guard<std::mutex> lk(g_queue_mtx);
