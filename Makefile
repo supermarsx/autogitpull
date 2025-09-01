@@ -6,7 +6,7 @@ ifeq ($(UNAME_S),Darwin)
     LDFLAGS = $(shell pkg-config --libs libgit2 2>/dev/null || echo -lgit2) \
               $(shell pkg-config --libs yaml-cpp 2>/dev/null || echo -lyaml-cpp) \
               $(shell pkg-config --libs zlib 2>/dev/null || echo -lz) \
-               -framework CoreFoundation -framework CoreServices
+               -framework CoreFoundation -framework CoreServices -framework FSEvents
 else
 ifeq ($(LIBGIT2_STATIC_AVAILABLE),yes)
     LDFLAGS = $(shell pkg-config --static --libs libgit2) $(shell pkg-config --libs yaml-cpp 2>/dev/null || echo -lyaml-cpp) $(shell pkg-config --libs zlib 2>/dev/null || echo -lz) -static

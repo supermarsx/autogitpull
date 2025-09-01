@@ -40,6 +40,7 @@ find_package(ZLIB REQUIRED)
 if(APPLE)
     find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
     find_library(CORESERVICES_FRAMEWORK CoreServices REQUIRED)
+    find_library(FSEVENTS_FRAMEWORK FSEvents REQUIRED)
 endif()
 
 add_library(autogitpull_lib STATIC
@@ -75,7 +76,8 @@ target_link_libraries(autogitpull_lib
 if(APPLE)
     target_link_libraries(autogitpull_lib PUBLIC
         ${COREFOUNDATION_FRAMEWORK}
-        ${CORESERVICES_FRAMEWORK})
+        ${CORESERVICES_FRAMEWORK}
+        ${FSEVENTS_FRAMEWORK})
 endif()
 
 add_executable(autogitpull
@@ -87,7 +89,8 @@ if(MSVC)
 elseif(APPLE)
     target_link_libraries(autogitpull PRIVATE
         ${COREFOUNDATION_FRAMEWORK}
-        ${CORESERVICES_FRAMEWORK})
+        ${CORESERVICES_FRAMEWORK}
+        ${FSEVENTS_FRAMEWORK})
     # macOS does not support fully static binaries
 else()
     # Link dynamically on platforms where static libgit2 is unavailable
@@ -120,7 +123,8 @@ endif()
 if(APPLE)
     target_link_libraries(autogitpull_tests PRIVATE
         ${COREFOUNDATION_FRAMEWORK}
-        ${CORESERVICES_FRAMEWORK})
+        ${CORESERVICES_FRAMEWORK}
+        ${FSEVENTS_FRAMEWORK})
 endif()
 add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
 
@@ -159,5 +163,6 @@ add_test(NAME memory_leak_test COMMAND memory_leak_test)
 if(APPLE)
     target_link_libraries(memory_leak_test PRIVATE
         ${COREFOUNDATION_FRAMEWORK}
-        ${CORESERVICES_FRAMEWORK})
+        ${CORESERVICES_FRAMEWORK}
+        ${FSEVENTS_FRAMEWORK})
 endif()
