@@ -317,8 +317,11 @@ static void write_log_entry(LogLevel level, const std::string& label, const std:
 static void enqueue_message(LogLevel level, const std::string& label, const std::string& msg,
                             const std::map<std::string, std::string>& fields) {
     // If no file sink is configured, drop messages immediately to avoid queue buildup.
-    if (g_log_path.empty())
-        return;
+    {
+        std::lock_guard<std::mutex> lk(g_init_mtx);
+        if (g_log_path.empty())
+            return;
+    }
 
     auto* entry = new LogMessage{level, label, msg, fields};
     {
