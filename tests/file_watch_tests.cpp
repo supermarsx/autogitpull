@@ -54,7 +54,9 @@ TEST_CASE("FileWatcher detects file modifications using " WATCH_BACKEND) {
 }
 
 #if defined(__linux__)
-TEST_CASE("FileWatcher does not spawn thread on inotify failure") {
+// When inotify_init1 fails the watcher should not start its background thread
+// and the callback must never be invoked.
+TEST_CASE("FileWatcher remains inactive when inotify_init1 fails") {
     auto tmp = fs::temp_directory_path() / "watch_fail.txt";
     {
         std::ofstream os(tmp);

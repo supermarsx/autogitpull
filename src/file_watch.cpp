@@ -3,6 +3,7 @@
 #include <chrono>
 #include <system_error>
 #include <array>
+#include <cerrno>
 
 #include "logger.hpp"
 
@@ -54,10 +55,14 @@ FileWatcher::FileWatcher(const std::filesystem::path& path, std::function<void()
                 }
             });
         } else {
-            log_warning("inotify_add_watch failed; monitoring disabled");
+            std::error_code ec(errno, std::system_category());
+            log_warning("inotify_add_watch failed; monitoring disabled: " + ec.message());
+            close(inotify_fd_);
+            inotify_fd_ = -1;
         }
     } else {
-        log_warning("inotify_init1 failed; monitoring disabled");
+        std::error_code ec(errno, std::system_category());
+        log_warning("inotify_init1 failed; monitoring disabled: " + ec.message());
     }
 #elif defined(__APPLE__)
     running_.store(true);
