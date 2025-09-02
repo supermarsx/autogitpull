@@ -310,8 +310,8 @@ static void write_log_entry(LogLevel level, const std::string& label, const std:
 
 static void enqueue_message(LogLevel level, const std::string& label, const std::string& msg,
                             const std::map<std::string, std::string>& fields) {
-    // Drop messages if the worker thread isn't running to avoid unbounded queue growth
-    if (!g_running.load())
+    // Drop messages only when no log file is configured to avoid unbounded queue growth
+    if (!g_running.load() && g_log_path.empty())
         return;
 
     auto* entry = new LogMessage{level, label, msg, fields};
@@ -474,4 +474,5 @@ void shutdown_logger() {
         delete g_log_queue.front();
         g_log_queue.pop();
     }
+    g_log_path.clear();
 }
