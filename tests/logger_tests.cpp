@@ -1,3 +1,4 @@
+#include <zlib.h>
 #include <cstdarg>
 #include <cstdio>
 #ifdef __linux__
@@ -6,9 +7,12 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <zlib.h>
-#include "test_common.hpp"
 #include <filesystem>
+#include <thread>
+#include <atomic>
+#include <chrono>
+#include <future>
+#include "test_common.hpp"
 #ifdef __linux__
 static std::vector<std::string> g_syslog_messages;
 extern "C" void openlog(const char*, int, int) {}
@@ -148,6 +152,97 @@ TEST_CASE("shutdown_logger exits cleanly with no messages") {
     REQUIRE(fs::exists(log));
     REQUIRE(fs::file_size(log) == 0);
     fs::remove(log);
+}
+
+TEST_CASE("init_logger can be called twice") {
+    fs::path log = fs::temp_directory_path() / "logger_reinit.log";
+    fs::remove(log);
+    init_logger(log.string());
+    log_info("first entry");
+    init_logger(log.string());
+    log_info("second entry");
+    shutdown_logger();
+    std::ifstream ifs(log);
+    REQUIRE(ifs.good());
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(ifs, line))
+        lines.push_back(line);
+    REQUIRE(lines.size() >= 2);
+    fs::remove(log);
+}
+
+TEST_CASE("init_logger preserves queued messages during reinit") {
+    fs::path log = fs::temp_directory_path() / "logger_reinit_queue.log";
+    fs::remove(log);
+    init_logger(log.string());
+    std::atomic<bool> run{true};
+    std::atomic<int> produced{0};
+    std::thread t([&] {
+        while (run.load()) {
+            log_info("entry " + std::to_string(produced.fetch_add(1)));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    init_logger(log.string());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    run.store(false);
+    t.join();
+    shutdown_logger();
+    std::ifstream ifs(log);
+    REQUIRE(ifs.good());
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(ifs, line))
+        lines.push_back(line);
+    REQUIRE(lines.size() >= static_cast<size_t>(produced.load()));
+    fs::remove(log);
+}
+
+TEST_CASE("init_logger restores thread on failed reopen") {
+    fs::path log = fs::temp_directory_path() / "logger_fail_reinit.log";
+    fs::remove(log);
+    init_logger(log.string());
+    log_info("before");
+    fs::path bad = log.parent_path() / "missing" / "logger.log";
+    init_logger(bad.string());
+    log_info("after");
+    shutdown_logger();
+    std::ifstream ifs(log);
+    REQUIRE(ifs.good());
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(ifs, line))
+        lines.push_back(line);
+    REQUIRE(lines.size() >= 2);
+    fs::remove(log);
+}
+
+TEST_CASE("init_logger and shutdown_logger can run concurrently") {
+    fs::path log1 = fs::temp_directory_path() / "logger_race1.log";
+    fs::path log2 = fs::temp_directory_path() / "logger_race2.log";
+    fs::remove(log1);
+    fs::remove(log2);
+    init_logger(log1.string());
+    std::promise<void> go;
+    auto ready = go.get_future().share();
+    std::thread t1([&] {
+        ready.wait();
+        init_logger(log2.string());
+    });
+    std::thread t2([&] {
+        ready.wait();
+        shutdown_logger();
+    });
+    go.set_value();
+    t1.join();
+    t2.join();
+    if (logger_initialized())
+        shutdown_logger();
+    fs::remove(log1);
+    fs::remove(log2);
+    REQUIRE(true);
 }
 
 #ifdef __linux__
