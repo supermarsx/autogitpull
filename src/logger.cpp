@@ -11,6 +11,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <queue>
+#include <memory>
 #include "time_utils.hpp"
 #ifdef __linux__
 #include <syslog.h>
@@ -35,7 +36,7 @@ struct LogMessage {
     std::map<std::string, std::string> fields;
 };
 
-static std::queue<LogMessage*> g_log_queue;
+static std::queue<std::unique_ptr<LogMessage>> g_log_queue;
 static std::mutex g_queue_mtx;
 static std::condition_variable g_queue_cv;
 static std::atomic<bool> g_running{false};
@@ -306,10 +307,10 @@ static void write_log_entry(LogLevel level, const std::string& label, const std:
 
 static void enqueue_message(LogLevel level, const std::string& label, const std::string& msg,
                             const std::map<std::string, std::string>& fields) {
-    auto* entry = new LogMessage{level, label, msg, fields};
+    auto entry = std::make_unique<LogMessage>(LogMessage{level, label, msg, fields});
     {
         std::lock_guard<std::mutex> lk(g_queue_mtx);
-        g_log_queue.push(entry);
+        g_log_queue.push(std::move(entry));
     }
     g_queue_cv.notify_one();
 }
@@ -426,7 +427,7 @@ void log_error(const std::string& msg, const std::map<std::string, std::string>&
 }
 
 static void log_worker() {
-    std::vector<LogMessage*> batch;
+    std::vector<std::unique_ptr<LogMessage>> batch;
     batch.reserve(16);
     while (true) {
         std::unique_lock<std::mutex> lk(g_queue_mtx);
@@ -434,13 +435,12 @@ static void log_worker() {
         if (!g_running.load() && g_log_queue.empty())
             break;
         while (!g_log_queue.empty() && batch.size() < 16) {
-            batch.push_back(g_log_queue.front());
+            batch.push_back(std::move(g_log_queue.front()));
             g_log_queue.pop();
         }
         lk.unlock();
-        for (LogMessage* m : batch) {
+        for (const auto& m : batch) {
             write_log_entry(m->level, m->label, m->msg, m->fields);
-            delete m;
         }
         batch.clear();
         g_log_ofs.flush();
@@ -463,7 +463,6 @@ void shutdown_logger() {
 #endif
     std::lock_guard<std::mutex> qlk(g_queue_mtx);
     while (!g_log_queue.empty()) {
-        delete g_log_queue.front();
         g_log_queue.pop();
     }
 }
