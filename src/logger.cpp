@@ -84,10 +84,14 @@ void init_logger(const std::string& path, LogLevel level, size_t max_size, size_
         if (!target.empty())
             g_log_ofs.open(target, std::ios::app);
     }
-    g_log_path = target;
-    g_min_level.store(level);
-    g_running.store(true);
-    g_log_thread = std::thread(log_worker);
+    if (g_log_ofs.is_open()) {
+        g_log_path = target;
+        g_min_level.store(level);
+        g_running.store(true);
+        g_log_thread = std::thread(log_worker);
+    } else {
+        g_log_path.clear();
+    }
 }
 
 #ifdef __linux__
@@ -306,6 +310,10 @@ static void write_log_entry(LogLevel level, const std::string& label, const std:
 
 static void enqueue_message(LogLevel level, const std::string& label, const std::string& msg,
                             const std::map<std::string, std::string>& fields) {
+    // Drop messages only when no log file is configured to avoid unbounded queue growth
+    if (!g_running.load() && g_log_path.empty())
+        return;
+
     auto* entry = new LogMessage{level, label, msg, fields};
     {
         std::lock_guard<std::mutex> lk(g_queue_mtx);
@@ -466,4 +474,5 @@ void shutdown_logger() {
         delete g_log_queue.front();
         g_log_queue.pop();
     }
+    g_log_path.clear();
 }
