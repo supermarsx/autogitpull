@@ -36,6 +36,7 @@ if(NOT LIBGIT2_FOUND)
     message(FATAL_ERROR "libgit2 not found. Install the libgit2 development package or run ./scripts/install_deps.sh")
 endif()
 find_package(ZLIB REQUIRED)
+find_package(Threads REQUIRED)
 
 if(APPLE)
     find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
@@ -71,8 +72,7 @@ else()
 endif()
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(autogitpull_lib
-    PUBLIC PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json ZLIB::ZLIB
-    PRIVATE pthread)
+    PUBLIC PkgConfig::LIBGIT2 yaml-cpp nlohmann_json::nlohmann_json ZLIB::ZLIB Threads::Threads)
 if(APPLE)
     target_link_libraries(autogitpull_lib PUBLIC
         ${COREFOUNDATION_FRAMEWORK}
