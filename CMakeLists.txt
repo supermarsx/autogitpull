@@ -78,6 +78,17 @@ if(APPLE)
         ${COREFOUNDATION_FRAMEWORK}
         ${CORESERVICES_FRAMEWORK}
         ${FSEVENTS_FRAMEWORK})
+    # Older Apple toolchains require explicit linkage to the filesystem
+    # library. Attempt to locate either libc++fs or libstdc++fs and link
+    # it when available so that std::filesystem symbols resolve correctly
+    # on macOS 64-bit builds.
+    find_library(FILESYSTEM_LIB c++fs)
+    if(NOT FILESYSTEM_LIB)
+        find_library(FILESYSTEM_LIB stdc++fs)
+    endif()
+    if(FILESYSTEM_LIB)
+        target_link_libraries(autogitpull_lib PUBLIC ${FILESYSTEM_LIB})
+    endif()
 endif()
 
 add_executable(autogitpull
