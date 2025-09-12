@@ -74,15 +74,13 @@ TEST_CASE("get_remote_commit_time handles authentication options") {
     setup_repo(repo, remote, hash, ctime);
 
     bool auth_failed = false;
-    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", false, &auth_failed) ==
-            ctime);
+    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", false, &auth_failed) == ctime);
     REQUIRE_FALSE(auth_failed);
 
     setenv("GIT_USERNAME", "user", 1);
     setenv("GIT_PASSWORD", "pass", 1);
     auth_failed = false;
-    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", true, &auth_failed) ==
-            ctime);
+    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", true, &auth_failed) == ctime);
     REQUIRE_FALSE(auth_failed);
     unsetenv("GIT_USERNAME");
     unsetenv("GIT_PASSWORD");
@@ -99,17 +97,15 @@ TEST_CASE("remote queries fail fast on fetch error") {
     fs::remove_all(bogus);
     fs::create_directory(repo);
     fs::create_directory(bogus);
-    REQUIRE(
-        std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
     std::system(("git -C " + repo.string() + " add file.txt").c_str());
-    std::system(("git -C " + repo.string() +
-                 " commit -m init > /dev/null 2>&1").c_str());
-    REQUIRE(std::system(("git -C " + repo.string() + " remote add origin " +
-                         bogus.string() +
-                         " > /dev/null 2>&1").c_str()) == 0);
+    std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
+    REQUIRE(std::system(("git -C " + repo.string() + " remote add origin " + bogus.string() +
+                         " > /dev/null 2>&1")
+                            .c_str()) == 0);
 
     bool auth_failed = false;
     std::string err;

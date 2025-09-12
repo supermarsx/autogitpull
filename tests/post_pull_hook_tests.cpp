@@ -11,11 +11,9 @@ TEST_CASE("run_post_pull_hook executes script") {
         ofs << "#!/bin/sh\n";
         ofs << "echo ran > \"" << marker.string() << "\"\n";
     }
-    fs::permissions(hook, fs::perms::owner_exec | fs::perms::owner_write |
-                               fs::perms::owner_read);
+    fs::permissions(hook, fs::perms::owner_exec | fs::perms::owner_write | fs::perms::owner_read);
     run_post_pull_hook(hook);
     REQUIRE(fs::exists(marker));
     fs::remove(hook);
     fs::remove(marker);
 }
-

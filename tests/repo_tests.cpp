@@ -63,8 +63,8 @@ TEST_CASE("clone_repo clones a public repository") {
     fs::path dest = fs::temp_directory_path() / "clone_repo_test";
     fs::remove_all(dest);
     bool auth_failed = false;
-    bool ok = git::clone_repo(dest, "https://github.com/octocat/Hello-World.git", nullptr,
-                              false, &auth_failed);
+    bool ok = git::clone_repo(dest, "https://github.com/octocat/Hello-World.git", nullptr, false,
+                              &auth_failed);
     if (!ok) {
         const git_error* e = git_error_last();
         WARN("clone_repo failed: " << (e && e->message ? e->message : "unknown"));
@@ -83,8 +83,8 @@ TEST_CASE("clone_repo reports progress and respects limits") {
     std::function<void(int)> cb = [&](int pct) { updates.push_back(pct); };
     auto start = std::chrono::steady_clock::now();
     bool auth_failed = false;
-    bool ok = git::clone_repo(dest, "https://github.com/octocat/Hello-World.git", &cb,
-                              false, &auth_failed, 1, 1, 1);
+    bool ok = git::clone_repo(dest, "https://github.com/octocat/Hello-World.git", &cb, false,
+                              &auth_failed, 1, 1, 1);
     auto elapsed = std::chrono::steady_clock::now() - start;
     if (!ok) {
         const git_error* e = git_error_last();
@@ -94,8 +94,7 @@ TEST_CASE("clone_repo reports progress and respects limits") {
     REQUIRE_FALSE(auth_failed);
     REQUIRE_FALSE(updates.empty());
     REQUIRE(updates.back() == 100);
-    REQUIRE(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >=
-            500);
+    REQUIRE(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 500);
     fs::remove_all(dest);
 }
 
@@ -268,11 +267,10 @@ TEST_CASE("scan_repos respects concurrency limit") {
     std::size_t max_seen = baseline;
 
     std::thread t([&]() {
-        scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false,
-                   "origin", fs::path(), true, true, concurrency, 0, 0, 0, 0, 0, true,
-                   false, false, false, true, true, false, fs::path(),
-                   std::chrono::seconds(0), false, std::chrono::seconds(0), false, false, {},
-                   false);
+        scan_repos(repos, infos, skip, mtx, scanning, running, act, act_mtx, false, "origin",
+                   fs::path(), true, true, concurrency, 0, 0, 0, 0, 0, true, false, false, false,
+                   true, true, false, fs::path(), std::chrono::seconds(0), false,
+                   std::chrono::seconds(0), false, false, {}, false);
     });
     while (scanning) {
         max_seen = std::max(max_seen, read_thread_count());
@@ -329,8 +327,7 @@ TEST_CASE("try_pull handles dirty repos") {
         std::getline(ifs, contents);
         REQUIRE(contents == "helloupdate");
     }
-    REQUIRE(git::get_local_hash(repo).value_or("") ==
-            git::get_local_hash(src).value_or(""));
+    REQUIRE(git::get_local_hash(repo).value_or("") == git::get_local_hash(src).value_or(""));
 
     fs::remove_all(remote);
     fs::remove_all(src);
@@ -352,10 +349,10 @@ TEST_CASE("scan_repos resets statuses to pending") {
     std::string act;
     std::mutex act_mtx;
 
-    scan_repos({}, infos, skip, mtx, scanning, running, act, act_mtx, false, "origin",
-               fs::path(), true, true, 1, 0, 0, 0, 0, 0, true, false, false, false, true,
-               true, false, fs::path(), std::chrono::seconds(0), false, std::chrono::seconds(0),
-               false, false, {}, false);
+    scan_repos({}, infos, skip, mtx, scanning, running, act, act_mtx, false, "origin", fs::path(),
+               true, true, 1, 0, 0, 0, 0, 0, true, false, false, false, true, true, false,
+               fs::path(), std::chrono::seconds(0), false, std::chrono::seconds(0), false, false,
+               {}, false);
 
     REQUIRE(infos[p].status == RS_PENDING);
     REQUIRE(infos[p].progress == 0);
