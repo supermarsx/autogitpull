@@ -12,14 +12,16 @@ TEST_CASE("scan_repos honors dry run") {
     fs::remove_all(repo);
 
     REQUIRE(std::system(("git init --bare " + remote.string() + " > /dev/null 2>&1").c_str()) == 0);
-    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + " > /dev/null 2>&1")
+                            .c_str()) == 0);
     std::system(("git -C " + src.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + src.string() + " config user.name tester").c_str());
     std::ofstream(src / "file.txt") << "hello";
     std::system(("git -C " + src.string() + " add file.txt").c_str());
     std::system(("git -C " + src.string() + " commit -m init > /dev/null 2>&1").c_str());
     std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1")
+                            .c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
 
@@ -37,10 +39,10 @@ TEST_CASE("scan_repos honors dry run") {
     std::string action;
     std::mutex action_mtx;
 
-    scan_repos(repos, infos, skip, mtx, scanning, running, action, action_mtx, false,
-               "origin", fs::path(), false, true, 1, 0, 0, 0, 0, 0, false, false, true,
-               false, false, false, false, fs::path(), std::chrono::seconds(0), false,
-               std::chrono::seconds(0), false, false, {}, false);
+    scan_repos(repos, infos, skip, mtx, scanning, running, action, action_mtx, false, "origin",
+               fs::path(), false, true, 1, 0, 0, 0, 0, 0, false, false, true, false, false, false,
+               false, fs::path(), std::chrono::seconds(0), false, std::chrono::seconds(0), false,
+               false, {}, false);
 
     REQUIRE(infos[repo].status != RS_PULL_OK);
     std::string local_hash = git::get_local_hash(repo).value_or("");

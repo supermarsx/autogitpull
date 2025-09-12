@@ -2,8 +2,7 @@
 
 struct DirGuard {
     std::filesystem::path old;
-    explicit DirGuard(const std::filesystem::path& p)
-        : old(std::filesystem::current_path()) {
+    explicit DirGuard(const std::filesystem::path& p) : old(std::filesystem::current_path()) {
         std::filesystem::current_path(p);
     }
     ~DirGuard() { std::filesystem::current_path(old); }
@@ -46,7 +45,8 @@ TEST_CASE("enable history auto-detect root") {
     DirGuard guard(cwd_dir);
     std::string exe = (exe_dir / "prog").string();
     std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--enable-history")};
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                    const_cast<char*>("--enable-history")};
     Options opts = parse_options(3, argv);
     REQUIRE(opts.history_file == (root_dir / ".autogitpull.config").string());
     auto hist = read_history(opts.history_file);
@@ -68,7 +68,8 @@ TEST_CASE("enable history auto-detect cwd fallback") {
     DirGuard guard(cwd_dir);
     std::string exe = (exe_dir / "prog").string();
     std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--enable-history")};
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                    const_cast<char*>("--enable-history")};
     Options opts = parse_options(3, argv);
     REQUIRE(opts.history_file == (cwd_dir / ".autogitpull.config").string());
     fs::remove_all(root_dir);
@@ -87,7 +88,8 @@ TEST_CASE("enable history auto-detect exe fallback") {
     DirGuard guard(cwd_dir);
     std::string exe = (exe_dir / "prog").string();
     std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()), const_cast<char*>("--enable-history")};
+    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                    const_cast<char*>("--enable-history")};
     Options opts = parse_options(3, argv);
     REQUIRE(opts.history_file == (exe_dir / ".autogitpull.config").string());
     fs::remove_all(root_dir);

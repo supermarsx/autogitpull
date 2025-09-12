@@ -50,4 +50,3 @@ TEST_CASE("UniqueHandle releases handle") {
     SUCCEED();
 #endif
 }
-

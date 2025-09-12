@@ -18,7 +18,8 @@ TEST_CASE("rate limits throttle git pull") {
     fs::remove_all(repo);
 
     REQUIRE(std::system(("git init --bare " + remote.string() + " > /dev/null 2>&1").c_str()) == 0);
-    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + " > /dev/null 2>&1")
+                            .c_str()) == 0);
     std::system(("git -C " + src.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + src.string() + " config user.name tester").c_str());
 
@@ -33,7 +34,8 @@ TEST_CASE("rate limits throttle git pull") {
         std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
     }
 
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1")
+                            .c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
 
@@ -49,8 +51,7 @@ TEST_CASE("rate limits throttle git pull") {
     std::vector<int> updates_base;
     std::function<void(int)> cb_base = [&](int pct) { updates_base.push_back(pct); };
     auto start = steady_clock::now();
-    int ret =
-        git::try_pull(repo, "origin", log, &cb_base, false, &auth_fail, 0, 0, 0, false);
+    int ret = git::try_pull(repo, "origin", log, &cb_base, false, &auth_fail, 0, 0, 0, false);
     auto base_ms = duration_cast<milliseconds>(steady_clock::now() - start).count();
     REQUIRE(ret == 0);
     REQUIRE_FALSE(updates_base.empty());
@@ -67,8 +68,7 @@ TEST_CASE("rate limits throttle git pull") {
     std::function<void(int)> cb_limited = [&](int pct) { updates_limited.push_back(pct); };
     start = steady_clock::now();
     ret = git::try_pull(repo, "origin", log, &cb_limited, false, &auth_fail, 20, 20, 20, false);
-    auto limited_ms =
-        duration_cast<milliseconds>(steady_clock::now() - start).count();
+    auto limited_ms = duration_cast<milliseconds>(steady_clock::now() - start).count();
     REQUIRE(ret == 0);
     REQUIRE_FALSE(updates_limited.empty());
     REQUIRE(updates_limited.back() == 100);
