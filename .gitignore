@@ -1,5 +1,8 @@
 # Build artifacts
 build/
+build-*/
+build_msvc/
+build-msvc/
 
 # Distribution files
 dist/
@@ -12,8 +15,17 @@ log/
 logs/
 *.log
 
+# Visual Studio and CMake user files
+*.vcxproj.user
+*.suo
+*.user
+CMakeCache.txt
+CMakeFiles/
+
 # Ignores
 .autogitpull.ignore
 
 # Generated icon files
 */.bld
+
+vcpkg/
