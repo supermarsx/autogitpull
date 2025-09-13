@@ -176,10 +176,10 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
     if (opts && !opts->credential_file.empty())
         read_credential_file(opts->credential_file, file_user,
                              file_pass); // load file credentials when provided
-    const char* user = username_from_url
-                           ? username_from_url
-                           : (!file_user.empty() ? file_user.c_str()
-                                                 : (env_user ? env_user->c_str() : nullptr));
+    const char* user =
+        username_from_url
+            ? username_from_url
+            : (!file_user.empty() ? file_user.c_str() : (env_user ? env_user->c_str() : nullptr));
     if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && opts && !opts->ssh_private_key.empty() &&
         user) {
         const char* pub = nullptr;
