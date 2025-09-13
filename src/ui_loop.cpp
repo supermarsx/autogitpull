@@ -365,8 +365,8 @@ int run_event_loop(Options opts) {
         return 0;
     }
     if (opts.cli && !opts.silent) {
-        std::cout << "Interval: " << interval << "s"
-                  << " Refresh: " << opts.refresh_ms.count() << "ms";
+        std::cout << "Interval: " << interval << "s" << " Refresh: " << opts.refresh_ms.count()
+                  << "ms";
         if (opts.limits.pull_timeout.count() > 0)
             std::cout << " Timeout: " << opts.limits.pull_timeout.count() << "s";
         std::cout << " SkipTimeouts: " << (opts.limits.skip_timeout ? "yes" : "no");
