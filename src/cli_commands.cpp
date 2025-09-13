@@ -65,10 +65,12 @@ std::optional<int> handle_service_control(const Options& opts, const std::string
     if (opts.service.install_service) {
         std::string exec = fs::absolute(exec_path).string();
 #ifdef _WIN32
-        char* user_dup = nullptr; size_t user_len = 0;
+        char* user_dup = nullptr;
+        size_t user_len = 0;
         (void)_dupenv_s(&user_dup, &user_len, "USER");
         std::string usr = user_dup ? user_dup : "root";
-        if (user_dup) free(user_dup);
+        if (user_dup)
+            free(user_dup);
 #else
         const char* user_env = std::getenv("USER");
         std::string usr = user_env ? user_env : "root";
@@ -103,10 +105,12 @@ std::optional<int> handle_daemon_control(const Options& opts, const std::string&
     if (opts.service.install_daemon) {
         std::string exec = fs::absolute(exec_path).string();
 #ifdef _WIN32
-        char* user_dup = nullptr; size_t user_len = 0;
+        char* user_dup = nullptr;
+        size_t user_len = 0;
         (void)_dupenv_s(&user_dup, &user_len, "USER");
         std::string usr = user_dup ? user_dup : "root";
-        if (user_dup) free(user_dup);
+        if (user_dup)
+            free(user_dup);
 #else
         const char* user_env = std::getenv("USER");
         std::string usr = user_env ? user_env : "root";

@@ -202,7 +202,7 @@ void parse_tracker_options(Options& opts, ArgParser& parser,
 void parse_limits(Options& opts, ArgParser& parser,
                   const std::function<std::string(const std::string&)>& cfg_opt,
                   const std::map<std::string, std::string>& cfg_opts) {
-        bool ok = false;
+    bool ok = false;
     if (cfg_opts.count("--cpu-percent")) {
         std::string v = cfg_opt("--cpu-percent");
         if (!v.empty() && v.back() == '%')
@@ -630,7 +630,7 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty() && cfg_opts.count("--rescan-new"))
             val = cfg_opt("--rescan-new");
         if (!val.empty()) {
-        bool ok2 = false;
+            bool ok2 = false;
             int mins = parse_int(val, 1, INT_MAX, ok);
             if (!ok)
                 throw std::runtime_error("Invalid value for --rescan-new");
@@ -682,7 +682,7 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty() && cfg_opts.count("--wait-empty"))
             val = cfg_opt("--wait-empty");
         if (!val.empty()) {
-        bool ok2 = false;
+            bool ok2 = false;
             opts.wait_empty_limit = parse_int(val, 1, INT_MAX, ok);
             if (!ok)
                 throw std::runtime_error("Invalid value for --wait-empty");
@@ -777,7 +777,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.limits.concurrency = std::thread::hardware_concurrency();
     if (opts.limits.concurrency == 0)
         opts.limits.concurrency = 1;
-        bool ok2 = false;
+    bool ok2 = false;
     if (cfg_opts.count("--threads")) {
         opts.limits.concurrency = parse_size_t(cfg_opt("--threads"), 1, SIZE_MAX, ok);
         if (!ok)
