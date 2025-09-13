@@ -25,15 +25,14 @@ static void setup_repo(fs::path& repo, fs::path& remote, std::string& hash, std:
     fs::remove_all(remote);
     fs::remove_all(repo);
     REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR)
-                            .c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR).c_str()) ==
+            0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
     std::system(("git -C " + repo.string() + " add file.txt").c_str());
     std::system(("git -C " + repo.string() + " commit -m init" REDIR).c_str());
-    REQUIRE(std::system(
-                ("git -C " + repo.string() + " push origin master" REDIR).c_str()) == 0);
+    REQUIRE(std::system(("git -C " + repo.string() + " push origin master" REDIR).c_str()) == 0);
     hash = git::get_local_hash(repo).value_or("");
     std::string t = run_cmd("git -C " + repo.string() + " log -1 --format=%ct");
     ctime = static_cast<std::time_t>(std::stoll(t));
@@ -115,8 +114,7 @@ TEST_CASE("remote queries fail fast on fetch error") {
     std::ofstream(repo / "file.txt") << "hello";
     std::system(("git -C " + repo.string() + " add file.txt").c_str());
     std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
-    REQUIRE(std::system(("git -C " + repo.string() + " remote add origin " + bogus.string() +
-                         REDIR)
+    REQUIRE(std::system(("git -C " + repo.string() + " remote add origin " + bogus.string() + REDIR)
                             .c_str()) == 0);
 
     bool auth_failed = false;

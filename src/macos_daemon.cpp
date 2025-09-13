@@ -181,8 +181,7 @@ int create_status_socket(const std::string& name) {
     addr.sun_family = AF_UNIX;
     std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
     unlink(path.c_str());
-    if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0 ||
-        listen(fd, 5) != 0) {
+    if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0 || listen(fd, 5) != 0) {
         close(fd);
         return -1;
     }
@@ -215,7 +214,8 @@ void remove_status_socket(const std::string& name, int fd) {
 
 bool daemonize() { return false; }
 
-bool create_service_unit(const std::string&, const std::string&, const std::string&, const std::string&, bool) {
+bool create_service_unit(const std::string&, const std::string&, const std::string&,
+                         const std::string&, bool) {
     return false;
 }
 

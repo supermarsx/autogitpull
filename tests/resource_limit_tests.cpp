@@ -18,8 +18,8 @@ TEST_CASE("rate limits throttle git pull") {
     fs::remove_all(repo);
 
     REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
-    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + REDIR)
-                            .c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + REDIR).c_str()) ==
+            0);
     std::system(("git -C " + src.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + src.string() + " config user.name tester").c_str());
 
@@ -34,8 +34,8 @@ TEST_CASE("rate limits throttle git pull") {
         std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
     }
 
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR)
-                            .c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR).c_str()) ==
+            0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
 
