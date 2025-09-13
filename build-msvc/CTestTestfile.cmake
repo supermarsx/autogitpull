@@ -1,0 +1,36 @@
+# CMake generated Testfile for 
+# Source directory: C:/Projects/autogitpull
+# Build directory: C:/Projects/autogitpull/build-msvc
+# 
+# This file includes the relevant testing commands required for 
+# testing this directory and lists subdirectories to be tested as well.
+if(CTEST_CONFIGURATION_TYPE MATCHES "^([Dd][Ee][Bb][Uu][Gg])$")
+  add_test([=[autogitpull_tests]=] "C:/Projects/autogitpull/build-msvc/Debug/autogitpull_tests.exe")
+  set_tests_properties([=[autogitpull_tests]=] PROPERTIES  _BACKTRACE_TRIPLES "C:/Projects/autogitpull/CMakeLists.txt;169;add_test;C:/Projects/autogitpull/CMakeLists.txt;0;")
+elseif(CTEST_CONFIGURATION_TYPE MATCHES "^([Rr][Ee][Ll][Ee][Aa][Ss][Ee])$")
+  add_test([=[autogitpull_tests]=] "C:/Projects/autogitpull/build-msvc/Release/autogitpull_tests.exe")
+  set_tests_properties([=[autogitpull_tests]=] PROPERTIES  _BACKTRACE_TRIPLES "C:/Projects/autogitpull/CMakeLists.txt;169;add_test;C:/Projects/autogitpull/CMakeLists.txt;0;")
+elseif(CTEST_CONFIGURATION_TYPE MATCHES "^([Mm][Ii][Nn][Ss][Ii][Zz][Ee][Rr][Ee][Ll])$")
+  add_test([=[autogitpull_tests]=] "C:/Projects/autogitpull/build-msvc/MinSizeRel/autogitpull_tests.exe")
+  set_tests_properties([=[autogitpull_tests]=] PROPERTIES  _BACKTRACE_TRIPLES "C:/Projects/autogitpull/CMakeLists.txt;169;add_test;C:/Projects/autogitpull/CMakeLists.txt;0;")
+elseif(CTEST_CONFIGURATION_TYPE MATCHES "^([Rr][Ee][Ll][Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo])$")
+  add_test([=[autogitpull_tests]=] "C:/Projects/autogitpull/build-msvc/RelWithDebInfo/autogitpull_tests.exe")
+  set_tests_properties([=[autogitpull_tests]=] PROPERTIES  _BACKTRACE_TRIPLES "C:/Projects/autogitpull/CMakeLists.txt;169;add_test;C:/Projects/autogitpull/CMakeLists.txt;0;")
+else()
+  add_test([=[autogitpull_tests]=] NOT_AVAILABLE)
+endif()
+if(CTEST_CONFIGURATION_TYPE MATCHES "^([Dd][Ee][Bb][Uu][Gg])$")
+  add_test([=[memory_leak_test]=] "C:/Projects/autogitpull/build-msvc/Debug/memory_leak_test.exe")
+  set_tests_properties([=[memory_leak_test]=] PROPERTIES  _BACKTRACE_TRIPLES "C:/Projects/autogitpull/CMakeLists.txt;202;add_test;C:/Projects/autogitpull/CMakeLists.txt;0;")
+elseif(CTEST_CONFIGURATION_TYPE MATCHES "^([Rr][Ee][Ll][Ee][Aa][Ss][Ee])$")
+  add_test([=[memory_leak_test]=] "C:/Projects/autogitpull/build-msvc/Release/memory_leak_test.exe")
+  set_tests_properties([=[memory_leak_test]=] PROPERTIES  _BACKTRACE_TRIPLES "C:/Projects/autogitpull/CMakeLists.txt;202;add_test;C:/Projects/autogitpull/CMakeLists.txt;0;")
+elseif(CTEST_CONFIGURATION_TYPE MATCHES "^([Mm][Ii][Nn][Ss][Ii][Zz][Ee][Rr][Ee][Ll])$")
+  add_test([=[memory_leak_test]=] "C:/Projects/autogitpull/build-msvc/MinSizeRel/memory_leak_test.exe")
+  set_tests_properties([=[memory_leak_test]=] PROPERTIES  _BACKTRACE_TRIPLES "C:/Projects/autogitpull/CMakeLists.txt;202;add_test;C:/Projects/autogitpull/CMakeLists.txt;0;")
+elseif(CTEST_CONFIGURATION_TYPE MATCHES "^([Rr][Ee][Ll][Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo])$")
+  add_test([=[memory_leak_test]=] "C:/Projects/autogitpull/build-msvc/RelWithDebInfo/memory_leak_test.exe")
+  set_tests_properties([=[memory_leak_test]=] PROPERTIES  _BACKTRACE_TRIPLES "C:/Projects/autogitpull/CMakeLists.txt;202;add_test;C:/Projects/autogitpull/CMakeLists.txt;0;")
+else()
+  add_test([=[memory_leak_test]=] NOT_AVAILABLE)
+endif()

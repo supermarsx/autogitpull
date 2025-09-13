@@ -1,0 +1,432 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FCD127EB-B2E2-32A0-8845-6F0010D7D038}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <VcpkgEnabled>false</VcpkgEnabled>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>memory_leak_test</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+    <EnableAsan>true</EnableAsan>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+    <EnableAsan>true</EnableAsan>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+    <EnableAsan>true</EnableAsan>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+    <EnableAsan>true</EnableAsan>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="do_not_import_user.props" Condition="exists('do_not_import_user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Projects\autogitpull\build-msvc\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">memory_leak_test.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">memory_leak_test</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Projects\autogitpull\build-msvc\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">memory_leak_test.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">memory_leak_test</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Projects\autogitpull\build-msvc\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">memory_leak_test.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">memory_leak_test</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Projects\autogitpull\build-msvc\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">memory_leak_test.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">memory_leak_test</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Projects/autogitpull/vcpkg/installed/x64-windows-static/include" -fsanitize=address</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;AUTOGITPULL_NO_MAIN;YAML_CPP_STATIC_DEFINE;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;AUTOGITPULL_NO_MAIN;YAML_CPP_STATIC_DEFINE;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+"C:\Program Files\PowerShell\7\pwsh.exe" -noprofile -executionpolicy Bypass -file C:/Projects/autogitpull/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/Projects/autogitpull/build-msvc/Debug/memory_leak_test.exe -installedDir C:/Projects/autogitpull/vcpkg/installed/x64-windows-static/debug/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\debug\lib\manual-link\Catch2Maind.lib;Debug\autogitpull_lib.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\debug\lib\yaml-cppd.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\debug\lib\zlibd.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\debug\lib\Catch2d.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\debug\lib\git2.lib;winhttp.lib;rpcrt4.lib;crypt32.lib;ole32.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\debug\lib\http_parser.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\debug\lib\pcred.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\debug\lib\zlibd.lib;ws2_32.lib;secur32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -fsanitize=address</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Projects/autogitpull/build-msvc/Debug/memory_leak_test.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Projects/autogitpull/build-msvc/Debug/memory_leak_test.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Projects/autogitpull/vcpkg/installed/x64-windows-static/include" -fsanitize=address</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;AUTOGITPULL_NO_MAIN;YAML_CPP_STATIC_DEFINE;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;AUTOGITPULL_NO_MAIN;YAML_CPP_STATIC_DEFINE;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+"C:\Program Files\PowerShell\7\pwsh.exe" -noprofile -executionpolicy Bypass -file C:/Projects/autogitpull/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/Projects/autogitpull/build-msvc/Release/memory_leak_test.exe -installedDir C:/Projects/autogitpull/vcpkg/installed/x64-windows-static/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\manual-link\Catch2Main.lib;Release\autogitpull_lib.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\yaml-cpp.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\zlib.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\Catch2.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\git2.lib;winhttp.lib;rpcrt4.lib;crypt32.lib;ole32.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\http_parser.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\pcre.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\zlib.lib;ws2_32.lib;secur32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -fsanitize=address</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Projects/autogitpull/build-msvc/Release/memory_leak_test.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Projects/autogitpull/build-msvc/Release/memory_leak_test.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Projects/autogitpull/vcpkg/installed/x64-windows-static/include" -fsanitize=address</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;AUTOGITPULL_NO_MAIN;YAML_CPP_STATIC_DEFINE;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;AUTOGITPULL_NO_MAIN;YAML_CPP_STATIC_DEFINE;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+"C:\Program Files\PowerShell\7\pwsh.exe" -noprofile -executionpolicy Bypass -file C:/Projects/autogitpull/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/Projects/autogitpull/build-msvc/MinSizeRel/memory_leak_test.exe -installedDir C:/Projects/autogitpull/vcpkg/installed/x64-windows-static/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\manual-link\Catch2Main.lib;MinSizeRel\autogitpull_lib.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\yaml-cpp.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\zlib.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\Catch2.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\git2.lib;winhttp.lib;rpcrt4.lib;crypt32.lib;ole32.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\http_parser.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\pcre.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\zlib.lib;ws2_32.lib;secur32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -fsanitize=address</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Projects/autogitpull/build-msvc/MinSizeRel/memory_leak_test.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Projects/autogitpull/build-msvc/MinSizeRel/memory_leak_test.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Projects/autogitpull/vcpkg/installed/x64-windows-static/include" -fsanitize=address</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;AUTOGITPULL_NO_MAIN;YAML_CPP_STATIC_DEFINE;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;AUTOGITPULL_NO_MAIN;YAML_CPP_STATIC_DEFINE;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Projects\autogitpull\include;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+"C:\Program Files\PowerShell\7\pwsh.exe" -noprofile -executionpolicy Bypass -file C:/Projects/autogitpull/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/Projects/autogitpull/build-msvc/RelWithDebInfo/memory_leak_test.exe -installedDir C:/Projects/autogitpull/vcpkg/installed/x64-windows-static/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\manual-link\Catch2Main.lib;RelWithDebInfo\autogitpull_lib.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\yaml-cpp.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\zlib.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\Catch2.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\git2.lib;winhttp.lib;rpcrt4.lib;crypt32.lib;ole32.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\http_parser.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\pcre.lib;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\lib\zlib.lib;ws2_32.lib;secur32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -fsanitize=address</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Projects/autogitpull/build-msvc/RelWithDebInfo/memory_leak_test.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Projects/autogitpull/build-msvc/RelWithDebInfo/memory_leak_test.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Projects\autogitpull\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Projects/autogitpull/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Projects/autogitpull -BC:/Projects/autogitpull/build-msvc --check-stamp-file C:/Projects/autogitpull/build-msvc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeDependentOption.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckCSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckIncludeFile.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckLibraryExists.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\ExternalProject\shared_internal_commands.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FetchContent.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPkgConfig.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindThreads.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindZLIB.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CheckSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\WindowsPaths.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\SelectLibraryConfigurations.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeCCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeCXXCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeRCCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeSystem.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2ConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2ConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonConfig.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonTargets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-config-version.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\zlib\vcpkg-cmake-wrapper.cmake;C:\Projects\autogitpull\vcpkg\scripts\buildsystems\vcpkg.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Projects\autogitpull\build-msvc\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Projects/autogitpull/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Projects/autogitpull -BC:/Projects/autogitpull/build-msvc --check-stamp-file C:/Projects/autogitpull/build-msvc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeDependentOption.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckCSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckIncludeFile.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckLibraryExists.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\ExternalProject\shared_internal_commands.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FetchContent.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPkgConfig.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindThreads.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindZLIB.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CheckSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\WindowsPaths.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\SelectLibraryConfigurations.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeCCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeCXXCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeRCCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeSystem.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2ConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2ConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonConfig.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonTargets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-config-version.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\zlib\vcpkg-cmake-wrapper.cmake;C:\Projects\autogitpull\vcpkg\scripts\buildsystems\vcpkg.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Projects\autogitpull\build-msvc\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Projects/autogitpull/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Projects/autogitpull -BC:/Projects/autogitpull/build-msvc --check-stamp-file C:/Projects/autogitpull/build-msvc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeDependentOption.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckCSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckIncludeFile.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckLibraryExists.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\ExternalProject\shared_internal_commands.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FetchContent.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPkgConfig.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindThreads.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindZLIB.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CheckSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\WindowsPaths.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\SelectLibraryConfigurations.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeCCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeCXXCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeRCCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeSystem.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2ConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2ConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonConfig.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonTargets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-config-version.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\zlib\vcpkg-cmake-wrapper.cmake;C:\Projects\autogitpull\vcpkg\scripts\buildsystems\vcpkg.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Projects\autogitpull\build-msvc\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Projects/autogitpull/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Projects/autogitpull -BC:/Projects/autogitpull/build-msvc --check-stamp-file C:/Projects/autogitpull/build-msvc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeDependentOption.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckCSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckIncludeFile.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\CheckLibraryExists.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\ExternalProject\shared_internal_commands.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FetchContent.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindPkgConfig.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindThreads.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\FindZLIB.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Internal\CheckSourceCompiles.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\Platform\WindowsPaths.cmake;C:\Program Files\CMake\share\cmake-4.0\Modules\SelectLibraryConfigurations.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeCCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeCXXCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeRCCompiler.cmake;C:\Projects\autogitpull\build-msvc\CMakeFiles\4.0.3\CMakeSystem.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2ConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\catch2\Catch2Targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2ConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\libgit2\libgit2Targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonConfig.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonConfigVersion.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_jsonTargets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-config-version.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-config.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets-debug.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets-release.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\yaml-cpp\yaml-cpp-targets.cmake;C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\zlib\vcpkg-cmake-wrapper.cmake;C:\Projects\autogitpull\vcpkg\scripts\buildsystems\vcpkg.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Projects\autogitpull\build-msvc\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="C:\Projects\autogitpull\tests\memory_leak.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\autogitpull.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\scanner.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\file_watch.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\ui_loop.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\git_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\logger.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\resource_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\system_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\time_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\config_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\debug_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\help_text.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\ignore_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\parse_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\history_utils.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\tui.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\windows_service.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\windows_commands.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\lock_utils_windows.cpp" />
+    <ClCompile Include="C:\Projects\autogitpull\src\linux_daemon.cpp" />
+    <Natvis Include="C:\Projects\autogitpull\vcpkg\installed\x64-windows-static\share\nlohmann_json\nlohmann_json.natvis">
+    </Natvis>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="C:\Projects\autogitpull\build-msvc\ZERO_CHECK.vcxproj">
+      <Project>{B9EFE32A-04B1-3216-9BDE-A0E70A72F46C}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Projects\autogitpull\build-msvc\autogitpull_lib.vcxproj">
+      <Project>{7ED8E48D-3CE5-3C9D-AE2C-1FDE209A7DF2}</Project>
+      <Name>autogitpull_lib</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

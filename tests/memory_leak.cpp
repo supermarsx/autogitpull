@@ -6,6 +6,7 @@
 #include <mutex>
 #include <set>
 #include <catch2/catch_test_macros.hpp>
+#include "test_common.hpp"
 #include "git_utils.hpp"
 #include "repo.hpp"
 #include "resource_utils.hpp"
@@ -14,17 +15,21 @@
 namespace fs = std::filesystem;
 
 TEST_CASE("scan_repos memory stability") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path repo = fs::temp_directory_path() / "memory_leak_repo";
     fs::remove_all(repo);
     fs::create_directory(repo);
 
-    REQUIRE(std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git init " + repo.string() + REDIR).c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
     std::system(("git -C " + repo.string() + " add file.txt").c_str());
-    std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
+    std::system(("git -C " + repo.string() + " commit -m init" REDIR).c_str());
 
     std::vector<fs::path> repos{repo};
     std::map<fs::path, RepoInfo> infos;

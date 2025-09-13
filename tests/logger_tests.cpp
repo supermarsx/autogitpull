@@ -82,7 +82,7 @@ TEST_CASE("Logger compresses rotated files") {
     REQUIRE(std::filesystem::exists(log1));
     REQUIRE(std::filesystem::exists(log2));
 
-    gzFile zf = gzopen(log1.c_str(), "rb");
+    gzFile zf = gzopen(log1.string().c_str(), "rb");
     REQUIRE(zf != nullptr);
     char buf[32];
     int n = gzread(zf, buf, sizeof(buf));

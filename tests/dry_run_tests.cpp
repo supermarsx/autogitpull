@@ -3,6 +3,10 @@
 namespace fs = std::filesystem;
 
 TEST_CASE("scan_repos honors dry run") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path remote = fs::temp_directory_path() / "dry_remote.git";
     fs::path src = fs::temp_directory_path() / "dry_src";
@@ -11,24 +15,24 @@ TEST_CASE("scan_repos honors dry run") {
     fs::remove_all(src);
     fs::remove_all(repo);
 
-    REQUIRE(std::system(("git init --bare " + remote.string() + " > /dev/null 2>&1").c_str()) == 0);
-    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + " > /dev/null 2>&1")
+    REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + REDIR)
                             .c_str()) == 0);
     std::system(("git -C " + src.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + src.string() + " config user.name tester").c_str());
     std::ofstream(src / "file.txt") << "hello";
     std::system(("git -C " + src.string() + " add file.txt").c_str());
-    std::system(("git -C " + src.string() + " commit -m init > /dev/null 2>&1").c_str());
-    std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1")
+    std::system(("git -C " + src.string() + " commit -m init" REDIR).c_str());
+    std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR)
                             .c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
 
     std::ofstream(src / "file.txt", std::ios::app) << "update";
     std::system(("git -C " + src.string() + " add file.txt").c_str());
-    std::system(("git -C " + src.string() + " commit -m update > /dev/null 2>&1").c_str());
-    std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
+    std::system(("git -C " + src.string() + " commit -m update" REDIR).c_str());
+    std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
 
     std::vector<fs::path> repos{repo};
     std::map<fs::path, RepoInfo> infos;

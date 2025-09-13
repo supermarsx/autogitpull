@@ -146,20 +146,40 @@ static git_transfer_progress_cb make_progress_callback(const std::function<void(
  * @param payload         Pointer to Options providing credential data.
  * @return 0 on success or a libgit2 error code.
  */
+static std::optional<std::string> safe_getenv(const char* name) {
+#ifdef _WIN32
+    char* buf = nullptr;
+    size_t len = 0;
+    if (_dupenv_s(&buf, &len, name) == 0 && buf) {
+        std::string v(buf);
+        free(buf);
+        return v;
+    }
+    return std::nullopt;
+#else
+    const char* v = std::getenv(name);
+    if (v)
+        return std::string(v);
+    return std::nullopt;
+#endif
+}
+
 int credential_cb(git_credential** out, const char* url, const char* username_from_url,
                   unsigned int allowed_types, void* payload) {
     GitInitGuard guard;
+    (void)url;
     const Options* opts = static_cast<const Options*>(payload);
-    const char* env_user = getenv("GIT_USERNAME");
-    const char* env_pass = getenv("GIT_PASSWORD");
+    auto env_user = safe_getenv("GIT_USERNAME");
+    auto env_pass = safe_getenv("GIT_PASSWORD");
     std::string file_user;
     std::string file_pass;
     if (opts && !opts->credential_file.empty())
         read_credential_file(opts->credential_file, file_user,
                              file_pass); // load file credentials when provided
-    const char* user =
-        username_from_url ? username_from_url
-                          : (!file_user.empty() ? file_user.c_str() : env_user); // URL > file > env
+    const char* user = username_from_url
+                           ? username_from_url
+                           : (!file_user.empty() ? file_user.c_str()
+                                                 : (env_user ? env_user->c_str() : nullptr));
     if ((allowed_types & GIT_CREDENTIAL_SSH_KEY) && opts && !opts->ssh_private_key.empty() &&
         user) {
         const char* pub = nullptr;
@@ -186,8 +206,8 @@ int credential_cb(git_credential** out, const char* url, const char* username_fr
                 out, file_user.c_str(),
                 file_pass.c_str()); // file credentials take precedence over env
         if (env_user && env_pass)
-            return git_credential_userpass_plaintext_new(out, env_user,
-                                                         env_pass); // finally, use environment
+            return git_credential_userpass_plaintext_new(
+                out, env_user->c_str(), env_pass->c_str()); // finally, use environment
     }
     return git_credential_default_new(out); // fall back to system credential helper
 }

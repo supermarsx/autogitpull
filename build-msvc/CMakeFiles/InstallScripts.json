@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Projects/autogitpull/build-msvc/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

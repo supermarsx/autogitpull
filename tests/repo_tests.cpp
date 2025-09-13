@@ -17,7 +17,7 @@ TEST_CASE("get_remote_hash surfaces error for missing remote") {
     fs::path repo = fs::temp_directory_path() / "missing_remote_repo";
     fs::remove_all(repo);
     fs::create_directory(repo);
-    REQUIRE(std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git init " + repo.string() + REDIR).c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
@@ -31,13 +31,17 @@ TEST_CASE("get_remote_hash surfaces error for missing remote") {
 }
 
 TEST_CASE("Git utils local repo") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path repo = fs::temp_directory_path() / "git_utils_test_repo";
     fs::remove_all(repo);
     fs::create_directory(repo);
     REQUIRE(git::is_git_repo(repo) == false);
 
-    std::string cmd = "git init " + repo.string() + " > /dev/null 2>&1";
+    std::string cmd = "git init " + repo.string() + REDIR;
     REQUIRE(std::system(cmd.c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
@@ -59,6 +63,10 @@ TEST_CASE("Git utils GitHub url detection") {
 }
 
 TEST_CASE("clone_repo clones a public repository") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path dest = fs::temp_directory_path() / "clone_repo_test";
     fs::remove_all(dest);
@@ -76,6 +84,10 @@ TEST_CASE("clone_repo clones a public repository") {
 }
 
 TEST_CASE("clone_repo reports progress and respects limits") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path dest = fs::temp_directory_path() / "clone_repo_progress";
     fs::remove_all(dest);
@@ -157,12 +169,16 @@ TEST_CASE("build_repo_list ignores symlinks outside root") {
 }
 
 TEST_CASE("recursive iterator finds nested repo") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path root = fs::temp_directory_path() / "recursive_test";
     fs::remove_all(root);
     fs::create_directories(root / "sub/inner/nested");
     fs::path repo = root / "sub/inner/nested";
-    REQUIRE(std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+    REQUIRE(std::system(("git init " + repo.string() + REDIR).c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
@@ -237,13 +253,17 @@ TEST_CASE("build_repo_list handles large ignore set") {
 }
 
 TEST_CASE("scan_repos respects concurrency limit") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     std::vector<fs::path> repos;
     for (int i = 0; i < 3; ++i) {
         fs::path repo = fs::temp_directory_path() / ("threads_repo_" + std::to_string(i));
         fs::remove_all(repo);
         fs::create_directory(repo);
-        REQUIRE(std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
+        REQUIRE(std::system(("git init " + repo.string() + REDIR).c_str()) == 0);
         std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
         std::system(("git -C " + repo.string() + " config user.name tester").c_str());
         std::ofstream(repo / "file.txt") << "hello";
@@ -285,6 +305,10 @@ TEST_CASE("scan_repos respects concurrency limit") {
 }
 
 TEST_CASE("try_pull handles dirty repos") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path remote = fs::temp_directory_path() / "pull_remote.git";
     fs::path src = fs::temp_directory_path() / "pull_src";
@@ -292,8 +316,8 @@ TEST_CASE("try_pull handles dirty repos") {
     fs::remove_all(remote);
     fs::remove_all(src);
     fs::remove_all(repo);
-    REQUIRE(std::system(("git init --bare " + remote.string() + " > /dev/null 2>&1").c_str()) == 0);
-    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + " > /dev/null 2>&1")
+    REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + REDIR)
                             .c_str()) == 0);
     std::system(("git -C " + src.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + src.string() + " config user.name tester").c_str());
@@ -301,14 +325,14 @@ TEST_CASE("try_pull handles dirty repos") {
     std::system(("git -C " + src.string() + " add file.txt").c_str());
     std::system(("git -C " + src.string() + " commit -m init > /dev/null 2>&1").c_str());
     std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1")
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR)
                             .c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
     std::ofstream(src / "file.txt", std::ios::app) << "update";
     std::system(("git -C " + src.string() + " add file.txt").c_str());
-    std::system(("git -C " + src.string() + " commit -m update > /dev/null 2>&1").c_str());
-    std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
+    std::system(("git -C " + src.string() + " commit -m update" REDIR).c_str());
+    std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
     std::ofstream(repo / "file.txt", std::ios::app) << "local";
 
     std::string log;

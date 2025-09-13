@@ -4,7 +4,7 @@
 
 TEST_CASE("rate limits throttle git pull") {
     git::GitInitGuard guard;
-    if (std::system("git --version > /dev/null 2>&1") != 0) {
+    if (std::system("git --version " REDIR) != 0) {
         WARN("git not available; skipping");
         return;
     }
@@ -17,8 +17,8 @@ TEST_CASE("rate limits throttle git pull") {
     fs::remove_all(src);
     fs::remove_all(repo);
 
-    REQUIRE(std::system(("git init --bare " + remote.string() + " > /dev/null 2>&1").c_str()) == 0);
-    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + " > /dev/null 2>&1")
+    REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + REDIR)
                             .c_str()) == 0);
     std::system(("git -C " + src.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + src.string() + " config user.name tester").c_str());
@@ -30,11 +30,11 @@ TEST_CASE("rate limits throttle git pull") {
     {
         std::ofstream(src / "big1.bin") << payload;
         std::system(("git -C " + src.string() + " add big1.bin").c_str());
-        std::system(("git -C " + src.string() + " commit -m init > /dev/null 2>&1").c_str());
-        std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
+        std::system(("git -C " + src.string() + " commit -m init" REDIR).c_str());
+        std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
     }
 
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1")
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR)
                             .c_str()) == 0);
     std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
     std::system(("git -C " + repo.string() + " config user.name tester").c_str());
@@ -42,8 +42,8 @@ TEST_CASE("rate limits throttle git pull") {
     {
         std::ofstream(src / "big2.bin") << payload;
         std::system(("git -C " + src.string() + " add big2.bin").c_str());
-        std::system(("git -C " + src.string() + " commit -m second > /dev/null 2>&1").c_str());
-        std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
+        std::system(("git -C " + src.string() + " commit -m second" REDIR).c_str());
+        std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
     }
 
     std::string log;
@@ -60,8 +60,8 @@ TEST_CASE("rate limits throttle git pull") {
     {
         std::ofstream(src / "big3.bin") << payload;
         std::system(("git -C " + src.string() + " add big3.bin").c_str());
-        std::system(("git -C " + src.string() + " commit -m third > /dev/null 2>&1").c_str());
-        std::system(("git -C " + src.string() + " push origin master > /dev/null 2>&1").c_str());
+        std::system(("git -C " + src.string() + " commit -m third" REDIR).c_str());
+        std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
     }
 
     std::vector<int> updates_limited;

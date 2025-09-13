@@ -1,0 +1,10 @@
+^C:\PROJECTS\AUTOGITPULL\BUILD-MSVC\CMAKEFILES\833D9F98EDE6B400333CA7E42E5B6F42\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Projects/autogitpull -BC:/Projects/autogitpull/build-msvc --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Projects/autogitpull/build-msvc/autogitpull.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

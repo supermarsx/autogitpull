@@ -7,6 +7,6 @@ TEST_CASE("launchctl command generation", "[macos]") {
     setenv("AUTOGITPULL_UNIT_DIR", "/tmp/agents", 1);
     REQUIRE(procutil::plist_path("svc") == std::string("/tmp/agents/svc.plist"));
     REQUIRE(procutil::launchctl_command("load", "svc") ==
-            std::string("launchctl load /tmp/agents/svc.plist > /dev/null 2>&1"));
+            std::string("launchctl load /tmp/agents/svc.plist" REDIR));
 }
 #endif

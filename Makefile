@@ -1,19 +1,7 @@
-CXX = g++
-CXXFLAGS = -std=c++20 -pthread -Iinclude $(shell pkg-config --cflags libgit2 2>/dev/null) $(shell pkg-config --cflags yaml-cpp 2>/dev/null) $(shell pkg-config --cflags zlib 2>/dev/null)
-UNAME_S := $(shell uname -s)
-LIBGIT2_STATIC_AVAILABLE := no
-ifeq ($(UNAME_S),Darwin)
-    LDFLAGS = $(shell pkg-config --libs libgit2 2>/dev/null || echo -lgit2) \
-              $(shell pkg-config --libs yaml-cpp 2>/dev/null || echo -lyaml-cpp) \
-              $(shell pkg-config --libs zlib 2>/dev/null || echo -lz) \
-               -framework CoreFoundation -framework CoreServices -framework FSEvents
-else
-ifeq ($(LIBGIT2_STATIC_AVAILABLE),yes)
-    LDFLAGS = $(shell pkg-config --static --libs libgit2) $(shell pkg-config --libs yaml-cpp 2>/dev/null || echo -lyaml-cpp) $(shell pkg-config --libs zlib 2>/dev/null || echo -lz) -static
-else
-    LDFLAGS = $(shell pkg-config --libs libgit2 2>/dev/null || echo -lgit2) $(shell pkg-config --libs yaml-cpp 2>/dev/null || echo -lyaml-cpp) $(shell pkg-config --libs zlib 2>/dev/null || echo -lz)
-endif
-endif
+# Convenience Makefile that wraps CMake (authoritative build system)
+
+BUILD_DIR ?= build
+CONFIG ?= Release
 
 SRC = \
     src/autogitpull.cpp \
@@ -35,52 +23,46 @@ SRC = \
     src/process_monitor.cpp \
     src/help_text.cpp \
     src/cli_commands.cpp \
-    src/mutant_mode.cpp
+    src/mutant_mode.cpp \
+    src/lock_utils_posix.cpp \
+    src/lock_utils_windows.cpp
 
-# Platform-specific sources
-ifeq ($(OS),Windows_NT)
-SRC += src/windows_service.cpp src/windows_commands.cpp
-else ifeq ($(UNAME_S),Darwin)
-SRC += src/macos_daemon.cpp src/linux_commands.cpp
-else
-SRC += src/linux_daemon.cpp src/linux_commands.cpp
-endif
+FORMAT_FILES = $(SRC) include/*.hpp
 
-ifeq ($(OS),Windows_NT)
-SRC += src/lock_utils_windows.cpp
-else
-SRC += src/lock_utils_posix.cpp
-endif
+.PHONY: all build clean format lint test dist
 
-OBJ = $(SRC:.cpp=.o)
-FORMAT_FILES = $(SRC) src/lock_utils_posix.cpp src/lock_utils_windows.cpp include/*.hpp
+all: build
 
-all: autogitpull
+build:
+	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CONFIG)
+	cmake --build $(BUILD_DIR) --config $(CONFIG) -j
 
-autogitpull: $(OBJ)
-	mkdir -p dist
-	$(CXX) $(CXXFLAGS) $(OBJ) $(LDFLAGS) -o dist/autogitpull
-
-test:
-	cmake -S . -B build
-	cmake --build build
-	cd build && ctest --output-on-failure
-
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-clean:
-	rm -f $(OBJ)
-	rm -rf dist
-
-lint:
-	clang-format --dry-run --Werror $(FORMAT_FILES)
-	cpplint --linelength=100 $(FORMAT_FILES)
+test: build
+	ctest --test-dir $(BUILD_DIR) --output-on-failure -j
 
 format:
-	clang-format -i $(FORMAT_FILES)
+	@if command -v clang-format >/dev/null 2>&1; then \
+	  echo "Running clang-format"; \
+	  clang-format -i $(FORMAT_FILES); \
+	else \
+	  echo "clang-format not found; skipping format (install clang-format to enable)"; \
+	fi
 
-deps:
-	./scripts/install_deps.sh
+lint:
+	@ret=0; \
+	if command -v clang-format >/dev/null 2>&1; then \
+	  echo "Checking format"; \
+	  clang-format --dry-run --Werror $(FORMAT_FILES) || ret=1; \
+	else \
+	  echo "clang-format not found; skipping format check"; \
+	fi; \
+	if command -v cpplint >/dev/null 2>&1; then \
+	  echo "Running cpplint"; \
+	  cpplint --linelength=120 $(FORMAT_FILES) || ret=1; \
+	else \
+	  echo "cpplint not found; skipping cpplint (pip install cpplint)"; \
+	fi; \
+	exit $$ret
 
-.PHONY: all clean lint format deps test
+clean:
+	cmake -E rm -rf $(BUILD_DIR)

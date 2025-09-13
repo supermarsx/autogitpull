@@ -26,8 +26,26 @@
 #include <chrono>
 #include <vector>
 #ifdef _WIN32
-#include <windows.h>
+#ifndef NOMINMAX
+#define NOMINMAX
 #endif
+#include <windows.h>
+#include <cstdlib>
+// Portable wrappers for environment manipulation in tests
+inline int setenv(const char* name, const char* value, int) { return _putenv_s(name, value); }
+inline int unsetenv(const char* name) { return _putenv_s(name, ""); }
+// Map POSIX popen/pclose to Windows equivalents for tests
+#define popen _popen
+#define pclose _pclose
+// Redirect stdout/stderr to null device in system() invocations
+#define REDIR " > NUL 2>&1"
+#endif
+
+#if !defined(REDIR)
+#define REDIR " > /dev/null 2>&1"
+#endif
+
+static inline bool have_git() { return std::system("git --version " REDIR) == 0; }
 #if defined(__linux__) || defined(__APPLE__)
 #include <signal.h>
 #include <sys/wait.h>

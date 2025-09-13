@@ -239,6 +239,7 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
                       bool scanning, const std::string& act,
                       std::chrono::milliseconds& cli_countdown_ms, const std::string& message,
                       int runtime_sec) {
+    (void)cli_countdown_ms;
     if (!opts.silent && !opts.cli) {
         bool show_affinity = opts.limits.cpu_core_mask != 0;
         draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, opts.show_skipped,

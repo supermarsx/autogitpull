@@ -1,0 +1,7 @@
+C:/Projects/autogitpull/build-msvc/CMakeFiles/autogitpull_lib.dir
+C:/Projects/autogitpull/build-msvc/CMakeFiles/autogitpull.dir
+C:/Projects/autogitpull/build-msvc/CMakeFiles/autogitpull_tests.dir
+C:/Projects/autogitpull/build-msvc/CMakeFiles/memory_leak_test.dir
+C:/Projects/autogitpull/build-msvc/CMakeFiles/RUN_TESTS.dir
+C:/Projects/autogitpull/build-msvc/CMakeFiles/ALL_BUILD.dir
+C:/Projects/autogitpull/build-msvc/CMakeFiles/ZERO_CHECK.dir
