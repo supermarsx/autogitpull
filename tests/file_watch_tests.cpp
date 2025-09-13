@@ -49,7 +49,7 @@ TEST_CASE("FileWatcher detects file modifications using " WATCH_BACKEND) {
         for (int i = 0; i < 20 && hits.load() == 0; ++i)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    fs::remove(tmp);
+    FS_REMOVE(tmp);
     REQUIRE(hits.load() > 0);
 }
 
@@ -75,7 +75,7 @@ TEST_CASE("FileWatcher remains inactive when inotify_init1 fails") {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     g_fail_inotify = false;
-    fs::remove(tmp);
+    FS_REMOVE(tmp);
     REQUIRE(hits.load() == 0);
 }
 #endif

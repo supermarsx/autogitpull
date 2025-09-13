@@ -416,7 +416,7 @@ TEST_CASE("parse_options repo overrides") {
     REQUIRE(ro.check_only.value_or(false));
     REQUIRE(ro.cpu_limit.value_or(0.0) == 25.5);
     REQUIRE(ro.post_pull_hook.value() == fs::path("/tmp/hook"));
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("parse_options post pull hook flag") {

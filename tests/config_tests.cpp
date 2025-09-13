@@ -13,7 +13,7 @@ TEST_CASE("YAML config loading") {
     REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--interval"] == "42");
     REQUIRE(opts["--cli"] == "true");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 #if 0
@@ -29,7 +29,7 @@ TEST_CASE("YAML config categories") {
     REQUIRE(opts["--interval"] == "10");
     REQUIRE(opts["--cli"] == "true");
     REQUIRE(opts["--log-level"] == "DEBUG");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 #endif
 
@@ -47,7 +47,7 @@ TEST_CASE("JSON config categories") {
     REQUIRE(opts["--interval"] == "10");
     REQUIRE(opts["--cli"] == "true");
     REQUIRE(opts["--log-level"] == "DEBUG");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("JSON config loading") {
@@ -62,7 +62,7 @@ TEST_CASE("JSON config loading") {
     REQUIRE(load_json_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--interval"] == "42");
     REQUIRE(opts["--cli"] == "true");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("YAML config root option") {
@@ -76,7 +76,7 @@ TEST_CASE("YAML config root option") {
     std::string err;
     REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--root"] == "/tmp/repos");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("JSON config root option") {
@@ -90,7 +90,7 @@ TEST_CASE("JSON config root option") {
     std::string err;
     REQUIRE(load_json_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--root"] == "/tmp/repos");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("YAML credential file option") {
@@ -104,7 +104,7 @@ TEST_CASE("YAML credential file option") {
     std::string err;
     REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--credential-file"] == "creds.txt");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("JSON credential file option") {
@@ -118,7 +118,7 @@ TEST_CASE("JSON credential file option") {
     std::string err;
     REQUIRE(load_json_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--credential-file"] == "creds.txt");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("JSON repositories section") {
@@ -135,7 +135,7 @@ TEST_CASE("JSON repositories section") {
     REQUIRE(repo.count("/tmp/repo") == 1);
     REQUIRE(repo["/tmp/repo"]["--force-pull"] == "true");
     REQUIRE(repo["/tmp/repo"]["--upload-limit"] == "50");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("YAML value conversions") {
@@ -157,7 +157,7 @@ TEST_CASE("YAML value conversions") {
     REQUIRE(opts["--int_val"] == "7");
     REQUIRE(opts["--float_val"] == "3.5");
     REQUIRE(opts["--null_val"] == "");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("JSON value conversions") {
@@ -176,7 +176,7 @@ TEST_CASE("JSON value conversions") {
     REQUIRE(opts["--int_val"] == "7");
     REQUIRE(opts["--float_val"] == "3.5");
     REQUIRE(opts["--null_val"] == "");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("YAML unknown key allowed") {
@@ -190,7 +190,7 @@ TEST_CASE("YAML unknown key allowed") {
     std::string err;
     REQUIRE(load_yaml_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--unknown"] == "1");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("JSON unknown key allowed") {
@@ -204,7 +204,7 @@ TEST_CASE("JSON unknown key allowed") {
     std::string err;
     REQUIRE(load_json_config(cfg.string(), opts, repo, err));
     REQUIRE(opts["--unknown"] == "1");
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("YAML type mismatch is reported") {

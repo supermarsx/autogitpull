@@ -21,7 +21,7 @@ TEST_CASE("scan_repos memory stability") {
     }
     git::GitInitGuard guard;
     fs::path repo = fs::temp_directory_path() / "memory_leak_repo";
-    fs::remove_all(repo);
+    FS_REMOVE_ALL(repo);
     fs::create_directory(repo);
 
     REQUIRE(std::system(("git init " + repo.string() + REDIR).c_str()) == 0);
@@ -54,5 +54,5 @@ TEST_CASE("scan_repos memory stability") {
         REQUIRE(mem <= baseline + 20);
     }
 
-    fs::remove_all(repo);
+    FS_REMOVE_ALL(repo);
 }

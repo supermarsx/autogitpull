@@ -30,7 +30,7 @@ TEST_CASE("service unit names are not shell expanded") {
     REQUIRE(lines[0] == "start");
     REQUIRE(lines[1] == unit);
     REQUIRE(!fs::exists(marker));
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
 #else
     SUCCEED("Windows test skipped");
 #endif

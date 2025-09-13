@@ -11,7 +11,7 @@ TEST_CASE("read_ignore_file trims whitespace and skips comments") {
     auto entries = ignore::read_ignore_file(file);
     std::vector<fs::path> expected{"foo", "bar", "baz"};
     REQUIRE(entries == expected);
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
 }
 
 TEST_CASE("write_ignore_file skips blanks and preserves newline") {
@@ -26,7 +26,7 @@ TEST_CASE("write_ignore_file skips blanks and preserves newline") {
     auto read = ignore::read_ignore_file(file);
     std::vector<fs::path> expected{"foo", "bar", "baz"};
     REQUIRE(read == expected);
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
 }
 
 TEST_CASE("ignore pattern matching supports wildcards") {
