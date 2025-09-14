@@ -2,6 +2,17 @@
 
 # autogitpull
 
+[![CI](https://github.com/aminya/autogitpull/actions/workflows/ci.yml/badge.svg)](https://github.com/aminya/autogitpull/actions/workflows/ci.yml)
+[![Coverage](https://raw.githubusercontent.com/aminya/autogitpull/badges/coverage.svg)](https://github.com/aminya/autogitpull/actions/workflows/ci.yml)
+[![Downloads](https://img.shields.io/github/downloads/aminya/autogitpull/total)](https://github.com/aminya/autogitpull/releases)
+[![Stars](https://img.shields.io/github/stars/aminya/autogitpull?style=social)](https://github.com/aminya/autogitpull/stargazers)
+[![Forks](https://img.shields.io/github/forks/aminya/autogitpull?style=social)](https://github.com/aminya/autogitpull/network/members)
+[![Watchers](https://img.shields.io/github/watchers/aminya/autogitpull?style=social)](https://github.com/aminya/autogitpull/watchers)
+[![Commit activity](https://img.shields.io/github/commit-activity/m/aminya/autogitpull)](https://github.com/aminya/autogitpull/graphs/commit-activity)
+[![Commit total](https://img.shields.io/github/commit-activity/t/aminya/autogitpull)](https://github.com/aminya/autogitpull/graphs/commit-activity)
+[![Made with C++](https://img.shields.io/badge/Made%20with-C%2B%2B-1f425f.svg)](https://isocpp.org/)
+[![License](https://img.shields.io/github/license/aminya/autogitpull)](license.md)
+
 Automatic Git Puller & Monitor
 
 Tested and working on MacOS, Ubuntu and Windows
