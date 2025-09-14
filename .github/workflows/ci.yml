@@ -60,8 +60,59 @@ jobs:
       - name: Auto Test
         run: make test
 
-  build:
+  coverage:
     needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        uses: aminya/setup-cpp@v1
+
+      - name: Install dependencies
+        run: ./scripts/install_deps.sh
+
+      - name: Build with coverage
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
+          cmake --build build
+
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure
+
+      - name: Generate coverage report
+        run: |
+          pip install gcovr genbadge[coverage]
+          gcovr -r . --xml coverage.xml
+          genbadge coverage -i coverage.xml -o coverage.svg
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: |
+            coverage.xml
+            coverage.svg
+
+      - name: Publish coverage badge
+        if: github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: badges
+          publish_dir: .
+          destination_dir: .
+          keep_files: true
+          user_name: github-actions
+          user_email: github-actions@github.com
+          commit_message: 'chore: update coverage badge'
+          enable_jekyll: false
+
+  build:
+    needs: coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
