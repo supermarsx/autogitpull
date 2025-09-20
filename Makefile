@@ -3,31 +3,12 @@
 BUILD_DIR ?= build
 CONFIG ?= Release
 
-SRC = \
-    src/autogitpull.cpp \
-    src/git_utils.cpp \
-    src/tui.cpp \
-    src/logger.cpp \
-    src/resource_utils.cpp \
-    src/system_utils.cpp \
-    src/time_utils.cpp \
-    src/config_utils.cpp \
-    src/ignore_utils.cpp \
-    src/debug_utils.cpp \
-    src/scanner.cpp \
-    src/ui_loop.cpp \
-    src/file_watch.cpp \
-    src/options.cpp \
-    src/parse_utils.cpp \
-    src/history_utils.cpp \
-    src/process_monitor.cpp \
-    src/help_text.cpp \
-    src/cli_commands.cpp \
-    src/mutant_mode.cpp \
-    src/lock_utils_posix.cpp \
-    src/lock_utils_windows.cpp
+PARALLEL ?= 8
+TEST_PARALLEL ?= 1
 
-FORMAT_FILES = $(SRC) include/*.hpp
+PROJECT_ROOT := $(CURDIR)
+FORMAT_SCRIPT := scripts/clang_format.cmake
+CPPLINT_SCRIPT := scripts/run_cpplint.cmake
 
 .PHONY: all build clean format lint test dist
 
@@ -35,34 +16,21 @@ all: build
 
 build:
 	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CONFIG)
-	cmake --build $(BUILD_DIR) --config $(CONFIG) -j
+	cmake --build $(BUILD_DIR) --config $(CONFIG) -j $(PARALLEL)
 
 test: build
-	ctest --test-dir $(BUILD_DIR) --output-on-failure -j
+	ctest --test-dir $(BUILD_DIR) --output-on-failure -j $(TEST_PARALLEL) -C $(CONFIG) -R autogitpull_tests
+
+.PHONY: test-all
+test-all: build
+	ctest --test-dir $(BUILD_DIR) --output-on-failure -j $(TEST_PARALLEL) -C $(CONFIG)
 
 format:
-	@if command -v clang-format >/dev/null 2>&1; then \
-	  echo "Running clang-format"; \
-	  clang-format -i $(FORMAT_FILES); \
-	else \
-	  echo "clang-format not found; skipping format (install clang-format to enable)"; \
-	fi
+	@cmake -DPROJECT_ROOT="$(PROJECT_ROOT)" -DACTION=fix -P $(FORMAT_SCRIPT)
 
 lint:
-	@ret=0; \
-	if command -v clang-format >/dev/null 2>&1; then \
-	  echo "Checking format"; \
-	  clang-format --dry-run --Werror $(FORMAT_FILES) || ret=1; \
-	else \
-	  echo "clang-format not found; skipping format check"; \
-	fi; \
-	if command -v cpplint >/dev/null 2>&1; then \
-	  echo "Running cpplint"; \
-	  cpplint --linelength=120 $(FORMAT_FILES) || ret=1; \
-	else \
-	  echo "cpplint not found; skipping cpplint (pip install cpplint)"; \
-	fi; \
-	exit $$ret
+	@cmake -DPROJECT_ROOT="$(PROJECT_ROOT)" -DACTION=check -P $(FORMAT_SCRIPT)
+	@cmake -DPROJECT_ROOT="$(PROJECT_ROOT)" -P $(CPPLINT_SCRIPT)
 
 clean:
 	cmake -E rm -rf $(BUILD_DIR)

@@ -13,9 +13,9 @@ TEST_CASE("rate limits throttle git pull") {
     fs::path remote = fs::temp_directory_path() / "limit_remote.git";
     fs::path src = fs::temp_directory_path() / "limit_src";
     fs::path repo = fs::temp_directory_path() / "limit_repo";
-    fs::remove_all(remote);
-    fs::remove_all(src);
-    fs::remove_all(repo);
+    FS_REMOVE_ALL(remote);
+    FS_REMOVE_ALL(src);
+    FS_REMOVE_ALL(repo);
 
     REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
     REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + REDIR).c_str()) ==
@@ -75,7 +75,7 @@ TEST_CASE("rate limits throttle git pull") {
 
     REQUIRE(limited_ms - base_ms >= 5);
 
-    fs::remove_all(remote);
-    fs::remove_all(src);
-    fs::remove_all(repo);
+    FS_REMOVE_ALL(remote);
+    FS_REMOVE_ALL(src);
+    FS_REMOVE_ALL(repo);
 }

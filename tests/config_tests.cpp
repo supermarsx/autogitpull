@@ -218,7 +218,7 @@ TEST_CASE("YAML type mismatch is reported") {
     std::string err;
     REQUIRE_FALSE(load_yaml_config(cfg.string(), opts, repo, err));
     REQUIRE(err.find("interval") != std::string::npos);
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("JSON type mismatch is reported") {
@@ -232,5 +232,5 @@ TEST_CASE("JSON type mismatch is reported") {
     std::string err;
     REQUIRE_FALSE(load_json_config(cfg.string(), opts, repo, err));
     REQUIRE(err.find("interval") != std::string::npos);
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }

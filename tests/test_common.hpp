@@ -17,6 +17,7 @@
 #include "thread_compat.hpp"
 #include <filesystem>
 #include <fstream>
+#include <system_error>
 #include <cstdlib>
 #include <map>
 #include <set>
@@ -77,3 +78,57 @@ static inline std::size_t read_thread_count() {
     return procutil::get_thread_count();
 #endif
 }
+
+namespace autogitpull::test_support {
+namespace detail {
+inline bool remove_once(const fs::path& target, bool recursive, std::error_code& ec) {
+    ec.clear();
+    if (recursive) {
+        fs::remove_all(target, ec);
+        if (!ec)
+            return true;
+        if (ec == std::errc::no_such_file_or_directory)
+            return true;
+        return false;
+    }
+    fs::remove(target, ec);
+    if (!ec)
+        return true;
+    if (ec == std::errc::no_such_file_or_directory)
+        return true;
+    return false;
+}
+
+inline void remove_with_retry(const fs::path& target, bool recursive) {
+    std::error_code ec;
+#if defined(_WIN32)
+    constexpr int kMaxAttempts = 10;
+    for (int attempt = 0; attempt < kMaxAttempts; ++attempt) {
+        if (remove_once(target, recursive, ec))
+            return;
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+#else
+    if (remove_once(target, recursive, ec))
+        return;
+#endif
+    INFO("Failed to remove '" << target.string() << "': " << ec.message());
+    REQUIRE(false);
+}
+}  // namespace detail
+
+inline void remove_path(const fs::path& target) {
+    detail::remove_with_retry(target, false);
+}
+
+inline void remove_all(const fs::path& target) {
+    detail::remove_with_retry(target, true);
+}
+}  // namespace autogitpull::test_support
+
+#ifndef FS_REMOVE
+#define FS_REMOVE(path) ::autogitpull::test_support::remove_path((path))
+#endif
+#ifndef FS_REMOVE_ALL
+#define FS_REMOVE_ALL(path) ::autogitpull::test_support::remove_all((path))
+#endif

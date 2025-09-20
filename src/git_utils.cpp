@@ -625,7 +625,8 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
         if (e && e->message)
             msg = e->message;
         std::string msg_lower = msg;
-        std::transform(msg_lower.begin(), msg_lower.end(), msg_lower.begin(), ::tolower);
+        std::transform(msg_lower.begin(), msg_lower.end(), msg_lower.begin(),
+                       [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
         bool is_rate_limit = msg_lower.find("rate limit") != std::string::npos ||
                              msg_lower.find("429") != std::string::npos;
         if (is_rate_limit) {
@@ -638,7 +639,8 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
                 if (e && e->message)
                     msg = e->message;
                 msg_lower = msg;
-                std::transform(msg_lower.begin(), msg_lower.end(), msg_lower.begin(), ::tolower);
+                std::transform(msg_lower.begin(), msg_lower.end(), msg_lower.begin(),
+                               [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
                 out_pull_log = msg;
                 finalize();
                 if (msg_lower.find("timed out") != std::string::npos ||

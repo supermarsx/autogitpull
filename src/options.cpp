@@ -305,7 +305,7 @@ Options parse_options(int argc, char* argv[]) {
             return false;
         std::string v = it->second;
         std::transform(v.begin(), v.end(), v.begin(),
-                       [](unsigned char c) { return std::tolower(c); });
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         return v == "" || v == "1" || v == "true" || v == "yes";
     };
 
@@ -557,7 +557,7 @@ Options parse_options(int argc, char* argv[]) {
             return false;
         std::string v = it->second;
         std::transform(v.begin(), v.end(), v.begin(),
-                       [](unsigned char c) { return std::tolower(c); });
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         return v == "" || v == "1" || v == "true" || v == "yes";
     };
     auto cfg_opt = [&](const std::string& k) {
@@ -569,6 +569,7 @@ Options parse_options(int argc, char* argv[]) {
 
     Options opts;
     bool ok = false; // reusable parse success flag for this function scope
+    bool ok2 = false; // secondary parse success flag for sub-parses
     opts.cli = parser.has_flag("--cli") || cfg_flag("--cli");
     opts.single_run = parser.has_flag("--single-run") || cfg_flag("--single-run");
     opts.single_repo = parser.has_flag("--single-repo") || cfg_flag("--single-repo");
@@ -581,7 +582,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string val = parser.get_option("--max-runtime");
         if (val.empty())
             val = cfg_opt("--max-runtime");
-        bool ok2 = false;
+        ok2 = false;
         auto dur = parse_duration(val, ok2);
         if (!ok2 || dur.count() < 1 || dur.count() > INT_MAX)
             throw std::runtime_error("Invalid value for --max-runtime");
@@ -599,7 +600,7 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty())
             val = cfg_opt("--respawn-limit");
         size_t comma = val.find(',');
-        bool ok2 = false;
+        ok2 = false;
         if (comma == std::string::npos) {
             opts.service.respawn_max = parse_int(val, 1, INT_MAX, ok);
             if (!ok)
@@ -608,7 +609,7 @@ Options parse_options(int argc, char* argv[]) {
             opts.service.respawn_max = parse_int(val.substr(0, comma), 1, INT_MAX, ok);
             if (!ok)
                 throw std::runtime_error("Invalid value for --respawn-limit");
-            bool ok2 = false;
+            ok2 = false;
             int mins = parse_int(val.substr(comma + 1), 1, INT_MAX, ok2);
             if (!ok2)
                 throw std::runtime_error("Invalid value for --respawn-limit");
@@ -619,7 +620,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string val = parser.get_option("--respawn-delay");
         if (val.empty())
             val = cfg_opt("--respawn-delay");
-        bool ok2 = false;
+        // ok2 not used here; reuse 'ok'
         opts.service.respawn_delay = parse_time_ms(val, ok);
         if (!ok || opts.service.respawn_delay.count() < 0)
             throw std::runtime_error("Invalid value for --respawn-delay");
@@ -630,7 +631,7 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty() && cfg_opts.count("--rescan-new"))
             val = cfg_opt("--rescan-new");
         if (!val.empty()) {
-            bool ok2 = false;
+            // reuse 'ok'
             int mins = parse_int(val, 1, INT_MAX, ok);
             if (!ok)
                 throw std::runtime_error("Invalid value for --rescan-new");
@@ -641,7 +642,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string val = parser.get_option("--updated-since");
         if (val.empty())
             val = cfg_opt("--updated-since");
-        bool ok2 = false;
+        // reuse 'ok'
         opts.updated_since = parse_duration(val, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --updated-since");
@@ -682,7 +683,7 @@ Options parse_options(int argc, char* argv[]) {
         if (val.empty() && cfg_opts.count("--wait-empty"))
             val = cfg_opt("--wait-empty");
         if (!val.empty()) {
-            bool ok2 = false;
+            ok2 = false;
             opts.wait_empty_limit = parse_int(val, 1, INT_MAX, ok);
             if (!ok)
                 throw std::runtime_error("Invalid value for --wait-empty");
@@ -733,7 +734,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string val = parser.get_option("--depth");
         if (val.empty())
             val = cfg_opt("--depth");
-        bool ok2 = false;
+        // reuse 'ok'
         unsigned int d = parse_uint(val, 0, UINT_MAX, ok);
         if (!ok)
             throw std::runtime_error("Invalid value for --depth");
@@ -777,7 +778,7 @@ Options parse_options(int argc, char* argv[]) {
     opts.limits.concurrency = std::thread::hardware_concurrency();
     if (opts.limits.concurrency == 0)
         opts.limits.concurrency = 1;
-    bool ok2 = false;
+    // ok2 already declared near function top; ensure not redeclared here
     if (cfg_opts.count("--threads")) {
         opts.limits.concurrency = parse_size_t(cfg_opt("--threads"), 1, SIZE_MAX, ok);
         if (!ok)
@@ -942,7 +943,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string val = parser.get_option("--max-log-size");
         if (val.empty())
             val = cfg_opt("--max-log-size");
-        bool ok2 = false;
+        ok2 = false;
         opts.logging.max_log_size = parse_bytes(val, ok2);
         if (!ok2)
             throw std::runtime_error("Invalid value for --max-log-size");
@@ -992,7 +993,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string val = parser.get_option("--syslog-facility");
         if (val.empty())
             val = cfg_opt("--syslog-facility");
-        bool ok2 = false;
+        ok2 = false;
         int fac = parse_int(val, 0, INT_MAX, ok2);
         if (!ok2)
             throw std::runtime_error("Invalid value for --syslog-facility");
@@ -1002,7 +1003,7 @@ Options parse_options(int argc, char* argv[]) {
         std::string val = parser.get_option("--pull-timeout");
         if (val.empty())
             val = cfg_opt("--pull-timeout");
-        bool ok2 = false;
+        ok2 = false;
         auto dur = parse_duration(val, ok2);
         if (!ok2 || dur.count() < 1 || dur.count() > INT_MAX)
             throw std::runtime_error("Invalid value for --pull-timeout");
@@ -1062,7 +1063,7 @@ Options parse_options(int argc, char* argv[]) {
                 return false;
             std::string v = it->second;
             std::transform(v.begin(), v.end(), v.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
             return v == "" || v == "1" || v == "true" || v == "yes";
         };
         auto ropt = [&](const std::string& k) {
@@ -1071,7 +1072,7 @@ Options parse_options(int argc, char* argv[]) {
                 return it->second;
             return std::string();
         };
-        bool ok2 = false;
+        ok2 = false;
         if (rflag("--force-pull") || rflag("--discard-dirty"))
             ro.force_pull = true;
         if (rflag("--exclude"))

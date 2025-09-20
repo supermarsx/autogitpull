@@ -11,9 +11,9 @@ TEST_CASE("scan_repos honors dry run") {
     fs::path remote = fs::temp_directory_path() / "dry_remote.git";
     fs::path src = fs::temp_directory_path() / "dry_src";
     fs::path repo = fs::temp_directory_path() / "dry_repo";
-    fs::remove_all(remote);
-    fs::remove_all(src);
-    fs::remove_all(repo);
+    FS_REMOVE_ALL(remote);
+    FS_REMOVE_ALL(src);
+    FS_REMOVE_ALL(repo);
 
     REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
     REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + REDIR).c_str()) ==
@@ -53,7 +53,7 @@ TEST_CASE("scan_repos honors dry run") {
     std::string remote_hash = git::get_local_hash(src).value_or("");
     REQUIRE(local_hash != remote_hash);
 
-    fs::remove_all(remote);
-    fs::remove_all(src);
-    fs::remove_all(repo);
+    FS_REMOVE_ALL(remote);
+    FS_REMOVE_ALL(src);
+    FS_REMOVE_ALL(repo);
 }

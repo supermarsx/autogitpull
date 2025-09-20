@@ -23,7 +23,7 @@ TEST_CASE("run_event_loop runtime limit") {
     auto start = std::chrono::steady_clock::now();
     int ret = run_event_loop(opts);
     auto elapsed = std::chrono::steady_clock::now() - start;
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
     REQUIRE(ret == 0);
     REQUIRE(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() >= 2);
     REQUIRE(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() < 5);

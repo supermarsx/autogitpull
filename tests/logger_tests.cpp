@@ -39,10 +39,10 @@ TEST_CASE("Logger rotates and limits files") {
     log2 += ".2";
     fs::path log3 = log;
     log3 += ".3";
-    fs::remove(log);
-    fs::remove(log1);
-    fs::remove(log2);
-    fs::remove(log3);
+    FS_REMOVE(log);
+    FS_REMOVE(log1);
+    FS_REMOVE(log2);
+    FS_REMOVE(log3);
 
     init_logger(log.string(), LogLevel::INFO, 100, 2);
     LoggerGuard guard;
@@ -56,9 +56,9 @@ TEST_CASE("Logger rotates and limits files") {
     REQUIRE(std::filesystem::exists(log2));
     REQUIRE_FALSE(std::filesystem::exists(log3));
 
-    fs::remove(log);
-    fs::remove(log1);
-    fs::remove(log2);
+    FS_REMOVE(log);
+    FS_REMOVE(log1);
+    FS_REMOVE(log2);
 }
 
 TEST_CASE("Logger compresses rotated files") {
@@ -67,9 +67,9 @@ TEST_CASE("Logger compresses rotated files") {
     log1 += ".1.gz";
     fs::path log2 = log;
     log2 += ".2.gz";
-    fs::remove(log);
-    fs::remove(log1);
-    fs::remove(log2);
+    FS_REMOVE(log);
+    FS_REMOVE(log1);
+    FS_REMOVE(log2);
 
     set_log_compression(true);
     init_logger(log.string(), LogLevel::INFO, 100, 2);
@@ -89,15 +89,15 @@ TEST_CASE("Logger compresses rotated files") {
     gzclose(zf);
     REQUIRE(n > 0);
 
-    fs::remove(log);
-    fs::remove(log1);
-    fs::remove(log2);
+    FS_REMOVE(log);
+    FS_REMOVE(log1);
+    FS_REMOVE(log2);
     set_log_compression(false);
 }
 
 TEST_CASE("Logger switches between JSON and plain") {
     fs::path log = fs::temp_directory_path() / "logger_format.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     LoggerGuard guard;
     set_json_logging(true);
@@ -120,13 +120,13 @@ TEST_CASE("Logger switches between JSON and plain") {
     REQUIRE(lines[0].find("\"k\":\"v\"") != std::string::npos);
     REQUIRE(!lines[1].empty());
     REQUIRE(lines[1][0] == '[');
-
-    fs::remove(log);
+    ifs.close();
+    FS_REMOVE(log);
 }
 
 TEST_CASE("shutdown_logger drains queued messages") {
     fs::path log = fs::temp_directory_path() / "logger_drain.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     for (int i = 0; i < 50; ++i)
         log_info("queued " + std::to_string(i));
@@ -138,12 +138,13 @@ TEST_CASE("shutdown_logger drains queued messages") {
     while (std::getline(ifs, line))
         lines.push_back(line);
     REQUIRE(lines.size() == 50);
-    fs::remove(log);
+    ifs.close();
+    FS_REMOVE(log);
 }
 
 TEST_CASE("shutdown_logger exits cleanly with no messages") {
     fs::path log = fs::temp_directory_path() / "logger_noop.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     LoggerGuard guard;
     REQUIRE(logger_initialized());
@@ -151,12 +152,12 @@ TEST_CASE("shutdown_logger exits cleanly with no messages") {
     REQUIRE_FALSE(logger_initialized());
     REQUIRE(fs::exists(log));
     REQUIRE(fs::file_size(log) == 0);
-    fs::remove(log);
+    FS_REMOVE(log);
 }
 
 TEST_CASE("init_logger can be called twice") {
     fs::path log = fs::temp_directory_path() / "logger_reinit.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     log_info("first entry");
     init_logger(log.string());
@@ -169,12 +170,13 @@ TEST_CASE("init_logger can be called twice") {
     while (std::getline(ifs, line))
         lines.push_back(line);
     REQUIRE(lines.size() >= 2);
-    fs::remove(log);
+    ifs.close();
+    FS_REMOVE(log);
 }
 
 TEST_CASE("init_logger preserves queued messages during reinit") {
     fs::path log = fs::temp_directory_path() / "logger_reinit_queue.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     std::atomic<bool> run{true};
     std::atomic<int> produced{0};
@@ -197,12 +199,13 @@ TEST_CASE("init_logger preserves queued messages during reinit") {
     while (std::getline(ifs, line))
         lines.push_back(line);
     REQUIRE(lines.size() >= static_cast<size_t>(produced.load()));
-    fs::remove(log);
+    ifs.close();
+    FS_REMOVE(log);
 }
 
 TEST_CASE("init_logger restores thread on failed reopen") {
     fs::path log = fs::temp_directory_path() / "logger_fail_reinit.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     log_info("before");
     fs::path bad = log.parent_path() / "missing" / "logger.log";
@@ -216,14 +219,15 @@ TEST_CASE("init_logger restores thread on failed reopen") {
     while (std::getline(ifs, line))
         lines.push_back(line);
     REQUIRE(lines.size() >= 2);
-    fs::remove(log);
+    ifs.close();
+    FS_REMOVE(log);
 }
 
 TEST_CASE("init_logger and shutdown_logger can run concurrently") {
     fs::path log1 = fs::temp_directory_path() / "logger_race1.log";
     fs::path log2 = fs::temp_directory_path() / "logger_race2.log";
-    fs::remove(log1);
-    fs::remove(log2);
+    FS_REMOVE(log1);
+    FS_REMOVE(log2);
     init_logger(log1.string());
     std::promise<void> go;
     auto ready = go.get_future().share();
@@ -240,15 +244,15 @@ TEST_CASE("init_logger and shutdown_logger can run concurrently") {
     t2.join();
     if (logger_initialized())
         shutdown_logger();
-    fs::remove(log1);
-    fs::remove(log2);
+    FS_REMOVE(log1);
+    FS_REMOVE(log2);
     REQUIRE(true);
 }
 
 #ifdef __linux__
 TEST_CASE("init_syslog routes messages") {
     fs::path log = fs::temp_directory_path() / "logger_syslog.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     g_syslog_messages.clear();
     init_logger(log.string());
     init_syslog(LOG_USER);
@@ -256,6 +260,6 @@ TEST_CASE("init_syslog routes messages") {
     shutdown_logger();
     REQUIRE_FALSE(g_syslog_messages.empty());
     REQUIRE(g_syslog_messages.back().find("syslog entry") != std::string::npos);
-    fs::remove(log);
+    FS_REMOVE(log);
 }
 #endif
