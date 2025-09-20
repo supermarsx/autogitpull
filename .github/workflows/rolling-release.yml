@@ -1,3 +1,4 @@
+---
 name: Rolling Release
 
 on:
@@ -33,7 +34,8 @@ jobs:
 
       - name: Skip build when release limit reached
         if: steps.check_releases.outputs.skip_build == 'true'
-        run: echo 'Skipping build: daily release threshold reached.'
+        run: |
+          echo 'Skipping build: daily release threshold reached.'
 
       - name: Set up C++ build environment
         if: steps.check_releases.outputs.skip_build != 'true'
