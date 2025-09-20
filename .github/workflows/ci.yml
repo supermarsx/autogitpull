@@ -35,14 +35,14 @@ jobs:
       - uses: aminya/setup-cpp@v1
       - name: Install deps (Windows)
         if: runner.os == 'Windows'
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: scripts/install_deps.bat
       - name: Install deps (*nix)
         if: runner.os != 'Windows'
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: bash scripts/install_deps.sh
       - name: Run clang-format script
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: cmake -DPROJECT_ROOT=. -DACTION=fix -P scripts/clang_format.cmake && git diff --exit-code
 
   lint:
@@ -73,14 +73,14 @@ jobs:
       - uses: aminya/setup-cpp@v1
       - name: Install deps (Windows)
         if: runner.os == 'Windows'
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: scripts/install_deps.bat
       - name: Install deps (*nix)
         if: runner.os != 'Windows'
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: bash scripts/install_deps.sh
       - name: Lint (cpplint)
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: cmake -DPROJECT_ROOT=. -P scripts/run_cpplint.cmake
 
   test:
@@ -116,17 +116,17 @@ jobs:
       - uses: aminya/setup-cpp@v1
       - name: Configure (Windows)
         if: runner.os == 'Windows'
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
       - name: Configure (*nix)
         if: runner.os != 'Windows'
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: cmake --build build --config Release -j
       - name: Run tests (ours)
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure
 
   build:
@@ -162,12 +162,12 @@ jobs:
       - uses: aminya/setup-cpp@v1
       - name: Configure (Windows)
         if: runner.os == 'Windows'
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
       - name: Configure (*nix)
         if: runner.os != 'Windows'
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: cmake --build build --config Release -j
