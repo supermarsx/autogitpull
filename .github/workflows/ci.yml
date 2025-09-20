@@ -8,121 +8,112 @@ on:
 
 jobs:
   format:
-    runs-on: ubuntu-latest
+    name: format (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: ubuntu-x64, runner: ubuntu-latest, shell: bash }
+          - { name: ubuntu-arm64, runner: ubuntu-24.04-arm64, shell: bash }
+          - { name: macos-x64, runner: macos-13, shell: bash }
+          - { name: macos-arm64, runner: macos-14, shell: bash }
+          - { name: windows-x64, runner: windows-latest, shell: powershell }
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up build environment
-        uses: aminya/setup-cpp@v1
-
-      - name: Install dependencies
-        run: ./scripts/install_deps.sh
-
-      - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
-
-      - name: Auto Format
-        run: make format && git diff --exit-code
+      - uses: actions/checkout@v4
+      - uses: aminya/setup-cpp@v1
+      - name: Install deps
+        shell: ${{ matrix.shell }}
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then scripts/install_deps.bat; else bash scripts/install_deps.sh; fi
+      - name: Run clang-format script
+        shell: ${{ matrix.shell }}
+        run: cmake -DPROJECT_ROOT=. -DACTION=fix -P scripts/clang_format.cmake && git diff --exit-code
 
   lint:
+    name: lint (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
     needs: format
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: ubuntu-x64, runner: ubuntu-latest, shell: bash }
+          - { name: ubuntu-arm64, runner: ubuntu-24.04-arm64, shell: bash }
+          - { name: macos-x64, runner: macos-13, shell: bash }
+          - { name: macos-arm64, runner: macos-14, shell: bash }
+          - { name: windows-x64, runner: windows-latest, shell: powershell }
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up build environment
-        uses: aminya/setup-cpp@v1
-
-      - name: Install dependencies
-        run: ./scripts/install_deps.sh
-
-      - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
-
-      - name: Auto Lint
-        run: make lint
+      - uses: actions/checkout@v4
+      - uses: aminya/setup-cpp@v1
+      - name: Install deps
+        shell: ${{ matrix.shell }}
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then scripts/install_deps.bat; else bash scripts/install_deps.sh; fi
+      - name: Lint (cpplint)
+        shell: ${{ matrix.shell }}
+        run: cmake -DPROJECT_ROOT=. -P scripts/run_cpplint.cmake
 
   test:
-    needs: lint
-    runs-on: ubuntu-latest
+    name: test (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    needs: [format, lint]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: ubuntu-x64, runner: ubuntu-latest, shell: bash, generator: "Unix Makefiles" }
+          - { name: ubuntu-arm64, runner: ubuntu-24.04-arm64, shell: bash, generator: "Unix Makefiles" }
+          - { name: macos-x64, runner: macos-13, shell: bash, generator: "Unix Makefiles" }
+          - { name: macos-arm64, runner: macos-14, shell: bash, generator: "Unix Makefiles" }
+          - { name: windows-x64, runner: windows-latest, shell: powershell, generator: "Visual Studio 17 2022" }
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up build environment
-        uses: aminya/setup-cpp@v1
-
-      - name: Install dependencies
-        run: ./scripts/install_deps.sh
-
-      - name: Auto Test
-        run: make test
-
-  coverage:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up build environment
-        uses: aminya/setup-cpp@v1
-
-      - name: Install dependencies
-        run: ./scripts/install_deps.sh
-
-      - name: Build with coverage
+      - uses: actions/checkout@v4
+      - uses: aminya/setup-cpp@v1
+      - name: Configure
+        shell: ${{ matrix.shell }}
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
-          cmake --build build
-
-      - name: Run tests
+          if [[ "$RUNNER_OS" == "Windows" ]]; then \
+            cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release; \
+          else \
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release; \
+          fi
+      - name: Build
+        shell: ${{ matrix.shell }}
         run: |
-          cd build
-          ctest --output-on-failure
-
-      - name: Generate coverage report
-        run: |
-          pip install gcovr genbadge[coverage]
-          gcovr -r . --xml coverage.xml
-          genbadge coverage -i coverage.xml -o coverage.svg
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage
-          path: |
-            coverage.xml
-            coverage.svg
-
-      - name: Publish coverage badge
-        if: github.event_name == 'push'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: badges
-          publish_dir: .
-          destination_dir: .
-          keep_files: true
-          user_name: github-actions
-          user_email: github-actions@github.com
-          commit_message: 'chore: update coverage badge'
-          enable_jekyll: false
+          if [[ "$RUNNER_OS" == "Windows" ]]; then \
+            cmake --build build --config Release -j; \
+          else \
+            cmake --build build --config Release -j; \
+          fi
+      - name: Run tests (ours)
+        shell: ${{ matrix.shell }}
+        run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure
 
   build:
-    needs: coverage
-    runs-on: ubuntu-latest
+    name: build (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    needs: [format, lint, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: ubuntu-x64, runner: ubuntu-latest, shell: bash, generator: "Unix Makefiles" }
+          - { name: ubuntu-arm64, runner: ubuntu-24.04-arm64, shell: bash, generator: "Unix Makefiles" }
+          - { name: macos-x64, runner: macos-13, shell: bash, generator: "Unix Makefiles" }
+          - { name: macos-arm64, runner: macos-14, shell: bash, generator: "Unix Makefiles" }
+          - { name: windows-x64, runner: windows-latest, shell: powershell, generator: "Visual Studio 17 2022" }
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up build environment
-        uses: aminya/setup-cpp@v1
-
-      - name: Install dependencies
-        run: ./scripts/install_deps.sh
-
-      - name: Auto Build
-        run: make
+      - uses: actions/checkout@v4
+      - uses: aminya/setup-cpp@v1
+      - name: Configure
+        shell: ${{ matrix.shell }}
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then \
+            cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release; \
+          else \
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release; \
+          fi
+      - name: Build
+        shell: ${{ matrix.shell }}
+        run: cmake --build build --config Release -j
