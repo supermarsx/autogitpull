@@ -6,6 +6,7 @@
 #include <thread>
 #include <ctime>
 #include <algorithm>
+#include <cctype>
 #include "resource_utils.hpp"
 #include "options.hpp"
 
