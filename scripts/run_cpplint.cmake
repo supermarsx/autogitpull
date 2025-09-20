@@ -23,14 +23,21 @@ if(NOT FILES)
 endif()
 
 find_program(CPPLINT_EXECUTABLE NAMES cpplint)
-if(NOT CPPLINT_EXECUTABLE)
-  message("cpplint not found; skipping cpplint (pip install cpplint)")
-  return()
+set(result 0)
+if(CPPLINT_EXECUTABLE)
+  execute_process(
+    COMMAND "${CPPLINT_EXECUTABLE}" --linelength=120 ${FILES}
+    RESULT_VARIABLE result)
+else()
+  find_package(Python3 COMPONENTS Interpreter)
+  if(NOT Python3_Interpreter_FOUND)
+    message("cpplint not found and no Python3 interpreter; skipping cpplint")
+    return()
+  endif()
+  execute_process(
+    COMMAND "${Python3_EXECUTABLE}" -m cpplint --linelength=120 ${FILES}
+    RESULT_VARIABLE result)
 endif()
-
-execute_process(
-  COMMAND "${CPPLINT_EXECUTABLE}" --linelength=120 ${FILES}
-  RESULT_VARIABLE result)
 if(NOT result EQUAL 0)
   message(FATAL_ERROR "cpplint failed")
 endif()

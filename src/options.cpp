@@ -568,7 +568,7 @@ Options parse_options(int argc, char* argv[]) {
     };
 
     Options opts;
-    bool ok = false; // reusable parse success flag for this function scope
+    bool ok = false;  // reusable parse success flag for this function scope
     bool ok2 = false; // secondary parse success flag for sub-parses
     opts.cli = parser.has_flag("--cli") || cfg_flag("--cli");
     opts.single_run = parser.has_flag("--single-run") || cfg_flag("--single-run");

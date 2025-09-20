@@ -25,7 +25,11 @@ if(NOT FILES)
   return()
 endif()
 
-find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
+find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format
+  HINTS
+    "C:/Program Files/LLVM/bin"
+    "C:/Program Files (x86)/LLVM/bin"
+)
 if(NOT CLANG_FORMAT_EXECUTABLE)
   message("clang-format not found; skipping format (install clang-format to enable)")
   return()
