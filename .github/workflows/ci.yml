@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -14,18 +15,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: ubuntu-x64, runner: ubuntu-latest, shell: bash }
-          - { name: ubuntu-arm64, runner: ubuntu-24.04-arm64, shell: bash }
-          - { name: macos-x64, runner: macos-13, shell: bash }
-          - { name: macos-arm64, runner: macos-14, shell: bash }
-          - { name: windows-x64, runner: windows-latest, shell: powershell }
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+            shell: bash
+          - name: ubuntu-arm64
+            runner: ubuntu-24.04-arm64
+            shell: bash
+          - name: macos-x64
+            runner: macos-13
+            shell: bash
+          - name: macos-arm64
+            runner: macos-14
+            shell: bash
+          - name: windows-x64
+            runner: windows-latest
+            shell: powershell
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
-      - name: Install deps
+      - name: Install deps (Windows)
+        if: runner.os == 'Windows'
         shell: ${{ matrix.shell }}
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then scripts/install_deps.bat; else bash scripts/install_deps.sh; fi
+        run: scripts/install_deps.bat
+      - name: Install deps (*nix)
+        if: runner.os != 'Windows'
+        shell: ${{ matrix.shell }}
+        run: bash scripts/install_deps.sh
       - name: Run clang-format script
         shell: ${{ matrix.shell }}
         run: cmake -DPROJECT_ROOT=. -DACTION=fix -P scripts/clang_format.cmake && git diff --exit-code
@@ -38,18 +53,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: ubuntu-x64, runner: ubuntu-latest, shell: bash }
-          - { name: ubuntu-arm64, runner: ubuntu-24.04-arm64, shell: bash }
-          - { name: macos-x64, runner: macos-13, shell: bash }
-          - { name: macos-arm64, runner: macos-14, shell: bash }
-          - { name: windows-x64, runner: windows-latest, shell: powershell }
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+            shell: bash
+          - name: ubuntu-arm64
+            runner: ubuntu-24.04-arm64
+            shell: bash
+          - name: macos-x64
+            runner: macos-13
+            shell: bash
+          - name: macos-arm64
+            runner: macos-14
+            shell: bash
+          - name: windows-x64
+            runner: windows-latest
+            shell: powershell
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
-      - name: Install deps
+      - name: Install deps (Windows)
+        if: runner.os == 'Windows'
         shell: ${{ matrix.shell }}
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then scripts/install_deps.bat; else bash scripts/install_deps.sh; fi
+        run: scripts/install_deps.bat
+      - name: Install deps (*nix)
+        if: runner.os != 'Windows'
+        shell: ${{ matrix.shell }}
+        run: bash scripts/install_deps.sh
       - name: Lint (cpplint)
         shell: ${{ matrix.shell }}
         run: cmake -DPROJECT_ROOT=. -P scripts/run_cpplint.cmake
@@ -62,30 +91,40 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: ubuntu-x64, runner: ubuntu-latest, shell: bash, generator: "Unix Makefiles" }
-          - { name: ubuntu-arm64, runner: ubuntu-24.04-arm64, shell: bash, generator: "Unix Makefiles" }
-          - { name: macos-x64, runner: macos-13, shell: bash, generator: "Unix Makefiles" }
-          - { name: macos-arm64, runner: macos-14, shell: bash, generator: "Unix Makefiles" }
-          - { name: windows-x64, runner: windows-latest, shell: powershell, generator: "Visual Studio 17 2022" }
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: ubuntu-arm64
+            runner: ubuntu-24.04-arm64
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: macos-x64
+            runner: macos-13
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: macos-arm64
+            runner: macos-14
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: windows-x64
+            runner: windows-latest
+            shell: powershell
+            generator: "Visual Studio 17 2022"
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
-      - name: Configure
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
         shell: ${{ matrix.shell }}
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then \
-            cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release; \
-          else \
-            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release; \
-          fi
+        run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (*nix)
+        if: runner.os != 'Windows'
+        shell: ${{ matrix.shell }}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         shell: ${{ matrix.shell }}
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then \
-            cmake --build build --config Release -j; \
-          else \
-            cmake --build build --config Release -j; \
-          fi
+        run: cmake --build build --config Release -j
       - name: Run tests (ours)
         shell: ${{ matrix.shell }}
         run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure
@@ -98,22 +137,37 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: ubuntu-x64, runner: ubuntu-latest, shell: bash, generator: "Unix Makefiles" }
-          - { name: ubuntu-arm64, runner: ubuntu-24.04-arm64, shell: bash, generator: "Unix Makefiles" }
-          - { name: macos-x64, runner: macos-13, shell: bash, generator: "Unix Makefiles" }
-          - { name: macos-arm64, runner: macos-14, shell: bash, generator: "Unix Makefiles" }
-          - { name: windows-x64, runner: windows-latest, shell: powershell, generator: "Visual Studio 17 2022" }
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: ubuntu-arm64
+            runner: ubuntu-24.04-arm64
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: macos-x64
+            runner: macos-13
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: macos-arm64
+            runner: macos-14
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: windows-x64
+            runner: windows-latest
+            shell: powershell
+            generator: "Visual Studio 17 2022"
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
-      - name: Configure
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
         shell: ${{ matrix.shell }}
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then \
-            cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release; \
-          else \
-            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release; \
-          fi
+        run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (*nix)
+        if: runner.os != 'Windows'
+        shell: ${{ matrix.shell }}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         shell: ${{ matrix.shell }}
         run: cmake --build build --config Release -j
