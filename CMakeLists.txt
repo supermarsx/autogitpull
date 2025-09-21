@@ -293,6 +293,9 @@ if(NOT LIBGIT2_TARGET)
         -DUSE_REGEX=builtin
         -DUSE_COMPRESSION=zlib
         -DUSE_BUNDLED_ZLIB:BOOL=ON
+        -DZLIB_FOUND:BOOL=OFF
+        -DZLIB_LIBRARY:FILEPATH=
+        -DZLIB_INCLUDE_DIR:PATH=
         -DLINK_WITH_STATIC_LIBRARIES:BOOL=ON
         -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
         -DCMAKE_POLICY_DEFAULT_CMP0077:STRING=NEW
@@ -325,6 +328,10 @@ if(NOT LIBGIT2_TARGET)
     set(USE_NTLM OFF CACHE BOOL "" FORCE)
     set(ENABLE_NTLM OFF CACHE BOOL "" FORCE)
     set(NTLMCLIENT_FOUND OFF CACHE BOOL "" FORCE)
+    # Force libgit2 to ignore any top-level zlib and use its bundled one
+    set(ZLIB_FOUND OFF CACHE BOOL "" FORCE)
+    unset(ZLIB_LIBRARY CACHE)
+    unset(ZLIB_INCLUDE_DIR CACHE)
     # Disable nanosecond mtimes at the subproject level for stability across toolchains
     set(USE_NSEC OFF CACHE BOOL "Disable nanosecond mtimes in libgit2" FORCE)
     FetchContent_Declare(
