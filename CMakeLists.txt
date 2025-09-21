@@ -14,11 +14,11 @@ endif()
 # Treat env flags as proper CMake lists (avoid "all flags as one token")
 if(DEFINED ENV{CFLAGS})
   separate_arguments(_ENV_CFLAGS NATIVE_COMMAND "$ENV{CFLAGS}")
-  add_compile_options(${_ENV_CFLAGS})
+  add_compile_options($<$<COMPILE_LANGUAGE:C>:${_ENV_CFLAGS}>)
 endif()
 if(DEFINED ENV{CXXFLAGS})
   separate_arguments(_ENV_CXXFLAGS NATIVE_COMMAND "$ENV{CXXFLAGS}")
-  add_compile_options(${_ENV_CXXFLAGS})
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:${_ENV_CXXFLAGS}>)
 endif()
 if(DEFINED ENV{LDFLAGS})
   separate_arguments(_ENV_LDFLAGS NATIVE_COMMAND "$ENV{LDFLAGS}")
@@ -31,7 +31,7 @@ endif()
 cmake_policy(SET CMP0077 NEW)
 
 # Scrub legacy POSIX feature defines from C sources that can hide st_mtim
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-U_POSIX_C_SOURCE -U_XOPEN_SOURCE>)
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-U_POSIX_C_SOURCE> $<$<COMPILE_LANGUAGE:C>:-U_XOPEN_SOURCE>)
 
 # Gate Clang-only warnings to avoid GCC noise
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|AppleClang")
