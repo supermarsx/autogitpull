@@ -277,6 +277,14 @@ if(NOT LIBGIT2_TARGET)
         add_library(libgit2::libgit2 ALIAS ${_autogitpull_libgit2_build_target})
     endif()
 
+    # As an extra guard, ensure libgit2 compiles without nanosecond stat usage
+    # on platforms where detection can misfire (e.g., some Ubuntu/GCC combos).
+    if(CODEX_FORCE_NO_NSEC OR WIN32 OR UNIX)
+        # We already pass -DUSE_NSEC=OFF to the libgit2 CMake, but some
+        # environments still toggle GIT_USE_NSEC via headers. Enforce via define.
+        target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE GIT_USE_NSEC=0 _GNU_SOURCE)
+    endif()
+
     foreach(_libgit2_extra IN ITEMS util llhttp pcre xdiff)
         if(TARGET ${_libgit2_extra})
             list(APPEND LIBGIT2_DEPENDENCIES ${_libgit2_extra})
