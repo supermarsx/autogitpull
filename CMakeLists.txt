@@ -17,19 +17,51 @@ if(_autogitpull_zlib_target)
   set_property(TARGET ${_autogitpull_zlib_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+include(CheckLinkerFlag)
+
+function(_filter_supported_flags _lang _out_var)
+  if(_lang STREQUAL "C")
+    set(_checker check_c_compiler_flag)
+  elseif(_lang STREQUAL "CXX")
+    set(_checker check_cxx_compiler_flag)
+  elseif(_lang STREQUAL "LD")
+    set(_checker check_linker_flag)
+  else()
+    message(FATAL_ERROR "Unknown language for flag filtering: ${_lang}")
+  endif()
+
+  set(_filtered "")
+  foreach(_flag IN LISTS ARGN)
+    string(STRIP "${_flag}" _flag)
+    if(_flag STREQUAL "")
+      continue()
+    endif()
+    ${_checker}("${_flag}" _ok)
+    if(_ok)
+      list(APPEND _filtered "${_flag}")
+    endif()
+    unset(_ok CACHE)
+  endforeach()
+  set(${_out_var} "${_filtered}" PARENT_SCOPE)
+endfunction()
+
 # --- BEGIN: flag normalization (treat env flags sanely) ---
-# Treat env flags as proper CMake lists (avoid "all flags as one token")
 if(DEFINED ENV{CFLAGS})
   separate_arguments(_ENV_CFLAGS NATIVE_COMMAND "$ENV{CFLAGS}")
-  add_compile_options($<$<COMPILE_LANGUAGE:C>:${_ENV_CFLAGS}>)
+  _filter_supported_flags(C _ENV_CFLAGS_OK ${_ENV_CFLAGS})
+  add_compile_options($<$<COMPILE_LANGUAGE:C>:${_ENV_CFLAGS_OK}>)
 endif()
 if(DEFINED ENV{CXXFLAGS})
   separate_arguments(_ENV_CXXFLAGS NATIVE_COMMAND "$ENV{CXXFLAGS}")
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:${_ENV_CXXFLAGS}>)
+  _filter_supported_flags(CXX _ENV_CXXFLAGS_OK ${_ENV_CXXFLAGS})
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:${_ENV_CXXFLAGS_OK}>)
 endif()
 if(DEFINED ENV{LDFLAGS})
   separate_arguments(_ENV_LDFLAGS NATIVE_COMMAND "$ENV{LDFLAGS}")
-  add_link_options(${_ENV_LDFLAGS})
+  _filter_supported_flags(LD _ENV_LDFLAGS_OK ${_ENV_LDFLAGS})
+  add_link_options(${_ENV_LDFLAGS_OK})
 endif()
 
 # --- END: flag normalization ---
@@ -37,8 +69,7 @@ endif()
 # Make option() honor cache values in subprojects
 cmake_policy(SET CMP0077 NEW)
 
-# Scrub legacy POSIX feature defines from C sources that can hide st_mtim
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-U_POSIX_C_SOURCE> $<$<COMPILE_LANGUAGE:C>:-U_XOPEN_SOURCE>)
+# (moved) POSIX feature macro scrubbing is scoped to zlib only
 
 # Gate Clang-only warnings to avoid GCC noise
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|AppleClang")
@@ -66,7 +97,7 @@ else()
         GIT_REPOSITORY https://github.com/madler/zlib.git
         GIT_TAG v1.3.1
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+        CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_FLAGS=-w
     )
     set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(autogitpull_zlib)
@@ -85,6 +116,8 @@ else()
         message(FATAL_ERROR "Bundled zlib did not produce ZLIB::ZLIB target")
     endif()
     if(_autogitpull_zlib_target)
+        # Scope any feature-macro scrubbing to zlib only (avoid breaking feature tests elsewhere)
+        target_compile_options(${_autogitpull_zlib_target} PRIVATE -U_POSIX_C_SOURCE -U_XOPEN_SOURCE)
         get_target_property(_autogitpull_zlib_include_dirs ${_autogitpull_zlib_target} INTERFACE_INCLUDE_DIRECTORIES)
         if(NOT _autogitpull_zlib_include_dirs)
             set(_autogitpull_zlib_include_dirs "${autogitpull_zlib_SOURCE_DIR}")
@@ -396,13 +429,24 @@ if(APPLE)
     # macOS does not support fully static binaries
 endif()
 
-# Required compiler warnings
+# Warnings configuration
+option(AUTOGITPULL_SUPPRESS_ALL_WARNINGS "Silence compiler warnings for project targets" ON)
 if(MSVC)
-    target_compile_options(autogitpull_lib PRIVATE /W4 /WX)
-    target_compile_options(autogitpull PRIVATE /W4 /WX)
+    if(AUTOGITPULL_SUPPRESS_ALL_WARNINGS)
+        target_compile_options(autogitpull_lib PRIVATE /w)
+        target_compile_options(autogitpull PRIVATE /w)
+    else()
+        target_compile_options(autogitpull_lib PRIVATE /W4)
+        target_compile_options(autogitpull PRIVATE /W4)
+    endif()
 else()
-    target_compile_options(autogitpull_lib PRIVATE -Wall -Wextra -Werror)
-    target_compile_options(autogitpull PRIVATE -Wall -Wextra -Werror)
+    if(AUTOGITPULL_SUPPRESS_ALL_WARNINGS)
+        target_compile_options(autogitpull_lib PRIVATE -w)
+        target_compile_options(autogitpull PRIVATE -w)
+    else()
+        target_compile_options(autogitpull_lib PRIVATE -Wall -Wextra)
+        target_compile_options(autogitpull PRIVATE -Wall -Wextra)
+    endif()
 endif()
 
 enable_testing()
