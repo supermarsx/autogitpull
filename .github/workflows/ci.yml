@@ -125,11 +125,15 @@ jobs:
       - name: Run tests (ours)
         if: runner.os != 'Windows'
         shell: bash
-        run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure
+        env:
+          CTEST_OUTPUT_ON_FAILURE: "1"
+        run: ctest --test-dir build -C Release -R autogitpull_tests -VV
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
         shell: powershell
-        run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure
+        env:
+          CTEST_OUTPUT_ON_FAILURE: "1"
+        run: ctest --test-dir build -C Release -R autogitpull_tests -VV
 
   build:
     name: build (${{ matrix.name }})
