@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: cmake -DPROJECT_ROOT=. -DACTION=fix -P scripts/clang_format.cmake
       - name: Commit formatting changes (push events)
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref_protected != 'true' && github.repository == github.event.repository.full_name
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

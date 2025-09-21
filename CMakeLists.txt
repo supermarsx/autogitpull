@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(autogitpull LANGUAGES C CXX)
 
+# Ensure all static libs are PIC-friendly on ELF platforms
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -8,6 +11,10 @@ set(BUILD_SHARED_LIBS OFF)
 if(MSVC)
     # Link the static runtime to satisfy "static everything" on Windows
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+# Ensure zlib static archive is built with PIC
+if(_autogitpull_zlib_target)
+  set_property(TARGET ${_autogitpull_zlib_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 # --- BEGIN: flag normalization (treat env flags sanely) ---
@@ -59,6 +66,7 @@ else()
         GIT_REPOSITORY https://github.com/madler/zlib.git
         GIT_TAG v1.3.1
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     )
     set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(autogitpull_zlib)
