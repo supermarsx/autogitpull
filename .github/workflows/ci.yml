@@ -35,8 +35,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --staged --quiet; then
             echo "No formatting changes to commit."
@@ -84,7 +84,7 @@ jobs:
       - uses: aminya/setup-cpp@v1
       - name: Configure
         shell: bash
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
       - name: Build
         shell: bash
         run: cmake --build build --config Release -j
@@ -126,11 +126,11 @@ jobs:
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         shell: powershell
-        run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
       - name: Configure (*nix)
         if: runner.os != 'Windows'
         shell: bash
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
       - name: Build
         shell: bash
         run: cmake --build build --config Release -j
