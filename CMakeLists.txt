@@ -358,8 +358,14 @@ if(NOT LIBGIT2_TARGET)
     foreach(_t libgit2 libgit2_static git2 ${_autogitpull_libgit2_build_target})
         if(TARGET ${_t})
             target_compile_definitions(${_t} PRIVATE _GNU_SOURCE _DARWIN_C_SOURCE)
-            target_compile_options(${_t} PRIVATE -UGIT_USE_NSEC)
-            target_compile_definitions(${_t} PRIVATE GIT_USE_NSEC=0 GIT_NTLM=0)
+            target_compile_options(${_t} PRIVATE -UGIT_USE_NSEC -UGIT_NTLM -UUSE_NTLMCLIENT)
+            target_compile_definitions(${_t} PRIVATE \
+                GIT_USE_NSEC=0 \
+                GIT_NTLM=0 \
+                USE_NTLMCLIENT=0 \
+                NTLMCLIENT_FOUND=0 \
+                ENABLE_NTLM=0 \
+                USE_NTLM=0)
         endif()
     endforeach()
 
