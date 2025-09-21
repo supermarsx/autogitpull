@@ -76,23 +76,50 @@ jobs:
         run: cmake -DPROJECT_ROOT=. -P scripts/run_cpplint.cmake
 
   test:
-    name: test
-    runs-on: ubuntu-latest
+    name: test (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
     needs: [format, lint]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: macos-x64
+            runner: macos-13
+            shell: bash
+            generator: "Unix Makefiles"
+          - name: windows-x64
+            runner: windows-latest
+            shell: powershell
+            generator: "Visual Studio 17 2022"
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
       - name: Clean build directory
+        if: runner.os != 'Windows'
         shell: bash
         run: rm -rf build
-      - name: Configure
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release -DUSE_NTLMCLIENT=OFF
+      - name: Configure (*nix)
+        if: runner.os != 'Windows'
         shell: bash
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_NTLMCLIENT=OFF
       - name: Build
         shell: bash
         run: cmake --build build --config Release -j
       - name: Run tests (ours)
+        if: runner.os != 'Windows'
         shell: bash
+        run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
         run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure
 
   build:
