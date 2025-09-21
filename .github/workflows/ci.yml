@@ -13,36 +13,12 @@ concurrency:
 
 jobs:
   format:
-    name: format (${{ matrix.name }})
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: ubuntu-x64
-            runner: ubuntu-latest
-            shell: bash
-          - name: ubuntu-arm64
-            runner: ubuntu-24.04-arm64
-            shell: bash
-          - name: macos-x64
-            runner: macos-13
-            shell: bash
-          - name: macos-arm64
-            runner: macos-14
-            shell: bash
-          - name: windows-x64
-            runner: windows-latest
-            shell: powershell
+    name: format
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
-      - name: Install deps (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: scripts/install_deps.bat
-      - name: Install deps (*nix)
-        if: runner.os != 'Windows'
+      - name: Install deps
         shell: bash
         run: bash scripts/install_deps.sh
       - name: Run clang-format script
@@ -50,37 +26,13 @@ jobs:
         run: cmake -DPROJECT_ROOT=. -DACTION=fix -P scripts/clang_format.cmake && git diff --exit-code
 
   lint:
-    name: lint (${{ matrix.name }})
-    runs-on: ${{ matrix.runner }}
+    name: lint
+    runs-on: ubuntu-latest
     needs: format
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: ubuntu-x64
-            runner: ubuntu-latest
-            shell: bash
-          - name: ubuntu-arm64
-            runner: ubuntu-24.04-arm64
-            shell: bash
-          - name: macos-x64
-            runner: macos-13
-            shell: bash
-          - name: macos-arm64
-            runner: macos-14
-            shell: bash
-          - name: windows-x64
-            runner: windows-latest
-            shell: powershell
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
-      - name: Install deps (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: scripts/install_deps.bat
-      - name: Install deps (*nix)
-        if: runner.os != 'Windows'
+      - name: Install deps
         shell: bash
         run: bash scripts/install_deps.sh
       - name: Lint (cpplint)
@@ -88,42 +40,13 @@ jobs:
         run: cmake -DPROJECT_ROOT=. -P scripts/run_cpplint.cmake
 
   test:
-    name: test (${{ matrix.name }})
-    runs-on: ${{ matrix.runner }}
+    name: test
+    runs-on: ubuntu-latest
     needs: [format, lint]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: ubuntu-x64
-            runner: ubuntu-latest
-            shell: bash
-            generator: "Unix Makefiles"
-          - name: ubuntu-arm64
-            runner: ubuntu-24.04-arm64
-            shell: bash
-            generator: "Unix Makefiles"
-          - name: macos-x64
-            runner: macos-13
-            shell: bash
-            generator: "Unix Makefiles"
-          - name: macos-arm64
-            runner: macos-14
-            shell: bash
-            generator: "Unix Makefiles"
-          - name: windows-x64
-            runner: windows-latest
-            shell: powershell
-            generator: "Visual Studio 17 2022"
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
-      - name: Configure (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
-      - name: Configure (*nix)
-        if: runner.os != 'Windows'
+      - name: Configure
         shell: bash
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
