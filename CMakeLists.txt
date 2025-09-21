@@ -97,12 +97,9 @@ _add_supported_warning_flags(CXX  "-Wno-maybe-uninitialized" "-Wno-missing-decla
 include(FetchContent)
 
 set(ZLIB_USE_STATIC_LIBS TRUE)
-# On platforms where libgit2 will build with its bundled zlib (to avoid target/name clashes),
-# skip configuring a top-level zlib and let libgit2 provide it internally.
-set(AUTOGITPULL_EMBED_ZLIB OFF)
-if(APPLE OR WIN32)
-  set(AUTOGITPULL_EMBED_ZLIB ON)
-endif()
+# Prefer letting libgit2 build with its bundled zlib to avoid
+# clashes and system libz.a (non-PIC) on Linux.
+set(AUTOGITPULL_EMBED_ZLIB ON)
 option(AUTOGITPULL_USE_SYSTEM_ZLIB "Use a pre-installed zlib instead of the bundled static build" OFF)
 if(AUTOGITPULL_USE_SYSTEM_LIBGIT2 AND NOT AUTOGITPULL_USE_SYSTEM_ZLIB)
     set(AUTOGITPULL_USE_SYSTEM_ZLIB ON CACHE BOOL "" FORCE)
