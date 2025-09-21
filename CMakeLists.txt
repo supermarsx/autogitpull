@@ -222,7 +222,7 @@ if(NOT LIBGIT2_TARGET)
     FetchContent_Declare(
         autogitpull_libgit2
         GIT_REPOSITORY https://github.com/libgit2/libgit2.git
-        GIT_TAG v1.9.0
+        GIT_TAG v1.9.1
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CMAKE_ARGS ${_autogitpull_libgit2_args}
     )
