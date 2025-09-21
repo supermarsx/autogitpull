@@ -10,6 +10,31 @@ if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
+# --- BEGIN: flag normalization (treat env flags sanely) ---
+# Treat env flags as proper CMake lists (avoid "all flags as one token")
+if(DEFINED ENV{CFLAGS})
+  separate_arguments(_ENV_CFLAGS NATIVE_COMMAND "$ENV{CFLAGS}")
+  add_compile_options(${_ENV_CFLAGS})
+endif()
+if(DEFINED ENV{CXXFLAGS})
+  separate_arguments(_ENV_CXXFLAGS NATIVE_COMMAND "$ENV{CXXFLAGS}")
+  add_compile_options(${_ENV_CXXFLAGS})
+endif()
+if(DEFINED ENV{LDFLAGS})
+  separate_arguments(_ENV_LDFLAGS NATIVE_COMMAND "$ENV{LDFLAGS}")
+  add_link_options(${_ENV_LDFLAGS})
+endif()
+
+# GNU extensions help libgit2 detect struct stat nsec fields correctly
+add_compile_definitions(_GNU_SOURCE)
+
+# Emergency switch to disable nanosecond timestamps if needed
+option(CODEX_FORCE_NO_NSEC "Force-disable nanosecond stat fields for libgit2" OFF)
+if(CODEX_FORCE_NO_NSEC)
+  add_compile_definitions(GIT_USE_NSEC=0)
+endif()
+# --- END: flag normalization ---
+
 include(FetchContent)
 
 set(ZLIB_USE_STATIC_LIBS TRUE)
