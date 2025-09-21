@@ -400,7 +400,8 @@ find_package(Threads REQUIRED)
 if(APPLE)
     find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
     find_library(CORESERVICES_FRAMEWORK CoreServices REQUIRED)
-    find_library(FSEVENTS_FRAMEWORK FSEvents REQUIRED)
+    # FSEvents may be unavailable on some SDKs; treat as optional
+    find_library(FSEVENTS_FRAMEWORK FSEvents)
 endif()
 
 add_library(autogitpull_lib STATIC
