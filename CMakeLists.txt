@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(autogitpull LANGUAGES CXX)
+project(autogitpull LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,30 +27,14 @@ endif()
 
 # --- END: flag normalization ---
 
-# Control libgit2 nanosecond usage (default OFF to avoid probe issues);
-# can be overridden or forced off.
-option(AUTOGITPULL_ENABLE_NSEC "Enable libgit2 nanosecond stat fields (advanced)" OFF)
-option(CODEX_FORCE_NO_NSEC "Force-disable nanosecond stat fields for libgit2" OFF)
-
-# Provide detection for the correct struct stat nsec member when enabled
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(DetectStatNsec)
-
-# Decide if we should effectively disable nsec
-set(_autogitpull_effective_no_nsec ${CODEX_FORCE_NO_NSEC})
-if(NOT _autogitpull_effective_no_nsec)
-  if(NOT AUTOGITPULL_ENABLE_NSEC)
-    set(_autogitpull_effective_no_nsec ON)
-  else()
-    # If enabled but we fail detection, disable to stay safe
-    if(NOT STAT_NSEC_FIELD)
-      message(WARNING "No struct stat nsec field detected; building without nanosecond support.")
-      set(_autogitpull_effective_no_nsec ON)
-    else()
-      message(STATUS "Detected struct stat nsec field: ${STAT_NSEC_FIELD}")
-      set(_autogitpull_effective_no_nsec OFF)
-    endif()
-  endif()
+if(STAT_NSEC_FIELD)
+  message(STATUS "Detected struct stat nsec field: ${STAT_NSEC_FIELD}")
+  add_compile_definitions(_GNU_SOURCE _DARWIN_C_SOURCE)
+else()
+  message(WARNING "No stat nsec field detected; building without nanosecond support.")
+  add_compile_definitions(GIT_USE_NSEC=0)
 endif()
 
 include(FetchContent)
@@ -248,12 +232,6 @@ if(NOT LIBGIT2_TARGET)
         -DCMAKE_POLICY_DEFAULT_CMP0077=NEW
     )
 
-    if(_autogitpull_effective_no_nsec)
-        list(APPEND _autogitpull_libgit2_args -DUSE_NSEC=OFF)
-    else()
-        list(APPEND _autogitpull_libgit2_args -DUSE_NSEC=ON)
-    endif()
-
     if(WIN32)
         # Work around MSVC/Windows struct stat nsec detection issues by disabling USE_NSEC.
         # This avoids: "GIT_USE_NSEC defined but unknown struct stat nanosecond type" during libgit2 build.
@@ -298,18 +276,10 @@ if(NOT LIBGIT2_TARGET)
         add_library(libgit2::libgit2 ALIAS ${_autogitpull_libgit2_build_target})
     endif()
 
-    # Scope feature-test macros to libgit2 target
+    # Scope feature-test macros to libgit2 target; disable nsec if not detected
     target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE _GNU_SOURCE _DARWIN_C_SOURCE)
-
-    # Final guard: enforce or allow nanoseconds on the fetched libgit2 target
-    if(_autogitpull_effective_no_nsec)
+    if(NOT STAT_NSEC_FIELD)
         target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE GIT_USE_NSEC=0)
-    else()
-        # Provide compatibility macros so libgit2 resolves the right field
-        target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE 
-            GIT_USE_NSEC=1
-            GIT_STAT_MTIME_NSEC(x)=x
-            GIT_STAT_MTIME_NSEC_FIELD=${STAT_NSEC_FIELD})
     endif()
 
     foreach(_libgit2_extra IN ITEMS util llhttp pcre xdiff)

@@ -1,5 +1,8 @@
 include(CheckCSourceCompiles)
 
+# Clear previous detection (if re-configuring)
+unset(STAT_NSEC_FIELD CACHE)
+
 # Try Linux/glibc style: st_mtim.tv_nsec
 set(_SRC_LINUX "
 #define _GNU_SOURCE 1
@@ -32,14 +35,12 @@ int main(void){
 }")
 check_c_source_compiles("${_SRC_LEGACY}" HAVE_STAT_NSEC_ST_MTIMENSEC)
 
-# Decide
 if(HAVE_STAT_NSEC_ST_MTIM)
-  set(STAT_NSEC_FIELD "st_mtim.tv_nsec" PARENT_SCOPE)
+  set(STAT_NSEC_FIELD "st_mtim.tv_nsec" CACHE INTERNAL "struct stat nsec field")
 elseif(HAVE_STAT_NSEC_ST_MTIMESPEC)
-  set(STAT_NSEC_FIELD "st_mtimespec.tv_nsec" PARENT_SCOPE)
+  set(STAT_NSEC_FIELD "st_mtimespec.tv_nsec" CACHE INTERNAL "struct stat nsec field")
 elseif(HAVE_STAT_NSEC_ST_MTIMENSEC)
-  set(STAT_NSEC_FIELD "st_mtimensec" PARENT_SCOPE)
+  set(STAT_NSEC_FIELD "st_mtimensec" CACHE INTERNAL "struct stat nsec field")
 else()
-  set(STAT_NSEC_FIELD "" PARENT_SCOPE)
+  set(STAT_NSEC_FIELD "" CACHE INTERNAL "struct stat nsec field")
 endif()
-
