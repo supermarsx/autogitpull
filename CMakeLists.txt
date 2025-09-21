@@ -230,10 +230,18 @@ if(NOT LIBGIT2_TARGET)
         -DCMAKE_POLICY_DEFAULT_CMP0077=NEW
     )
 
+    # Permanently disable libgit2 nanoseconds by default to prevent
+    # "GIT_USE_NSEC defined but unknown struct stat nanosecond type" across toolchains.
+    if(_autogitpull_effective_no_nsec)
+        list(APPEND _autogitpull_libgit2_args -DUSE_NSEC=OFF)
+    else()
+        list(APPEND _autogitpull_libgit2_args -DUSE_NSEC=ON)
+    endif()
+
     if(WIN32)
         # Work around MSVC/Windows struct stat nsec detection issues by disabling USE_NSEC.
         # This avoids: "GIT_USE_NSEC defined but unknown struct stat nanosecond type" during libgit2 build.
-        list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=WinHTTP -DSTATIC_CRT=ON -DUSE_NSEC=OFF)
+        list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=WinHTTP -DSTATIC_CRT=ON)
         list(APPEND LIBGIT2_DEPENDENCIES winhttp rpcrt4 crypt32 ole32 ws2_32 secur32 bcrypt)
     elseif(APPLE)
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=SecureTransport)
@@ -243,9 +251,6 @@ if(NOT LIBGIT2_TARGET)
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=OpenSSL -DOPENSSL_USE_STATIC_LIBS=ON)
         find_package(OpenSSL REQUIRED)
         list(APPEND LIBGIT2_DEPENDENCIES OpenSSL::SSL OpenSSL::Crypto)
-        # Work around Linux (Ubuntu) detection issue for struct stat nanoseconds in libgit2.
-        # Force-disable USE_NSEC to avoid: "GIT_USE_NSEC defined but unknown struct stat nanosecond type".
-        list(APPEND _autogitpull_libgit2_args -DUSE_NSEC=OFF)
     endif()
 
     # Prevent libgit2 from registering its own CTest tests in our build
@@ -277,12 +282,11 @@ if(NOT LIBGIT2_TARGET)
         add_library(libgit2::libgit2 ALIAS ${_autogitpull_libgit2_build_target})
     endif()
 
-    # As an extra guard, ensure libgit2 compiles without nanosecond stat usage
-    # on platforms where detection can misfire (e.g., some Ubuntu/GCC combos).
-    if(CODEX_FORCE_NO_NSEC OR WIN32 OR UNIX)
-        # We already pass -DUSE_NSEC=OFF to the libgit2 CMake, but some
-        # environments still toggle GIT_USE_NSEC via headers. Enforce via define.
+    # Final guard: enforce or allow nanoseconds on the fetched libgit2 target
+    if(_autogitpull_effective_no_nsec)
         target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE GIT_USE_NSEC=0 _GNU_SOURCE)
+    else()
+        target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE _GNU_SOURCE)
     endif()
 
     foreach(_libgit2_extra IN ITEMS util llhttp pcre xdiff)
@@ -481,5 +485,17 @@ if(NOT MSVC)
             ${COREFOUNDATION_FRAMEWORK}
             ${CORESERVICES_FRAMEWORK}
             ${FSEVENTS_FRAMEWORK})
+    endif()
+endif()
+# Control libgit2 nanosecond usage globally (default OFF to avoid platform probe issues)
+option(AUTOGITPULL_ENABLE_NSEC "Enable libgit2 nanosecond stat fields (advanced)" OFF)
+
+# If the emergency switch is ON, it always disables nsec even if AUTOGITPULL_ENABLE_NSEC=ON
+set(_autogitpull_effective_no_nsec ${CODEX_FORCE_NO_NSEC})
+if(NOT _autogitpull_effective_no_nsec)
+    if(NOT AUTOGITPULL_ENABLE_NSEC)
+        set(_autogitpull_effective_no_nsec ON)
+    else()
+        set(_autogitpull_effective_no_nsec OFF)
     endif()
 endif()
