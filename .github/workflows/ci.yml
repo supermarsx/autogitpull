@@ -82,6 +82,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
+      - name: Clean build directory
+        shell: bash
+        run: rm -rf build
       - name: Configure
         shell: bash
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
@@ -123,6 +126,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
+      - name: Clean build directory
+        if: runner.os != 'Windows'
+        shell: bash
+        run: rm -rf build
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         shell: powershell
