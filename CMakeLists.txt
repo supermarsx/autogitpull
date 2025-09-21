@@ -31,10 +31,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(DetectStatNsec)
 if(STAT_NSEC_FIELD)
   message(STATUS "Detected struct stat nsec field: ${STAT_NSEC_FIELD}")
-  add_compile_definitions(_GNU_SOURCE _DARWIN_C_SOURCE)
 else()
   message(WARNING "No stat nsec field detected; building without nanosecond support.")
-  add_compile_definitions(GIT_USE_NSEC=0)
 endif()
 
 include(FetchContent)
@@ -276,8 +274,9 @@ if(NOT LIBGIT2_TARGET)
         add_library(libgit2::libgit2 ALIAS ${_autogitpull_libgit2_build_target})
     endif()
 
-    # Scope feature-test macros to libgit2 target; disable nsec if not detected
+    # Scope feature macros to libgit2; ensure no stray GIT_USE_NSEC leaks in
     target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE _GNU_SOURCE _DARWIN_C_SOURCE)
+    target_compile_options(${_autogitpull_libgit2_build_target} PRIVATE -UGIT_USE_NSEC)
     if(NOT STAT_NSEC_FIELD)
         target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE GIT_USE_NSEC=0)
     endif()
@@ -349,17 +348,6 @@ else()
     target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 endif()
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
-if(_autogitpull_effective_no_nsec)
-    target_compile_definitions(autogitpull_lib PUBLIC GIT_USE_NSEC=0)
-else()
-    if(STAT_NSEC_FIELD)
-        target_compile_definitions(autogitpull_lib PUBLIC 
-            _GNU_SOURCE _DARWIN_C_SOURCE
-            GIT_USE_NSEC=1
-            GIT_STAT_MTIME_NSEC(x)=x
-            GIT_STAT_MTIME_NSEC_FIELD=${STAT_NSEC_FIELD})
-    endif()
-endif()
 target_link_libraries(autogitpull_lib
     PUBLIC ${LIBGIT2_TARGET} ${LIBGIT2_DEPENDENCIES} yaml-cpp::yaml-cpp nlohmann_json::nlohmann_json ZLIB::ZLIB Threads::Threads)
 if(APPLE)
