@@ -71,10 +71,28 @@ cmake_policy(SET CMP0077 NEW)
 
 # (moved) POSIX feature macro scrubbing is scoped to zlib only
 
-# Gate Clang-only warnings to avoid GCC noise
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|AppleClang")
-  add_compile_options(-Wno-documentation-deprecated-sync)
-endif()
+# Compiler warning tuning: add only if the compiler supports them
+function(_add_supported_warning_flags _lang)
+  foreach(_f IN LISTS ARGN)
+    if(_lang STREQUAL "C")
+      check_c_compiler_flag("${_f}" _ok)
+      if(_ok)
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:${_f}>)
+      endif()
+    elseif(_lang STREQUAL "CXX")
+      check_cxx_compiler_flag("${_f}" _ok)
+      if(_ok)
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:${_f}>)
+      endif()
+    endif()
+    unset(_ok CACHE)
+  endforeach()
+endfunction()
+
+# Suppress noisy warnings when supported by the active compiler
+# GCC supports -Wno-maybe-uninitialized; Clang does not. Probe first.
+_add_supported_warning_flags(C    "-Wno-maybe-uninitialized" "-Wno-missing-declarations")
+_add_supported_warning_flags(CXX  "-Wno-maybe-uninitialized" "-Wno-missing-declarations")
 
 include(FetchContent)
 
