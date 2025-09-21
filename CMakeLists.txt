@@ -27,6 +27,12 @@ endif()
 
 # --- END: flag normalization ---
 
+# Make option() honor cache values in subprojects
+cmake_policy(SET CMP0077 NEW)
+
+# Scrub legacy POSIX feature defines from C sources that can hide st_mtim
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-U_POSIX_C_SOURCE -U_XOPEN_SOURCE>)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(DetectStatNsec)
 if(STAT_NSEC_FIELD)
@@ -247,6 +253,8 @@ if(NOT LIBGIT2_TARGET)
 
     # Prevent libgit2 from registering its own CTest tests in our build
     set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    # Disable nanosecond mtimes at the subproject level for stability across toolchains
+    set(USE_NSEC OFF CACHE BOOL "Disable nanosecond mtimes in libgit2" FORCE)
     FetchContent_Declare(
         autogitpull_libgit2
         GIT_REPOSITORY https://github.com/libgit2/libgit2.git
@@ -275,11 +283,13 @@ if(NOT LIBGIT2_TARGET)
     endif()
 
     # Scope feature macros to libgit2; ensure no stray GIT_USE_NSEC leaks in
-    target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE _GNU_SOURCE _DARWIN_C_SOURCE)
-    target_compile_options(${_autogitpull_libgit2_build_target} PRIVATE -UGIT_USE_NSEC)
-    if(NOT STAT_NSEC_FIELD)
-        target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE GIT_USE_NSEC=0)
-    endif()
+    foreach(_t libgit2 libgit2_static git2 ${_autogitpull_libgit2_build_target})
+        if(TARGET ${_t})
+            target_compile_definitions(${_t} PRIVATE _GNU_SOURCE _DARWIN_C_SOURCE)
+            target_compile_options(${_t} PRIVATE -UGIT_USE_NSEC)
+            target_compile_definitions(${_t} PRIVATE GIT_USE_NSEC=0)
+        endif()
+    endforeach()
 
     foreach(_libgit2_extra IN ITEMS util llhttp pcre xdiff)
         if(TARGET ${_libgit2_extra})
