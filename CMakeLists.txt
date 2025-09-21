@@ -33,12 +33,9 @@ cmake_policy(SET CMP0077 NEW)
 # Scrub legacy POSIX feature defines from C sources that can hide st_mtim
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-U_POSIX_C_SOURCE -U_XOPEN_SOURCE>)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(DetectStatNsec)
-if(STAT_NSEC_FIELD)
-  message(STATUS "Detected struct stat nsec field: ${STAT_NSEC_FIELD}")
-else()
-  message(WARNING "No stat nsec field detected; building without nanosecond support.")
+# Gate Clang-only warnings to avoid GCC noise
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|AppleClang")
+  add_compile_options(-Wno-documentation-deprecated-sync)
 endif()
 
 include(FetchContent)

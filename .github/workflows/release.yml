@@ -54,11 +54,11 @@ jobs:
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         shell: powershell
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release
       - name: Configure (*nix)
         if: runner.os != 'Windows'
         shell: bash
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         shell: bash
         run: cmake --build build --config Release -j
