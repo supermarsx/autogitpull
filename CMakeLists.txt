@@ -280,9 +280,11 @@ if(NOT LIBGIT2_TARGET)
         -DBUILD_SHARED_LIBS=OFF
         -DBUILD_TESTS=OFF
         -DBUILD_TESTING=OFF
+        -DBUILD_CLAR=OFF
         -DBUILD_CLI=OFF
         -DBUILD_EXAMPLES=OFF
         -DBUILD_FUZZERS=OFF
+        -DBUILD_PROGRAMS=OFF
         -DUSE_SSH=OFF
         -DUSE_REGEX=builtin
         -DUSE_COMPRESSION=zlib
@@ -307,8 +309,13 @@ if(NOT LIBGIT2_TARGET)
         list(APPEND LIBGIT2_DEPENDENCIES OpenSSL::SSL OpenSSL::Crypto)
     endif()
 
-    # Prevent libgit2 from registering its own CTest tests in our build
+    # Prevent libgit2 from registering its own tests/examples/programs in our build
     set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(BUILD_CLAR OFF CACHE BOOL "" FORCE)
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
+    set(BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
     # Disable nanosecond mtimes at the subproject level for stability across toolchains
     set(USE_NSEC OFF CACHE BOOL "Disable nanosecond mtimes in libgit2" FORCE)
     FetchContent_Declare(
