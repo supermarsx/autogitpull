@@ -205,7 +205,9 @@ if(NOT LIBGIT2_TARGET)
     )
 
     if(WIN32)
-        list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=WinHTTP -DSTATIC_CRT=ON)
+        # Work around MSVC/Windows struct stat nsec detection issues by disabling USE_NSEC.
+        # This avoids: "GIT_USE_NSEC defined but unknown struct stat nanosecond type" during libgit2 build.
+        list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=WinHTTP -DSTATIC_CRT=ON -DUSE_NSEC=OFF)
         list(APPEND LIBGIT2_DEPENDENCIES winhttp rpcrt4 crypt32 ole32 ws2_32 secur32 bcrypt)
     elseif(APPLE)
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=SecureTransport)
