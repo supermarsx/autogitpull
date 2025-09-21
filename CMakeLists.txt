@@ -287,6 +287,8 @@ if(NOT LIBGIT2_TARGET)
         -DBUILD_PROGRAMS=OFF
         -DUSE_SSH=OFF
         -DUSE_NTLMCLIENT=OFF
+        -DUSE_NTLM=OFF
+        -DENABLE_NTLM=OFF
         -DNTLMCLIENT_FOUND=OFF
         -DUSE_REGEX=builtin
         -DUSE_COMPRESSION=zlib
@@ -320,6 +322,9 @@ if(NOT LIBGIT2_TARGET)
     set(BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
     # Disable optional NTLM client to avoid missing ntlm_client_* symbols on Linux
     set(USE_NTLMCLIENT OFF CACHE BOOL "" FORCE)
+    set(USE_NTLM OFF CACHE BOOL "" FORCE)
+    set(ENABLE_NTLM OFF CACHE BOOL "" FORCE)
+    set(NTLMCLIENT_FOUND OFF CACHE BOOL "" FORCE)
     # Disable nanosecond mtimes at the subproject level for stability across toolchains
     set(USE_NSEC OFF CACHE BOOL "Disable nanosecond mtimes in libgit2" FORCE)
     FetchContent_Declare(
