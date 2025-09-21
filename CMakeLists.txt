@@ -217,6 +217,11 @@ if(NOT LIBGIT2_TARGET)
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=OpenSSL -DOPENSSL_USE_STATIC_LIBS=ON)
         find_package(OpenSSL REQUIRED)
         list(APPEND LIBGIT2_DEPENDENCIES OpenSSL::SSL OpenSSL::Crypto)
+        # Work around GCC/Ubuntu detection issue for struct stat nanoseconds in libgit2.
+        # Avoids: "GIT_USE_NSEC defined but unknown struct stat nanosecond type" with GCC.
+        if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+            list(APPEND _autogitpull_libgit2_args -DUSE_NSEC=OFF)
+        endif()
     endif()
 
     # Prevent libgit2 from registering its own CTest tests in our build
