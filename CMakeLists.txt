@@ -286,6 +286,7 @@ if(NOT LIBGIT2_TARGET)
         -DBUILD_FUZZERS=OFF
         -DBUILD_PROGRAMS=OFF
         -DUSE_SSH=OFF
+        -DUSE_NTLMCLIENT=OFF
         -DUSE_REGEX=builtin
         -DUSE_COMPRESSION=zlib
         -DUSE_BUNDLED_ZLIB=OFF
@@ -316,6 +317,8 @@ if(NOT LIBGIT2_TARGET)
     set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
     set(BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+    # Disable optional NTLM client to avoid missing ntlm_client_* symbols on Linux
+    set(USE_NTLMCLIENT OFF CACHE BOOL "" FORCE)
     # Disable nanosecond mtimes at the subproject level for stability across toolchains
     set(USE_NSEC OFF CACHE BOOL "Disable nanosecond mtimes in libgit2" FORCE)
     FetchContent_Declare(
