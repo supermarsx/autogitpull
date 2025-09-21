@@ -442,8 +442,10 @@ target_link_libraries(autogitpull_lib
 if(APPLE)
     target_link_libraries(autogitpull_lib PUBLIC
         ${COREFOUNDATION_FRAMEWORK}
-        ${CORESERVICES_FRAMEWORK}
-        ${FSEVENTS_FRAMEWORK})
+        ${CORESERVICES_FRAMEWORK})
+    if(FSEVENTS_FRAMEWORK)
+        target_link_libraries(autogitpull_lib PUBLIC ${FSEVENTS_FRAMEWORK})
+    endif()
     # Older Apple toolchains require explicit linkage to the filesystem
     # library. Attempt to locate either libc++fs or libstdc++fs and link
     # it when available so that std::filesystem symbols resolve correctly
@@ -465,8 +467,10 @@ set_property(TARGET autogitpull PROPERTY LINK_LIBRARY_DEPENDENCIES ON)
 if(APPLE)
     target_link_libraries(autogitpull PRIVATE
         ${COREFOUNDATION_FRAMEWORK}
-        ${CORESERVICES_FRAMEWORK}
-        ${FSEVENTS_FRAMEWORK})
+        ${CORESERVICES_FRAMEWORK})
+    if(FSEVENTS_FRAMEWORK)
+        target_link_libraries(autogitpull PRIVATE ${FSEVENTS_FRAMEWORK})
+    endif()
     # macOS does not support fully static binaries
 endif()
 
@@ -523,8 +527,10 @@ endif()
 if(APPLE)
     target_link_libraries(autogitpull_tests PRIVATE
         ${COREFOUNDATION_FRAMEWORK}
-        ${CORESERVICES_FRAMEWORK}
-        ${FSEVENTS_FRAMEWORK})
+        ${CORESERVICES_FRAMEWORK})
+    if(FSEVENTS_FRAMEWORK)
+        target_link_libraries(autogitpull_tests PRIVATE ${FSEVENTS_FRAMEWORK})
+    endif()
 endif()
 add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
 if(WIN32)
@@ -575,7 +581,9 @@ if(NOT MSVC)
     if(APPLE)
         target_link_libraries(memory_leak_test PRIVATE
             ${COREFOUNDATION_FRAMEWORK}
-            ${CORESERVICES_FRAMEWORK}
-            ${FSEVENTS_FRAMEWORK})
+            ${CORESERVICES_FRAMEWORK})
+        if(FSEVENTS_FRAMEWORK)
+            target_link_libraries(memory_leak_test PRIVATE ${FSEVENTS_FRAMEWORK})
+        endif()
     endif()
 endif()
