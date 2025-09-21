@@ -25,15 +25,33 @@ if(DEFINED ENV{LDFLAGS})
   add_link_options(${_ENV_LDFLAGS})
 endif()
 
-# GNU extensions help libgit2 detect struct stat nsec fields correctly
-add_compile_definitions(_GNU_SOURCE)
-
-# Emergency switch to disable nanosecond timestamps if needed
-option(CODEX_FORCE_NO_NSEC "Force-disable nanosecond stat fields for libgit2" OFF)
-if(CODEX_FORCE_NO_NSEC)
-  add_compile_definitions(GIT_USE_NSEC=0)
-endif()
 # --- END: flag normalization ---
+
+# Control libgit2 nanosecond usage (default OFF to avoid probe issues);
+# can be overridden or forced off.
+option(AUTOGITPULL_ENABLE_NSEC "Enable libgit2 nanosecond stat fields (advanced)" OFF)
+option(CODEX_FORCE_NO_NSEC "Force-disable nanosecond stat fields for libgit2" OFF)
+
+# Provide detection for the correct struct stat nsec member when enabled
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(DetectStatNsec)
+
+# Decide if we should effectively disable nsec
+set(_autogitpull_effective_no_nsec ${CODEX_FORCE_NO_NSEC})
+if(NOT _autogitpull_effective_no_nsec)
+  if(NOT AUTOGITPULL_ENABLE_NSEC)
+    set(_autogitpull_effective_no_nsec ON)
+  else()
+    # If enabled but we fail detection, disable to stay safe
+    if(NOT STAT_NSEC_FIELD)
+      message(WARNING "No struct stat nsec field detected; building without nanosecond support.")
+      set(_autogitpull_effective_no_nsec ON)
+    else()
+      message(STATUS "Detected struct stat nsec field: ${STAT_NSEC_FIELD}")
+      set(_autogitpull_effective_no_nsec OFF)
+    endif()
+  endif()
+endif()
 
 include(FetchContent)
 
@@ -230,8 +248,6 @@ if(NOT LIBGIT2_TARGET)
         -DCMAKE_POLICY_DEFAULT_CMP0077=NEW
     )
 
-    # Permanently disable libgit2 nanoseconds by default to prevent
-    # "GIT_USE_NSEC defined but unknown struct stat nanosecond type" across toolchains.
     if(_autogitpull_effective_no_nsec)
         list(APPEND _autogitpull_libgit2_args -DUSE_NSEC=OFF)
     else()
@@ -282,11 +298,18 @@ if(NOT LIBGIT2_TARGET)
         add_library(libgit2::libgit2 ALIAS ${_autogitpull_libgit2_build_target})
     endif()
 
+    # Scope feature-test macros to libgit2 target
+    target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE _GNU_SOURCE _DARWIN_C_SOURCE)
+
     # Final guard: enforce or allow nanoseconds on the fetched libgit2 target
     if(_autogitpull_effective_no_nsec)
-        target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE GIT_USE_NSEC=0 _GNU_SOURCE)
+        target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE GIT_USE_NSEC=0)
     else()
-        target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE _GNU_SOURCE)
+        # Provide compatibility macros so libgit2 resolves the right field
+        target_compile_definitions(${_autogitpull_libgit2_build_target} PRIVATE 
+            GIT_USE_NSEC=1
+            GIT_STAT_MTIME_NSEC(x)=x
+            GIT_STAT_MTIME_NSEC_FIELD=${STAT_NSEC_FIELD})
     endif()
 
     foreach(_libgit2_extra IN ITEMS util llhttp pcre xdiff)
@@ -356,6 +379,17 @@ else()
     target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 endif()
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
+if(_autogitpull_effective_no_nsec)
+    target_compile_definitions(autogitpull_lib PUBLIC GIT_USE_NSEC=0)
+else()
+    if(STAT_NSEC_FIELD)
+        target_compile_definitions(autogitpull_lib PUBLIC 
+            _GNU_SOURCE _DARWIN_C_SOURCE
+            GIT_USE_NSEC=1
+            GIT_STAT_MTIME_NSEC(x)=x
+            GIT_STAT_MTIME_NSEC_FIELD=${STAT_NSEC_FIELD})
+    endif()
+endif()
 target_link_libraries(autogitpull_lib
     PUBLIC ${LIBGIT2_TARGET} ${LIBGIT2_DEPENDENCIES} yaml-cpp::yaml-cpp nlohmann_json::nlohmann_json ZLIB::ZLIB Threads::Threads)
 if(APPLE)
@@ -485,17 +519,5 @@ if(NOT MSVC)
             ${COREFOUNDATION_FRAMEWORK}
             ${CORESERVICES_FRAMEWORK}
             ${FSEVENTS_FRAMEWORK})
-    endif()
-endif()
-# Control libgit2 nanosecond usage globally (default OFF to avoid platform probe issues)
-option(AUTOGITPULL_ENABLE_NSEC "Enable libgit2 nanosecond stat fields (advanced)" OFF)
-
-# If the emergency switch is ON, it always disables nsec even if AUTOGITPULL_ENABLE_NSEC=ON
-set(_autogitpull_effective_no_nsec ${CODEX_FORCE_NO_NSEC})
-if(NOT _autogitpull_effective_no_nsec)
-    if(NOT AUTOGITPULL_ENABLE_NSEC)
-        set(_autogitpull_effective_no_nsec ON)
-    else()
-        set(_autogitpull_effective_no_nsec OFF)
     endif()
 endif()
