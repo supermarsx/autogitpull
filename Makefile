@@ -32,5 +32,12 @@ lint:
 	@cmake -DPROJECT_ROOT="$(PROJECT_ROOT)" -DACTION=check -P $(FORMAT_SCRIPT)
 	@cmake -DPROJECT_ROOT="$(PROJECT_ROOT)" -P $(CPPLINT_SCRIPT)
 
+.PHONY: format-commit
+format-commit: format
+	@echo "Staging changes..."
+	@git add -A
+	@echo "Creating commit (allows empty to trigger CI if no changes)..."
+	@git commit --allow-empty -m "chore(format): apply clang-format (or no-op)"
+
 clean:
 	cmake -E rm -rf $(BUILD_DIR)
