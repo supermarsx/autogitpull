@@ -25,7 +25,8 @@ bool acquire_lock_file(const std::filesystem::path& path) {
         return false;
     char buf[32];
     int len = snprintf(buf, sizeof(buf), "%ld\n", static_cast<long>(getpid()));
-    write(fd.get(), buf, len);
+    ssize_t w = write(fd.get(), buf, static_cast<size_t>(len));
+    (void)w;
     return true;
 }
 

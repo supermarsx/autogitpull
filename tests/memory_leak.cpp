@@ -25,11 +25,11 @@ TEST_CASE("scan_repos memory stability") {
     fs::create_directory(repo);
 
     REQUIRE(std::system(("git init " + repo.string() + REDIR).c_str()) == 0);
-    std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
-    std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    (void)std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
+    (void)std::system(("git -C " + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
-    std::system(("git -C " + repo.string() + " add file.txt").c_str());
-    std::system(("git -C " + repo.string() + " commit -m init" REDIR).c_str());
+    (void)std::system(("git -C " + repo.string() + " add file.txt").c_str());
+    (void)std::system(("git -C " + repo.string() + " commit -m init" REDIR).c_str());
 
     std::vector<fs::path> repos{repo};
     std::map<fs::path, RepoInfo> infos;

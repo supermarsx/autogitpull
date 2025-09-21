@@ -348,7 +348,8 @@ TEST_CASE("Network usage upload bytes") {
         int fd = accept(srv, nullptr, nullptr);
         REQUIRE(fd >= 0);
         char buf[4096];
-        read(fd, buf, sizeof(buf));
+        ssize_t r = read(fd, buf, sizeof(buf));
+        (void)r;
         close(fd);
     });
     int cli = socket(AF_INET, SOCK_STREAM, 0);

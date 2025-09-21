@@ -13,7 +13,7 @@ TEST_CASE("run_event_loop runtime limit") {
     fs::create_directories(dir);
     // create a minimal git repo so event loop does not exit immediately
     std::string cmd = "git init -q " + (dir / "repo").string();
-    std::system(cmd.c_str());
+    (void)std::system(cmd.c_str());
     Options opts;
     opts.root = dir;
     opts.cli = true;

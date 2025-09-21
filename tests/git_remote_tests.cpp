@@ -27,11 +27,11 @@ static void setup_repo(fs::path& repo, fs::path& remote, std::string& hash, std:
     REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
     REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR).c_str()) ==
             0);
-    std::system((std::string("git -C ") + repo.string() + " config user.email you@example.com").c_str());
-    std::system((std::string("git -C ") + repo.string() + " config user.name tester").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " config user.email you@example.com").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
-    std::system((std::string("git -C ") + repo.string() + " add file.txt").c_str());
-    std::system((std::string("git -C ") + repo.string() + " commit -m init" REDIR).c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " add file.txt").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " commit -m init" REDIR).c_str());
     REQUIRE(std::system((std::string("git -C ") + repo.string() + " push origin master" + REDIR).c_str()) == 0);
     hash = git::get_local_hash(repo).value_or("");
     std::string t = run_cmd(std::string("git -C ") + repo.string() + " log -1 --format=%ct");
@@ -109,11 +109,11 @@ TEST_CASE("remote queries fail fast on fetch error") {
     fs::create_directory(repo);
     fs::create_directory(bogus);
     REQUIRE(std::system(("git init " + repo.string() + REDIR).c_str()) == 0);
-    std::system((std::string("git -C ") + repo.string() + " config user.email you@example.com").c_str());
-    std::system((std::string("git -C ") + repo.string() + " config user.name tester").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " config user.email you@example.com").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
-    std::system((std::string("git -C ") + repo.string() + " add file.txt").c_str());
-    std::system((std::string("git -C ") + repo.string() + " commit -m init" + REDIR).c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " add file.txt").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " commit -m init" + REDIR).c_str());
     REQUIRE(std::system((std::string("git -C ") + repo.string() + " remote add origin " + bogus.string() + REDIR)
                             .c_str()) == 0);
 
