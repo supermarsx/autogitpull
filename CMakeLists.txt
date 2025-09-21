@@ -287,6 +287,7 @@ if(NOT LIBGIT2_TARGET)
         -DBUILD_PROGRAMS=OFF
         -DUSE_SSH=OFF
         -DUSE_NTLMCLIENT=OFF
+        -DNTLMCLIENT_FOUND=OFF
         -DUSE_REGEX=builtin
         -DUSE_COMPRESSION=zlib
         -DUSE_BUNDLED_ZLIB=OFF
@@ -353,7 +354,7 @@ if(NOT LIBGIT2_TARGET)
         if(TARGET ${_t})
             target_compile_definitions(${_t} PRIVATE _GNU_SOURCE _DARWIN_C_SOURCE)
             target_compile_options(${_t} PRIVATE -UGIT_USE_NSEC)
-            target_compile_definitions(${_t} PRIVATE GIT_USE_NSEC=0)
+            target_compile_definitions(${_t} PRIVATE GIT_USE_NSEC=0 GIT_NTLM=0)
         endif()
     endforeach()
 
