@@ -67,7 +67,8 @@ std::vector<std::pair<std::string, unsigned long>> find_running_instances() {
     auto add_inst = [&](const std::string& n, unsigned long p) { out.emplace_back(n, p); };
 
     fs::path tmp = fs::temp_directory_path();
-    for (const auto& entry : fs::directory_iterator(tmp, fs::directory_options::skip_permission_denied)) {
+    for (const auto& entry :
+         fs::directory_iterator(tmp, fs::directory_options::skip_permission_denied)) {
         std::error_code ec;
         const auto status = entry.status(ec);
         if (!ec && fs::is_directory(status)) {
