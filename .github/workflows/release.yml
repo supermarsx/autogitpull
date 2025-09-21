@@ -3,10 +3,10 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
-  schedule:
-    - cron: '0 0 * * *'
+    tags:
+      - 'v*'
+      - '*/release'
+  workflow_dispatch:
 
 permissions:
   contents: write
