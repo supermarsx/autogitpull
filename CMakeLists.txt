@@ -406,6 +406,7 @@ find_package(Threads REQUIRED)
 if(APPLE)
     find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
     find_library(CORESERVICES_FRAMEWORK CoreServices REQUIRED)
+    find_library(SECURITY_FRAMEWORK Security)
     # FSEvents may be unavailable on some SDKs; treat as optional
     find_library(FSEVENTS_FRAMEWORK FSEvents)
 endif()
@@ -443,6 +444,9 @@ if(APPLE)
     target_link_libraries(autogitpull_lib PUBLIC
         ${COREFOUNDATION_FRAMEWORK}
         ${CORESERVICES_FRAMEWORK})
+    if(SECURITY_FRAMEWORK)
+        target_link_libraries(autogitpull_lib PUBLIC ${SECURITY_FRAMEWORK})
+    endif()
     if(FSEVENTS_FRAMEWORK)
         target_link_libraries(autogitpull_lib PUBLIC ${FSEVENTS_FRAMEWORK})
     endif()
@@ -468,6 +472,9 @@ if(APPLE)
     target_link_libraries(autogitpull PRIVATE
         ${COREFOUNDATION_FRAMEWORK}
         ${CORESERVICES_FRAMEWORK})
+    if(SECURITY_FRAMEWORK)
+        target_link_libraries(autogitpull PRIVATE ${SECURITY_FRAMEWORK})
+    endif()
     if(FSEVENTS_FRAMEWORK)
         target_link_libraries(autogitpull PRIVATE ${FSEVENTS_FRAMEWORK})
     endif()
@@ -528,6 +535,9 @@ if(APPLE)
     target_link_libraries(autogitpull_tests PRIVATE
         ${COREFOUNDATION_FRAMEWORK}
         ${CORESERVICES_FRAMEWORK})
+    if(SECURITY_FRAMEWORK)
+        target_link_libraries(autogitpull_tests PRIVATE ${SECURITY_FRAMEWORK})
+    endif()
     if(FSEVENTS_FRAMEWORK)
         target_link_libraries(autogitpull_tests PRIVATE ${FSEVENTS_FRAMEWORK})
     endif()
@@ -582,6 +592,9 @@ if(NOT MSVC)
         target_link_libraries(memory_leak_test PRIVATE
             ${COREFOUNDATION_FRAMEWORK}
             ${CORESERVICES_FRAMEWORK})
+        if(SECURITY_FRAMEWORK)
+            target_link_libraries(memory_leak_test PRIVATE ${SECURITY_FRAMEWORK})
+        endif()
         if(FSEVENTS_FRAMEWORK)
             target_link_libraries(memory_leak_test PRIVATE ${FSEVENTS_FRAMEWORK})
         endif()
