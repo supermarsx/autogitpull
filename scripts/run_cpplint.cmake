@@ -22,12 +22,17 @@ if(NOT FILES)
   return()
 endif()
 
+set(CPPLINT_REPORT "${PROJECT_ROOT}/cpplint.txt")
+unset(result)
+unset(out)
+unset(err)
 find_program(CPPLINT_EXECUTABLE NAMES cpplint)
-set(result 0)
 if(CPPLINT_EXECUTABLE)
   execute_process(
     COMMAND "${CPPLINT_EXECUTABLE}" --linelength=120 ${FILES}
-    RESULT_VARIABLE result)
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE out
+    ERROR_VARIABLE err)
 else()
   find_package(Python3 COMPONENTS Interpreter)
   if(NOT Python3_Interpreter_FOUND)
@@ -36,8 +41,18 @@ else()
   endif()
   execute_process(
     COMMAND "${Python3_EXECUTABLE}" -m cpplint --linelength=120 ${FILES}
-    RESULT_VARIABLE result)
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE out
+    ERROR_VARIABLE err)
 endif()
+
+# Write combined output to report
+file(WRITE "${CPPLINT_REPORT}" "${out}${err}")
+
 if(NOT result EQUAL 0)
-  message(FATAL_ERROR "cpplint failed")
+  if(DEFINED ENV{CPPLINT_NON_BLOCKING} AND "$ENV{CPPLINT_NON_BLOCKING}" STREQUAL "ON")
+    message(WARNING "cpplint reported issues; see ${CPPLINT_REPORT}")
+  else()
+    message(FATAL_ERROR "cpplint failed; see ${CPPLINT_REPORT}")
+  endif()
 endif()

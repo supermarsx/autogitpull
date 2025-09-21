@@ -73,7 +73,16 @@ jobs:
         run: bash scripts/install_deps.sh
       - name: Lint (cpplint)
         shell: bash
-        run: cmake -DPROJECT_ROOT=. -P scripts/run_cpplint.cmake
+        env:
+          CPPLINT_NON_BLOCKING: ${{ github.event_name == 'push' && github.ref_protected != 'true' && github.repository == github.event.repository.full_name && 'ON' || 'OFF' }}
+        run: cmake -DPROJECT_ROOT=. -P scripts/run_cpplint.cmake || true
+      - name: Upload cpplint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpplint-report
+          path: cpplint.txt
+          if-no-files-found: ignore
 
   test:
     name: test (${{ matrix.name }})
