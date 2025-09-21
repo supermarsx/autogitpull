@@ -22,12 +22,12 @@ void parse_service_options(Options& opts, ArgParser& parser,
                            const std::map<std::string, std::string>& cfg_opts) {
     struct ControlFlag {
         const char* flag;
-        bool ServiceOptions::* state;
-        std::string ServiceOptions::* name;
+        bool ServiceOptions::*state;
+        std::string ServiceOptions::*name;
     };
     struct BoolFlag {
         const char* flag;
-        bool ServiceOptions::* state;
+        bool ServiceOptions::*state;
     };
     const BoolFlag bool_flags[] = {
         {"--install-daemon", &ServiceOptions::install_daemon},
@@ -71,7 +71,7 @@ void parse_service_options(Options& opts, ArgParser& parser,
 
     struct ValueOpt {
         const char* flag;
-        std::string ServiceOptions::* member;
+        std::string ServiceOptions::*member;
     };
     const ValueOpt value_opts[] = {
         {"--daemon-config", &ServiceOptions::daemon_config},
@@ -120,7 +120,7 @@ void parse_service_options(Options& opts, ArgParser& parser,
 
     struct ForceFlag {
         const char* flag;
-        bool ServiceOptions::* state;
+        bool ServiceOptions::*state;
     };
     const ForceFlag force_flags[] = {
         {"--force-stop-daemon", &ServiceOptions::force_stop_daemon},
@@ -177,7 +177,7 @@ void parse_tracker_options(Options& opts, ArgParser& parser,
     struct TrackerFlag {
         const char* flag;
         bool negative;
-        bool Options::* member;
+        bool Options::*member;
     };
     const TrackerFlag trackers[] = {
         {"--no-cpu-tracker", true, &Options::cpu_tracker},
@@ -232,7 +232,7 @@ void parse_limits(Options& opts, ArgParser& parser,
 
     struct ByteLimit {
         const char* flag;
-        size_t ResourceLimits::* member;
+        size_t ResourceLimits::*member;
         size_t divisor;
     };
     const ByteLimit limits[] = {
