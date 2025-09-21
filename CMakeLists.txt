@@ -494,6 +494,17 @@ add_executable(autogitpull
     src/tui.cpp)
 target_link_libraries(autogitpull PRIVATE autogitpull_lib ${LIBGIT2_TARGET})
 set_property(TARGET autogitpull PROPERTY LINK_LIBRARY_DEPENDENCIES ON)
+if(TARGET ZLIB::ZLIB)
+    target_link_libraries(autogitpull PRIVATE ZLIB::ZLIB)
+endif()
+if(TARGET zlibstatic)
+    target_link_libraries(autogitpull PRIVATE zlibstatic)
+elseif(TARGET zlib)
+    target_link_libraries(autogitpull PRIVATE zlib)
+endif()
+if(TARGET autogitpull_zlib)
+    target_link_libraries(autogitpull PRIVATE autogitpull_zlib)
+endif()
 if(APPLE)
     target_link_libraries(autogitpull PRIVATE
         ${COREFOUNDATION_FRAMEWORK}
