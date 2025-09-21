@@ -67,11 +67,14 @@ std::vector<std::pair<std::string, unsigned long>> find_running_instances() {
     auto add_inst = [&](const std::string& n, unsigned long p) { out.emplace_back(n, p); };
 
     fs::path tmp = fs::temp_directory_path();
-    for (const auto& entry : fs::directory_iterator(tmp)) {
-        if (entry.is_directory()) {
+    for (const auto& entry : fs::directory_iterator(tmp, fs::directory_options::skip_permission_denied)) {
+        std::error_code ec;
+        const auto status = entry.status(ec);
+        if (!ec && fs::is_directory(status)) {
             fs::path lock = entry.path() / ".autogitpull.lock";
             unsigned long pid = 0;
-            if (fs::exists(lock) && read_lock_pid(lock, pid) && process_running(pid))
+            std::error_code ec2;
+            if (fs::exists(lock, ec2) && !ec2 && read_lock_pid(lock, pid) && process_running(pid))
                 add_inst(entry.path().filename().string(), pid);
         }
 #ifdef __linux__
