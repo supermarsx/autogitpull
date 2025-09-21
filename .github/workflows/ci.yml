@@ -127,7 +127,9 @@ jobs:
         shell: bash
         env:
           CTEST_OUTPUT_ON_FAILURE: "1"
-        run: ctest --test-dir build -C Release -R autogitpull_tests -VV
+          CTEST_PARALLEL_LEVEL: "1"
+          GIT_TERMINAL_PROMPT: "0"
+        run: ctest --test-dir build -C Release -R autogitpull_tests -VV --timeout 900
       - name: Run tests (Windows) [non-blocking]
         if: runner.os == 'Windows'
         shell: powershell
