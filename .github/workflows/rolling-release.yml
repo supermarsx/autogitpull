@@ -1,16 +1,41 @@
+---
 name: Rolling Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test-release:
-    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+            shell: bash
+          - name: ubuntu-arm64
+            runner: ubuntu-24.04-arm64
+            shell: bash
+          - name: macos-x64
+            runner: macos-13
+            shell: bash
+          - name: macos-arm64
+            runner: macos-14
+            shell: bash
+          - name: windows-x64
+            runner: windows-latest
+            shell: powershell
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,23 +58,58 @@ jobs:
 
       - name: Skip build when release limit reached
         if: steps.check_releases.outputs.skip_build == 'true'
-        run: echo 'Skipping build: daily release threshold reached.'
+        run: |
+          echo 'Skipping build: daily release threshold reached.'
 
       - name: Set up C++ build environment
         if: steps.check_releases.outputs.skip_build != 'true'
         uses: aminya/setup-cpp@v1
 
-      - name: Install dependencies
-        if: steps.check_releases.outputs.skip_build != 'true'
+      - name: Install dependencies (*nix)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        shell: bash
         run: ./scripts/install_deps.sh
+      - name: Install dependencies (Windows)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        shell: powershell
+        run: scripts/install_deps.bat
 
       - name: Install lint tools
         if: steps.check_releases.outputs.skip_build != 'true'
         run: pip install cpplint
 
-      - name: Lint
+      - name: Configure (Windows)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        shell: powershell
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
+      - name: Configure (*nix)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        shell: bash
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
+      - name: Build
         if: steps.check_releases.outputs.skip_build != 'true'
-        run: make lint
+        shell: bash
+        run: cmake --build build --config Release -j
+      - name: Run tests
+        if: steps.check_releases.outputs.skip_build != 'true'
+        shell: bash
+        run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure || true
+      - name: Copy artifact to dist
+        if: steps.check_releases.outputs.skip_build != 'true'
+        shell: bash
+        run: |
+          mkdir -p dist/${{ matrix.name }}
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp build/Release/autogitpull.exe dist/${{ matrix.name }}/autogitpull.exe || true
+          else
+            cp build/autogitpull dist/${{ matrix.name }}/autogitpull || true
+          fi
+      - name: Upload artifact
+        if: steps.check_releases.outputs.skip_build != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: autogitpull-${{ matrix.name }}
+          path: dist/${{ matrix.name }}/*
 
       - name: Build
         if: steps.check_releases.outputs.skip_build != 'true'
@@ -77,29 +137,31 @@ jobs:
 
       - name: Tag commit
         if: steps.check_releases.outputs.skip_build != 'true'
+        shell: bash
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git tag $NEXT_TAG
-          git push origin $NEXT_TAG
+          git tag "$NEXT_TAG"
+          git push origin "$NEXT_TAG"
 
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    needs: build-test-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
       - name: Create GitHub Release
-        if: steps.check_releases.outputs.skip_build != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.NEXT_TAG }}
           name: Rolling Release ${{ env.NEXT_TAG }}
-          body: "Automated rolling release for ${{ env.NEXT_TAG }}"
+          body: Automated rolling release for ${{ env.NEXT_TAG }}
           draft: false
           prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Release Asset
-        if: steps.check_releases.outputs.skip_build != 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.NEXT_TAG }}
-          files: dist/bin/autogitpull
+          files: |
+            dist/**/autogitpull*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

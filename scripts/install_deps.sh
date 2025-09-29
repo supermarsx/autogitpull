@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-set -e
-echo "Installing dependencies..."
+set -euo pipefail
+IFS=$'\n\t'
 
+echo "Installing dependencies..."
 
 # Auto-detect make and cmake if missing from PATH
 for tool in make cmake; do
@@ -18,7 +19,6 @@ for tool in make cmake; do
     fi
 done
 
-
 # Install cpplint if missing
 if ! command -v cpplint >/dev/null; then
     if command -v pip3 >/dev/null; then
@@ -31,7 +31,6 @@ if ! command -v cpplint >/dev/null; then
         echo "pip not found. Please install cpplint manually." >&2
     fi
 fi
-
 
 # Check if libgit2, yaml-cpp, nlohmann-json and zlib are installed
 libgit2_installed=false
@@ -68,22 +67,28 @@ case "$os" in
             $yamlcpp_installed || packages+=(libyaml-cpp-dev)
             $json_installed || packages+=(nlohmann-json3-dev)
             $zlib_installed || packages+=(zlib1g-dev)
-            sudo apt-get update
-            sudo apt-get install -y "${packages[@]}"
+            if [ ${#packages[@]} -gt 0 ]; then
+                sudo apt-get update
+                sudo apt-get install -y "${packages[@]}"
+            fi
         elif command -v yum >/dev/null; then
             packages=()
             $libgit2_installed || packages+=(libgit2-devel)
             $yamlcpp_installed || packages+=(yaml-cpp-devel)
             $json_installed || packages+=(nlohmann-json-devel)
             $zlib_installed || packages+=(zlib-devel)
-            sudo yum install -y "${packages[@]}"
+            if [ ${#packages[@]} -gt 0 ]; then
+                sudo yum install -y "${packages[@]}"
+            fi
         elif command -v zypper >/dev/null; then
             packages=()
             $libgit2_installed || packages+=(libgit2-devel)
             $yamlcpp_installed || packages+=(yaml-cpp-devel)
             $json_installed || packages+=(nlohmann_json-devel)
             $zlib_installed || packages+=(zlib-devel)
-            sudo zypper install -y "${packages[@]}"
+            if [ ${#packages[@]} -gt 0 ]; then
+                sudo zypper install -y "${packages[@]}"
+            fi
         else
             echo "Unsupported Linux distribution. Please install libgit2, yaml-cpp, and nlohmann-json manually."
             exit 1
@@ -96,7 +101,9 @@ case "$os" in
             $yamlcpp_installed || packages+=(yaml-cpp)
             $json_installed || packages+=(nlohmann-json)
             $zlib_installed || packages+=(zlib)
-            brew install "${packages[@]}"
+            if [ ${#packages[@]} -gt 0 ]; then
+                brew install "${packages[@]}"
+            fi
         else
             echo "Homebrew not found. Please install libgit2, yaml-cpp, and nlohmann-json manually."
             exit 1
@@ -107,3 +114,4 @@ case "$os" in
         exit 1
         ;;
 esac
+

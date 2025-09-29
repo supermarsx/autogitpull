@@ -153,7 +153,7 @@ std::string render_header(const std::vector<fs::path>& all_repos,
  * @return Formatted statistics string.
  */
 std::string render_stats(bool track_cpu, bool track_mem, bool track_threads, bool track_net,
-                         bool show_affinity, bool track_vmem, const TuiColors& c) {
+                         bool show_affinity, bool track_vmem, [[maybe_unused]] const TuiColors& c) {
     std::ostringstream out;
     if (track_cpu || track_mem || track_threads || show_affinity || track_vmem) {
         // Layout: CPU, memory, optional virtual memory, thread count and core affinity

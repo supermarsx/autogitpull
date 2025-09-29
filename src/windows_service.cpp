@@ -31,6 +31,7 @@ void WINAPI ServiceCtrlHandler(DWORD ctrl) {
 }
 
 void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
+    (void)argc;
     g_status_handle = RegisterServiceCtrlHandler(argv[0], ServiceCtrlHandler);
     if (!g_status_handle)
         return;

@@ -13,8 +13,7 @@ TEST_CASE("service unit names are not shell expanded") {
         out << "#!/bin/sh\n";
         out << "printf '%s\\n' \"$@\" > '" << argsfile.string() << "'\n";
     }
-    fs::permissions(script, fs::perms::owner_read | fs::perms::owner_write |
-                                fs::perms::owner_exec);
+    fs::permissions(script, fs::perms::owner_read | fs::perms::owner_write | fs::perms::owner_exec);
     std::string old_path = std::getenv("PATH") ? std::getenv("PATH") : "";
     setenv("PATH", (dir.string() + ":" + old_path).c_str(), 1);
     fs::path marker = dir / "marker";
@@ -31,9 +30,8 @@ TEST_CASE("service unit names are not shell expanded") {
     REQUIRE(lines[0] == "start");
     REQUIRE(lines[1] == unit);
     REQUIRE(!fs::exists(marker));
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
 #else
     SUCCEED("Windows test skipped");
 #endif
 }
-

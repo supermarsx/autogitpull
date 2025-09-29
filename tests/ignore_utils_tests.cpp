@@ -6,12 +6,18 @@ TEST_CASE("read_ignore_file trims whitespace and skips comments") {
     fs::create_directories(dir);
     fs::path file = dir / ".autogitpull.ignore";
     std::ofstream ofs(file);
-    ofs << "  foo  \n#comment\nbar\n   \n\t#another\n\tbaz  \n";
+    ofs << R"(  foo  
+#comment
+bar
+   
+	#another
+	baz  
+)";
     ofs.close();
     auto entries = ignore::read_ignore_file(file);
     std::vector<fs::path> expected{"foo", "bar", "baz"};
     REQUIRE(entries == expected);
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
 }
 
 TEST_CASE("write_ignore_file skips blanks and preserves newline") {
@@ -22,11 +28,18 @@ TEST_CASE("write_ignore_file skips blanks and preserves newline") {
     ignore::write_ignore_file(file, entries);
     std::ifstream ifs(file, std::ios::binary);
     std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-    REQUIRE(content == "foo\nbar\nbaz\n");
+    std::string normalized;
+    normalized.reserve(content.size());
+    for (char ch : content) {
+        if (ch != '\r')
+            normalized.push_back(ch);
+    }
+    REQUIRE(normalized == "foo\nbar\nbaz\n");
+    ifs.close();
     auto read = ignore::read_ignore_file(file);
     std::vector<fs::path> expected{"foo", "bar", "baz"};
     REQUIRE(read == expected);
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
 }
 
 TEST_CASE("ignore pattern matching supports wildcards") {

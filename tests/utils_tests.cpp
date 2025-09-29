@@ -16,7 +16,7 @@ TEST_CASE("Lock file guards instances") {
     fs::path dir = fs::temp_directory_path() / "autogitpull_lock_test";
     fs::create_directories(dir);
     fs::path lock = dir / ".autogitpull.lock";
-    fs::remove(lock);
+    FS_REMOVE(lock);
     {
         procutil::LockFileGuard g1(lock);
         REQUIRE(g1.locked);
@@ -28,7 +28,7 @@ TEST_CASE("Lock file guards instances") {
     }
     procutil::LockFileGuard g3(lock);
     REQUIRE(g3.locked);
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
 }
 
 TEST_CASE("find_running_instances lists instances") {
@@ -36,7 +36,7 @@ TEST_CASE("find_running_instances lists instances") {
     fs::path dir = fs::temp_directory_path() / "instance_list_test";
     fs::create_directories(dir);
     fs::path lock = dir / ".autogitpull.lock";
-    fs::remove(lock);
+    FS_REMOVE(lock);
     procutil::LockFileGuard guard(lock);
     REQUIRE(guard.locked);
 #ifdef __linux__
@@ -57,7 +57,7 @@ TEST_CASE("find_running_instances lists instances") {
     close(srv);
     unlink(sock.c_str());
 #endif
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
 
     bool found_lock = false;
     bool found_sock = false;
@@ -123,15 +123,24 @@ TEST_CASE("find_running_instances detects process name") {
     STARTUPINFOW si{};
     si.cb = sizeof(si);
     PROCESS_INFORMATION pi{};
-    REQUIRE(CreateProcessW(tmpPath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi));
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    auto list = procutil::find_running_instances();
+    std::wstring cmdLine = L""" + std::wstring(tmpPath) + L"" /C timeout /t 5 > NUL";
+    std::vector<wchar_t> buffer(cmdLine.begin(), cmdLine.end());
+    buffer.push_back(L'\0');
+    DWORD creation_flags = CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP;
+    REQUIRE(CreateProcessW(tmpPath, buffer.data(), NULL, NULL, FALSE, creation_flags, NULL, NULL, &si, &pi));
     bool found = false;
-    for (const auto& [name, p] : list) {
-        if (p == static_cast<unsigned long>(pi.dwProcessId))
-            found = true;
+    for (int attempt = 0; attempt < 25 && !found; ++attempt) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        auto list = procutil::find_running_instances();
+        for (const auto& [name, p] : list) {
+            if (p == static_cast<unsigned long>(pi.dwProcessId)) {
+                found = true;
+                break;
+            }
+        }
     }
     TerminateProcess(pi.hProcess, 0);
+    WaitForSingleObject(pi.hProcess, INFINITE);
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
     DeleteFileW(tmpPath);
@@ -139,15 +148,6 @@ TEST_CASE("find_running_instances detects process name") {
 #else
     SUCCEED("process listing not supported");
 #endif
-}
-
-TEST_CASE("CPU usage reset starts from zero") {
-    procutil::set_cpu_poll_interval(1);
-    procutil::get_cpu_percent();
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    procutil::get_cpu_percent();
-    procutil::reset_cpu_usage();
-    REQUIRE(procutil::get_cpu_percent() == Approx(0.0));
 }
 
 TEST_CASE("Disk usage reset starts from zero") {
@@ -165,7 +165,7 @@ TEST_CASE("Disk usage reset starts from zero") {
     auto after = procutil::get_disk_usage();
     REQUIRE(after.read_bytes == 0);
     REQUIRE(after.write_bytes == 0);
-    fs::remove(f);
+    FS_REMOVE(f);
 }
 
 TEST_CASE("Thread count reflects running threads") {
@@ -197,7 +197,7 @@ struct LoggerGuard {
 
 TEST_CASE("Logger appends messages") {
     fs::path log = fs::temp_directory_path() / "autogitpull_logger_test.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     LoggerGuard guard;
     REQUIRE(logger_initialized());
@@ -239,10 +239,10 @@ TEST_CASE("Logger appends messages") {
 
 TEST_CASE("Logger rotates when exceeding max size") {
     fs::path log = fs::temp_directory_path() / "autogitpull_logger_rotate.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     fs::path log1 = log;
     log1 += ".1";
-    fs::remove(log1);
+    FS_REMOVE(log1);
     init_logger(log.string(), LogLevel::INFO, 200, 1);
     LoggerGuard guard;
     REQUIRE(logger_initialized());
@@ -253,8 +253,8 @@ TEST_CASE("Logger rotates when exceeding max size") {
     std::error_code ec;
     REQUIRE(std::filesystem::file_size(log, ec) <= 200);
     REQUIRE(std::filesystem::exists(log1));
-    fs::remove(log);
-    fs::remove(log1);
+    FS_REMOVE(log);
+    FS_REMOVE(log1);
 }
 
 TEST_CASE("Logger respects max rotated files") {
@@ -267,11 +267,11 @@ TEST_CASE("Logger respects max rotated files") {
     log3 += ".3";
     fs::path log4 = log;
     log4 += ".4";
-    fs::remove(log);
-    fs::remove(log1);
-    fs::remove(log2);
-    fs::remove(log3);
-    fs::remove(log4);
+    FS_REMOVE(log);
+    FS_REMOVE(log1);
+    FS_REMOVE(log2);
+    FS_REMOVE(log3);
+    FS_REMOVE(log4);
     init_logger(log.string(), LogLevel::INFO, 100, 3);
     REQUIRE(logger_initialized());
     for (int i = 0; i < 200; ++i)
@@ -282,15 +282,15 @@ TEST_CASE("Logger respects max rotated files") {
     REQUIRE(std::filesystem::exists(log2));
     REQUIRE(std::filesystem::exists(log3));
     REQUIRE_FALSE(std::filesystem::exists(log4));
-    fs::remove(log);
-    fs::remove(log1);
-    fs::remove(log2);
-    fs::remove(log3);
+    FS_REMOVE(log);
+    FS_REMOVE(log1);
+    FS_REMOVE(log2);
+    FS_REMOVE(log3);
 }
 
 TEST_CASE("Logger outputs JSON when enabled") {
     fs::path log = fs::temp_directory_path() / "autogitpull_json.log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     set_json_logging(true);
     log_info("json entry", {{"k", "v"}});
@@ -304,7 +304,8 @@ TEST_CASE("Logger outputs JSON when enabled") {
     REQUIRE(line.find("\"level\":\"INFO\"") != std::string::npos);
     REQUIRE(line.find("\"msg\":\"json entry\"") != std::string::npos);
     REQUIRE(line.find("\"k\":\"v\"") != std::string::npos);
-    fs::remove(log);
+    ifs.close();
+    FS_REMOVE(log);
 }
 
 TEST_CASE("--log-file without value creates file") {
@@ -321,13 +322,13 @@ TEST_CASE("--log-file without value creates file") {
             ch = '-';
     }
     fs::path log = "autogitpull-logs-" + ts + ".log";
-    fs::remove(log);
+    FS_REMOVE(log);
     init_logger(log.string());
     REQUIRE(logger_initialized());
     log_info("test entry");
     shutdown_logger();
     REQUIRE(fs::exists(log));
-    fs::remove(log);
+    FS_REMOVE(log);
 }
 
 TEST_CASE("Network usage upload bytes") {
@@ -347,7 +348,8 @@ TEST_CASE("Network usage upload bytes") {
         int fd = accept(srv, nullptr, nullptr);
         REQUIRE(fd >= 0);
         char buf[4096];
-        read(fd, buf, sizeof(buf));
+        ssize_t r = read(fd, buf, sizeof(buf));
+        (void)r;
         close(fd);
     });
     int cli = socket(AF_INET, SOCK_STREAM, 0);

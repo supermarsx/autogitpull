@@ -239,6 +239,7 @@ static void update_ui(const Options& opts, const std::vector<fs::path>& all_repo
                       bool scanning, const std::string& act,
                       std::chrono::milliseconds& cli_countdown_ms, const std::string& message,
                       int runtime_sec) {
+    (void)cli_countdown_ms;
     if (!opts.silent && !opts.cli) {
         bool show_affinity = opts.limits.cpu_core_mask != 0;
         draw_tui(all_repos, repo_infos, interval, sec_left, scanning, act, opts.show_skipped,
@@ -365,8 +366,8 @@ int run_event_loop(Options opts) {
         return 0;
     }
     if (opts.cli && !opts.silent) {
-        std::cout << "Interval: " << interval << "s"
-                  << " Refresh: " << opts.refresh_ms.count() << "ms";
+        std::cout << "Interval: " << interval << "s" << " Refresh: " << opts.refresh_ms.count()
+                  << "ms";
         if (opts.limits.pull_timeout.count() > 0)
             std::cout << " Timeout: " << opts.limits.pull_timeout.count() << "s";
         std::cout << " SkipTimeouts: " << (opts.limits.skip_timeout ? "yes" : "no");

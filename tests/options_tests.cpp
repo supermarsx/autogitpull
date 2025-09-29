@@ -416,7 +416,7 @@ TEST_CASE("parse_options repo overrides") {
     REQUIRE(ro.check_only.value_or(false));
     REQUIRE(ro.cpu_limit.value_or(0.0) == 25.5);
     REQUIRE(ro.post_pull_hook.value() == fs::path("/tmp/hook"));
-    fs::remove(cfg);
+    FS_REMOVE(cfg);
 }
 
 TEST_CASE("parse_options post pull hook flag") {
@@ -443,15 +443,18 @@ TEST_CASE("parse_options auto-config root directory") {
     std::ofstream(root_dir / ".autogitpull.yaml") << "interval: 1\n";
     std::ofstream(cwd_dir / ".autogitpull.yaml") << "interval: 2\n";
     std::ofstream(exe_dir / ".autogitpull.yaml") << "interval: 3\n";
-    DirGuard guard(cwd_dir);
-    std::string exe = (exe_dir / "prog").string();
-    std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
-                    const_cast<char*>("--auto-config")};
-    Options opts = parse_options(3, argv);
-    fs::remove_all(root_dir);
-    fs::remove_all(cwd_dir);
-    fs::remove_all(exe_dir);
+    Options opts;
+    {
+        DirGuard guard(cwd_dir);
+        std::string exe = (exe_dir / "prog").string();
+        std::string root_s = root_dir.string();
+        char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                        const_cast<char*>("--auto-config")};
+        opts = parse_options(3, argv);
+    }
+    FS_REMOVE_ALL(root_dir);
+    FS_REMOVE_ALL(cwd_dir);
+    FS_REMOVE_ALL(exe_dir);
     REQUIRE(opts.interval == 1);
 }
 
@@ -463,16 +466,18 @@ TEST_CASE("parse_options auto-config cwd fallback") {
     fs::create_directories(cwd_dir);
     fs::create_directories(exe_dir);
     std::ofstream(cwd_dir / ".autogitpull.yaml") << "interval: 2\n";
-    std::ofstream(exe_dir / ".autogitpull.yaml") << "interval: 3\n";
-    DirGuard guard(cwd_dir);
-    std::string exe = (exe_dir / "prog").string();
-    std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
-                    const_cast<char*>("--auto-config")};
-    Options opts = parse_options(3, argv);
-    fs::remove_all(root_dir);
-    fs::remove_all(cwd_dir);
-    fs::remove_all(exe_dir);
+    Options opts;
+    {
+        DirGuard guard(cwd_dir);
+        std::string exe = (exe_dir / "prog").string();
+        std::string root_s = root_dir.string();
+        char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                        const_cast<char*>("--auto-config")};
+        opts = parse_options(3, argv);
+    }
+    FS_REMOVE_ALL(root_dir);
+    FS_REMOVE_ALL(cwd_dir);
+    FS_REMOVE_ALL(exe_dir);
     REQUIRE(opts.interval == 2);
 }
 
@@ -484,15 +489,18 @@ TEST_CASE("parse_options auto-config exe directory fallback") {
     fs::create_directories(cwd_dir);
     fs::create_directories(exe_dir);
     std::ofstream(exe_dir / ".autogitpull.yaml") << "interval: 3\n";
-    DirGuard guard(cwd_dir);
-    std::string exe = (exe_dir / "prog").string();
-    std::string root_s = root_dir.string();
-    char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
-                    const_cast<char*>("--auto-config")};
-    Options opts = parse_options(3, argv);
-    fs::remove_all(root_dir);
-    fs::remove_all(cwd_dir);
-    fs::remove_all(exe_dir);
+    Options opts;
+    {
+        DirGuard guard(cwd_dir);
+        std::string exe = (exe_dir / "prog").string();
+        std::string root_s = root_dir.string();
+        char* argv[] = {const_cast<char*>(exe.c_str()), const_cast<char*>(root_s.c_str()),
+                        const_cast<char*>("--auto-config")};
+        opts = parse_options(3, argv);
+    }
+    FS_REMOVE_ALL(root_dir);
+    FS_REMOVE_ALL(cwd_dir);
+    FS_REMOVE_ALL(exe_dir);
     REQUIRE(opts.interval == 3);
 }
 
@@ -601,7 +609,7 @@ TEST_CASE("credential callback file") {
     REQUIRE(std::string(up->username) == "user");
     REQUIRE(std::string(up->password) == "pass");
     git_credential_free(cred_out);
-    fs::remove(cred);
+    FS_REMOVE(cred);
 }
 
 TEST_CASE("parse_options proxy flag") {

@@ -479,7 +479,13 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
     if (cli_mode && !silent && ri.pulled && !prev_pulled) {
         std::time_t now = std::time(nullptr);
         char buf[32];
+#ifdef _WIN32
+        std::tm tm_buf{};
+        localtime_s(&tm_buf, &now);
+        std::strftime(buf, sizeof(buf), "%F %T", &tm_buf);
+#else
         std::strftime(buf, sizeof(buf), "%F %T", std::localtime(&now));
+#endif
         std::cout << "Updated " << p.filename().string();
         if (!ri.commit_date.empty())
             std::cout << " at " << ri.commit_date;

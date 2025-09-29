@@ -10,7 +10,7 @@ TEST_CASE("list_installed_services detects units") {
     setenv("AUTOGITPULL_UNIT_DIR", dir.string().c_str(), 1);
     auto svcs = procutil::list_installed_services();
     unsetenv("AUTOGITPULL_UNIT_DIR");
-    fs::remove_all(dir);
+    FS_REMOVE_ALL(dir);
     REQUIRE(svcs.size() == 1);
     REQUIRE(svcs[0].first == "foo");
     std::ostringstream oss;

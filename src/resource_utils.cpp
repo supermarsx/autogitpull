@@ -301,8 +301,8 @@ double get_cpu_percent() {
     // Linux: compute usage based on jiffy deltas read from /proc/self/stat.
     long jiff = read_proc_jiffies();
     long diff_jiff = jiff - prev_jiffies;
-    double diff_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count();
+    double diff_time = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count());
     prev_jiffies = jiff;
     prev_time = now;
     if (diff_time <= 0)
@@ -319,8 +319,8 @@ double get_cpu_percent() {
     // Windows: GetProcessTimes returns 100-ns units; convert and normalize by core count.
     ULONGLONG proc = get_process_time();
     ULONGLONG diff_proc = proc - prev_proc_time;
-    double diff_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count();
+    double diff_time = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count());
     prev_proc_time = proc;
     prev_time = now;
     if (diff_time <= 0)
@@ -356,8 +356,8 @@ double get_cpu_percent() {
     uint64_t diff_us = (user_us - prev_user) + (system_us - prev_system);
     prev_user = user_us;
     prev_system = system_us;
-    double diff_time =
-        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count();
+    double diff_time = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_time).count());
     prev_time = now;
     if (diff_time <= 0)
         return last_cpu_percent;

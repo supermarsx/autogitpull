@@ -22,24 +22,27 @@ static std::string run_cmd(const std::string& cmd) {
 static void setup_repo(fs::path& repo, fs::path& remote, std::string& hash, std::time_t& ctime) {
     remote = fs::temp_directory_path() / "fetch_remote.git";
     repo = fs::temp_directory_path() / "fetch_local";
-    fs::remove_all(remote);
-    fs::remove_all(repo);
-    REQUIRE(std::system(("git init --bare " + remote.string() + " > /dev/null 2>&1").c_str()) == 0);
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + " > /dev/null 2>&1")
-                            .c_str()) == 0);
-    std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
-    std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    FS_REMOVE_ALL(remote);
+    FS_REMOVE_ALL(repo);
+    REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
+    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR).c_str()) ==
+            0);
+    (void)std::system((std::string("git -C ") + repo.string() + " config user.email you@example.com").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
-    std::system(("git -C " + repo.string() + " add file.txt").c_str());
-    std::system(("git -C " + repo.string() + " commit -m init > /dev/null 2>&1").c_str());
-    REQUIRE(std::system(
-                ("git -C " + repo.string() + " push origin master > /dev/null 2>&1").c_str()) == 0);
+    (void)std::system((std::string("git -C ") + repo.string() + " add file.txt").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " commit -m init" REDIR).c_str());
+    REQUIRE(std::system((std::string("git -C ") + repo.string() + " push origin master" + REDIR).c_str()) == 0);
     hash = git::get_local_hash(repo).value_or("");
-    std::string t = run_cmd("git -C " + repo.string() + " log -1 --format=%ct");
+    std::string t = run_cmd(std::string("git -C ") + repo.string() + " log -1 --format=%ct");
     ctime = static_cast<std::time_t>(std::stoll(t));
 }
 
 TEST_CASE("get_remote_hash handles authentication options") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path repo, remote;
     std::string hash;
@@ -62,11 +65,15 @@ TEST_CASE("get_remote_hash handles authentication options") {
     unsetenv("GIT_USERNAME");
     unsetenv("GIT_PASSWORD");
 
-    fs::remove_all(repo);
-    fs::remove_all(remote);
+    FS_REMOVE_ALL(repo);
+    FS_REMOVE_ALL(remote);
 }
 
 TEST_CASE("get_remote_commit_time handles authentication options") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path repo, remote;
     std::string hash;
@@ -74,42 +81,41 @@ TEST_CASE("get_remote_commit_time handles authentication options") {
     setup_repo(repo, remote, hash, ctime);
 
     bool auth_failed = false;
-    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", false, &auth_failed) ==
-            ctime);
+    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", false, &auth_failed) == ctime);
     REQUIRE_FALSE(auth_failed);
 
     setenv("GIT_USERNAME", "user", 1);
     setenv("GIT_PASSWORD", "pass", 1);
     auth_failed = false;
-    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", true, &auth_failed) ==
-            ctime);
+    REQUIRE(git::get_remote_commit_time(repo, "origin", "master", true, &auth_failed) == ctime);
     REQUIRE_FALSE(auth_failed);
     unsetenv("GIT_USERNAME");
     unsetenv("GIT_PASSWORD");
 
-    fs::remove_all(repo);
-    fs::remove_all(remote);
+    FS_REMOVE_ALL(repo);
+    FS_REMOVE_ALL(remote);
 }
 
 TEST_CASE("remote queries fail fast on fetch error") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path repo = fs::temp_directory_path() / "fetch_fail_repo";
     fs::path bogus = fs::temp_directory_path() / "not_a_repo";
-    fs::remove_all(repo);
-    fs::remove_all(bogus);
+    FS_REMOVE_ALL(repo);
+    FS_REMOVE_ALL(bogus);
     fs::create_directory(repo);
     fs::create_directory(bogus);
-    REQUIRE(
-        std::system(("git init " + repo.string() + " > /dev/null 2>&1").c_str()) == 0);
-    std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
-    std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    REQUIRE(std::system(("git init " + repo.string() + REDIR).c_str()) == 0);
+    (void)std::system((std::string("git -C ") + repo.string() + " config user.email you@example.com").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " config user.name tester").c_str());
     std::ofstream(repo / "file.txt") << "hello";
-    std::system(("git -C " + repo.string() + " add file.txt").c_str());
-    std::system(("git -C " + repo.string() +
-                 " commit -m init > /dev/null 2>&1").c_str());
-    REQUIRE(std::system(("git -C " + repo.string() + " remote add origin " +
-                         bogus.string() +
-                         " > /dev/null 2>&1").c_str()) == 0);
+    (void)std::system((std::string("git -C ") + repo.string() + " add file.txt").c_str());
+    (void)std::system((std::string("git -C ") + repo.string() + " commit -m init" + REDIR).c_str());
+    REQUIRE(std::system((std::string("git -C ") + repo.string() + " remote add origin " + bogus.string() + REDIR)
+                            .c_str()) == 0);
 
     bool auth_failed = false;
     std::string err;
@@ -123,11 +129,15 @@ TEST_CASE("remote queries fail fast on fetch error") {
     REQUIRE(t == 0);
     REQUIRE_FALSE(auth_failed);
 
-    fs::remove_all(repo);
-    fs::remove_all(bogus);
+    FS_REMOVE_ALL(repo);
+    FS_REMOVE_ALL(bogus);
 }
 
 TEST_CASE("mutant_should_pull skips unchanged repos") {
+    if (!have_git()) {
+        WARN("git not available; skipping");
+        return;
+    }
     git::GitInitGuard guard;
     fs::path repo, remote;
     std::string hash;
@@ -137,7 +147,7 @@ TEST_CASE("mutant_should_pull skips unchanged repos") {
     Options opts;
     opts.mutant_mode = true;
     opts.mutant_config = fs::temp_directory_path() / "mutant_test.cfg";
-    fs::remove(opts.mutant_config);
+    FS_REMOVE(opts.mutant_config);
     apply_mutant_mode(opts);
 
     RepoInfo ri;
@@ -145,7 +155,7 @@ TEST_CASE("mutant_should_pull skips unchanged repos") {
     REQUIRE(mutant_should_pull(repo, ri, "origin", false, std::chrono::hours(1)));
     REQUIRE_FALSE(mutant_should_pull(repo, ri, "origin", false, std::chrono::hours(1)));
 
-    fs::remove_all(repo);
-    fs::remove_all(remote);
-    fs::remove(opts.mutant_config);
+    FS_REMOVE_ALL(repo);
+    FS_REMOVE_ALL(remote);
+    FS_REMOVE(opts.mutant_config);
 }

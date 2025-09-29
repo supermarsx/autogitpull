@@ -1,5 +1,32 @@
 # Build artifacts
 build/
+build-*/
+build_msvc/
+build-msvc/
+
+# Distribution files
+dist/
+
+# External libraries
+libs/
+
+# Log files
+log/
+logs/
+*.log
+
+# Visual Studio and CMake user files
+*.vcxproj.user
+*.suo
+*.user
+CMakeCache.txt
+CMakeFiles/
+
+# Ignores
+.autogitpull.ignore
+
+# Generated icon files
+*/.bld
 
 # Distribution files
 dist/
@@ -22,3 +49,5 @@ autogitpull
 .DS_Store
 git_auto_pull_all
 /autogitpull.dSYM
+
+vcpkg/
