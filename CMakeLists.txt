@@ -94,9 +94,11 @@ endfunction()
 _add_supported_warning_flags(C    "-Wno-maybe-uninitialized" "-Wno-missing-declarations")
 _add_supported_warning_flags(CXX  "-Wno-maybe-uninitialized" "-Wno-missing-declarations")
 
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wno-documentation-deprecated-sync>)
+endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    _add_supported_warning_flags(C    "-Wno-documentation-deprecated-sync")
-    _add_supported_warning_flags(CXX  "-Wno-documentation-deprecated-sync")
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-documentation-deprecated-sync>)
 endif()
 
 include(FetchContent)
