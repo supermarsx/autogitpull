@@ -9,6 +9,7 @@
 #endif
 #ifdef __APPLE__
 #include <libproc.h>
+#include <sys/sysctl.h>
 #endif
 #include <algorithm>
 #include <cstring>
@@ -119,17 +120,53 @@ std::vector<std::pair<std::string, unsigned long>> find_running_instances() {
             add_inst("autogitpull", pid);
     }
 #elif defined(__APPLE__)
+    auto is_autogitpull_process = [](pid_t pid) -> bool {
+        char namebuf[PROC_PIDPATHINFO_MAXSIZE];
+        if (proc_name(pid, namebuf, sizeof(namebuf)) > 0) {
+            if (std::string(namebuf) == "autogitpull")
+                return true;
+        }
+
+        int mib[3] = {CTL_KERN, KERN_PROCARGS2, pid};
+        size_t args_size = 0;
+        if (sysctl(mib, 3, nullptr, &args_size, nullptr, 0) != 0 || args_size == 0)
+            return false;
+        std::vector<char> args(args_size);
+        if (sysctl(mib, 3, args.data(), &args_size, nullptr, 0) != 0 || args_size == 0)
+            return false;
+
+        const char* data = args.data();
+        if (args_size < sizeof(int))
+            return false;
+        int argc = *reinterpret_cast<const int*>(data);
+        if (argc <= 0)
+            return false;
+        const char* ptr = data + sizeof(int);
+        const char* end = data + args_size;
+
+        while (ptr < end && *ptr != '\0')
+            ++ptr;
+        if (ptr >= end)
+            return false;
+        ++ptr;
+
+        if (ptr >= end || *ptr == '\0')
+            return false;
+        std::string argv0(ptr);
+        if (argv0 == "autogitpull")
+            return true;
+        std::string base = std::filesystem::path(argv0).filename().string();
+        return base == "autogitpull";
+    };
+
     int count = proc_listallpids(nullptr, 0);
     if (count > 0) {
         std::vector<pid_t> pids(static_cast<std::size_t>(count));
         count = proc_listallpids(pids.data(), static_cast<int>(pids.size() * sizeof(pid_t)));
         count /= static_cast<int>(sizeof(pid_t));
-        char namebuf[PROC_PIDPATHINFO_MAXSIZE];
         for (int i = 0; i < count; ++i) {
-            if (proc_name(pids[i], namebuf, sizeof(namebuf)) > 0) {
-                if (std::string(namebuf) == "autogitpull")
-                    add_inst("autogitpull", static_cast<unsigned long>(pids[i]));
-            }
+            if (is_autogitpull_process(pids[i]))
+                add_inst("autogitpull", static_cast<unsigned long>(pids[i]));
         }
     }
 #endif

@@ -51,7 +51,7 @@ TEST_CASE("enable history auto-detect root") {
                         const_cast<char*>("--enable-history")};
         opts = parse_options(3, argv);
     }
-    REQUIRE(opts.history_file == (root_dir / ".autogitpull.config").string());
+    REQUIRE(std::filesystem::equivalent(opts.history_file, root_dir / ".autogitpull.config"));
     auto hist = read_history(opts.history_file);
     REQUIRE(hist.size() == 1);
     REQUIRE(hist[0] == "line");
@@ -77,7 +77,7 @@ TEST_CASE("enable history auto-detect cwd fallback") {
                         const_cast<char*>("--enable-history")};
         opts = parse_options(3, argv);
     }
-    REQUIRE(opts.history_file == (cwd_dir / ".autogitpull.config").string());
+    REQUIRE(std::filesystem::equivalent(opts.history_file, cwd_dir / ".autogitpull.config"));
     FS_REMOVE_ALL(root_dir);
     FS_REMOVE_ALL(cwd_dir);
     FS_REMOVE_ALL(exe_dir);
@@ -100,7 +100,7 @@ TEST_CASE("enable history auto-detect exe fallback") {
                         const_cast<char*>("--enable-history")};
         opts = parse_options(3, argv);
     }
-    REQUIRE(opts.history_file == (exe_dir / ".autogitpull.config").string());
+    REQUIRE(std::filesystem::equivalent(opts.history_file, exe_dir / ".autogitpull.config"));
     FS_REMOVE_ALL(root_dir);
     FS_REMOVE_ALL(cwd_dir);
     FS_REMOVE_ALL(exe_dir);

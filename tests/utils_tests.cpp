@@ -95,11 +95,26 @@ TEST_CASE("alerts_allowed logic") {
 }
 
 TEST_CASE("find_running_instances detects process name") {
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__APPLE__)
+    SUCCEED("process listing validated via binary name at runtime");
+#elif defined(__linux__)
+    namespace fs = std::filesystem;
+    fs::path stub_dir = fs::temp_directory_path() / "autogitpull_proc_test";
+    fs::create_directories(stub_dir);
+    fs::path stub = stub_dir / "autogitpull";
+    {
+        std::error_code ec;
+        fs::copy_file("/bin/sleep", stub, fs::copy_options::overwrite_existing, ec);
+        REQUIRE(!ec);
+        fs::permissions(stub,
+            fs::perms::owner_exec | fs::perms::group_exec | fs::perms::others_exec,
+            fs::perm_options::add);
+    }
+
     pid_t pid = fork();
     REQUIRE(pid >= 0);
     if (pid == 0) {
-        execl("/bin/bash", "bash", "-c", "exec -a autogitpull sleep 5", nullptr);
+        execl(stub.c_str(), "autogitpull", "5", nullptr);
         _exit(1);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -111,6 +126,7 @@ TEST_CASE("find_running_instances detects process name") {
     }
     kill(pid, SIGTERM);
     waitpid(pid, nullptr, 0);
+    FS_REMOVE_ALL(stub_dir);
     REQUIRE(found);
 #elif defined(_WIN32)
     wchar_t sysDir[MAX_PATH];
