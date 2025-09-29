@@ -94,9 +94,13 @@ endfunction()
 _add_supported_warning_flags(C    "-Wno-maybe-uninitialized" "-Wno-missing-declarations")
 _add_supported_warning_flags(CXX  "-Wno-maybe-uninitialized" "-Wno-missing-declarations")
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    _add_supported_warning_flags(C    "-Wno-documentation-deprecated-sync")
+    _add_supported_warning_flags(CXX  "-Wno-documentation-deprecated-sync")
+endif()
+
 include(FetchContent)
 
-set(ZLIB_USE_STATIC_LIBS TRUE)
 # Prefer letting libgit2 build with its bundled zlib to avoid
 # clashes and system libz.a (non-PIC) on Linux.
 set(AUTOGITPULL_EMBED_ZLIB ON)
@@ -113,6 +117,13 @@ if(APPLE)
 endif()
 option(AUTOGITPULL_APP_BUNDLED_ZLIB "Fetch and build a bundled zlib for autogitpull features" ${_autogitpull_app_zlib_default})
 unset(_autogitpull_app_zlib_default)
+
+if(AUTOGITPULL_USE_SYSTEM_ZLIB)
+    set(ZLIB_USE_STATIC_LIBS OFF)
+else()
+    set(ZLIB_USE_STATIC_LIBS ON)
+endif()
+
 if(AUTOGITPULL_USE_SYSTEM_LIBGIT2 AND NOT AUTOGITPULL_USE_SYSTEM_ZLIB)
     set(AUTOGITPULL_USE_SYSTEM_ZLIB ON CACHE BOOL "" FORCE)
 endif()
