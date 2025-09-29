@@ -1,46 +1,67 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Compiling debug build..."
-CXX=${CXX:-clang++}
-if ! command -v "$CXX" >/dev/null 2>&1; then
-    echo "Compiler $CXX not found" >&2
-    exit 1
-fi
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="${SCRIPT_DIR}/.."
-PKG_CFLAGS="$(pkg-config --cflags libgit2 2>/dev/null || echo '') $(pkg-config --cflags yaml-cpp 2>/dev/null || echo '')"
-PKG_LIBS="$(pkg-config --libs libgit2 2>/dev/null || echo '-lgit2') $(pkg-config --libs yaml-cpp 2>/dev/null || echo '-lyaml-cpp')"
+BUILD_DIR="${AUTOGITPULL_BUILD_DIR:-${ROOT_DIR}/build-debug}"
+BUILD_TYPE=Debug
 
-mkdir -p "${ROOT_DIR}/dist"
-"$CXX" -std=c++20 -O0 -g -fsanitize=address -DYAML_CPP_STATIC_DEFINE \
-    -I "${ROOT_DIR}/include" ${PKG_CFLAGS} \
-    ${ROOT_DIR}/src/autogitpull.cpp \
-    ${ROOT_DIR}/src/scanner.cpp \
-    ${ROOT_DIR}/src/ui_loop.cpp \
-    ${ROOT_DIR}/src/file_watch.cpp \
-    ${ROOT_DIR}/src/git_utils.cpp \
-    ${ROOT_DIR}/src/tui.cpp \
-    ${ROOT_DIR}/src/logger.cpp \
-    ${ROOT_DIR}/src/resource_utils.cpp \
-    ${ROOT_DIR}/src/system_utils.cpp \
-    ${ROOT_DIR}/src/time_utils.cpp \
-    ${ROOT_DIR}/src/config_utils.cpp \
-    ${ROOT_DIR}/src/ignore_utils.cpp \
-    ${ROOT_DIR}/src/debug_utils.cpp \
-    ${ROOT_DIR}/src/options.cpp \
-    ${ROOT_DIR}/src/parse_utils.cpp \
-    ${ROOT_DIR}/src/history_utils.cpp \
-    ${ROOT_DIR}/src/mutant_mode.cpp \
-    ${ROOT_DIR}/src/lock_utils_posix.cpp \
-    ${ROOT_DIR}/src/process_monitor.cpp \
-    ${ROOT_DIR}/src/help_text.cpp \
-    ${ROOT_DIR}/src/cli_commands.cpp \
-    ${ROOT_DIR}/src/linux_daemon.cpp \
-    ${ROOT_DIR}/src/windows_service.cpp \
-    ${ROOT_DIR}/src/linux_commands.cpp \
-    ${ROOT_DIR}/src/windows_commands.cpp \
-    ${PKG_LIBS} -fsanitize=address -o "${ROOT_DIR}/dist/autogitpull_debug"
+CMAKE_ARGS=(
+    "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
+    "-DCMAKE_CXX_FLAGS_DEBUG=-fsanitize=address"
+    "-DCMAKE_EXE_LINKER_FLAGS_DEBUG=-fsanitize=address"
+)
 
-echo "Build complete: ${ROOT_DIR}/dist/autogitpull_debug"
+if [[ "${AUTOGITPULL_GENERATOR:-}" != "" ]]; then
+    CMAKE_ARGS+=("-G" "${AUTOGITPULL_GENERATOR}")
+fi
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    ARCHES="${AUTOGITPULL_OSX_ARCHS:-}"
+    if [[ -z "${ARCHES}" ]]; then
+        ARCHES=$(uname -m)
+    fi
+    CMAKE_ARGS+=("-DCMAKE_OSX_ARCHITECTURES=${ARCHES}")
+fi
+
+if [[ -n "${AUTOGITPULL_CMAKE_EXTRA_ARGS:-}" ]]; then
+    # shellcheck disable=SC2206
+    EXTRA_ARGS=( ${AUTOGITPULL_CMAKE_EXTRA_ARGS} )
+    CMAKE_ARGS+=("${EXTRA_ARGS[@]}")
+fi
+
+echo "==> Configuring (Debug + ASan)"
+cmake -S "${ROOT_DIR}" -B "${BUILD_DIR}" "${CMAKE_ARGS[@]}"
+
+PARALLEL=${AUTOGITPULL_BUILD_PARALLEL:-}
+if [[ -z "${PARALLEL}" ]]; then
+    if command -v sysctl >/dev/null 2>&1; then
+        PARALLEL=$(sysctl -n hw.logicalcpu 2>/dev/null || echo 4)
+    elif command -v nproc >/dev/null 2>&1; then
+        PARALLEL=$(nproc)
+    else
+        PARALLEL=4
+    fi
+fi
+
+echo "==> Building (${PARALLEL} jobs)"
+cmake --build "${BUILD_DIR}" --config "${BUILD_TYPE}" --parallel "${PARALLEL}"
+
+BIN_SUBDIR="${BUILD_DIR}"
+if [[ -d "${BUILD_DIR}/${BUILD_TYPE}" ]]; then
+    BIN_SUBDIR="${BUILD_DIR}/${BUILD_TYPE}"
+fi
+
+EXEC_NAME="autogitpull"
+case "${OSTYPE:-}" in
+    msys*|cygwin*|win32*) EXEC_NAME="autogitpull.exe" ;;
+    *) EXEC_NAME="autogitpull" ;;
+esac
+
+if [[ -f "${BIN_SUBDIR}/${EXEC_NAME}" ]]; then
+    cmake -E make_directory "${ROOT_DIR}/dist"
+    cmake -E copy "${BIN_SUBDIR}/${EXEC_NAME}" "${ROOT_DIR}/dist/${EXEC_NAME}_debug"
+    echo "Debug binary copied to dist/${EXEC_NAME}_debug"
+else
+    echo "Build completed; debug binary located under ${BIN_SUBDIR}" >&2
+fi

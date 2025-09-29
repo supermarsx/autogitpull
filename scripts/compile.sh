@@ -1,83 +1,64 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "============================================================"
-echo " AutoGitPull - Release Build"
-echo "============================================================"
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="${SCRIPT_DIR}/.."
+BUILD_DIR="${AUTOGITPULL_BUILD_DIR:-${ROOT_DIR}/build-release}"
+BUILD_TYPE="${AUTOGITPULL_BUILD_TYPE:-Release}"
 
-###############################################################################
-# 1. Locate compiler
-###############################################################################
-echo "[1/4] Checking for C++ compiler..."
-CXX=${CXX:-g++}
-if ! command -v "$CXX" >/dev/null 2>&1; then
-    if command -v clang++ >/dev/null 2>&1; then
-        CXX=clang++
-        echo "    g++ not found, using clang++"
-    else
-        echo "    No C++ compiler found" >&2
-        exit 1
+CMAKE_ARGS=()
+CMAKE_ARGS+=("-DCMAKE_BUILD_TYPE=${BUILD_TYPE}")
+
+if [[ "${AUTOGITPULL_GENERATOR:-}" != "" ]]; then
+    CMAKE_ARGS+=("-G" "${AUTOGITPULL_GENERATOR}")
+fi
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    ARCHES="${AUTOGITPULL_OSX_ARCHS:-}"
+    if [[ -z "${ARCHES}" ]]; then
+        ARCHES=$(uname -m)
     fi
-else
-    echo "    Using $CXX"
+    CMAKE_ARGS+=("-DCMAKE_OSX_ARCHITECTURES=${ARCHES}")
 fi
 
-###############################################################################
-# 2. Resolve dependency flags
-###############################################################################
-echo "[2/4] Resolving dependencies..."
-PKG_CFLAGS="$(pkg-config --cflags libgit2 2>/dev/null || echo '') $(pkg-config --cflags yaml-cpp 2>/dev/null || echo '')"
-PKG_LIBS="$(pkg-config --libs libgit2 2>/dev/null || echo '-lgit2') $(pkg-config --libs yaml-cpp 2>/dev/null || echo '-lyaml-cpp')"
-
-###############################################################################
-# 3. Ensure resources
-###############################################################################
-if [[ ! -f "${ROOT_DIR}/graphics/icon.ico" ]] || [[ ! -f "${ROOT_DIR}/graphics/icon.icns" ]]; then
-    echo "[3/4] Generating icons..."
-    "${SCRIPT_DIR}/generate_icons.sh"
-else
-    echo "[3/4] Icons already generated"
+if [[ -n "${AUTOGITPULL_CMAKE_EXTRA_ARGS:-}" ]]; then
+    # shellcheck disable=SC2206
+    EXTRA_ARGS=( ${AUTOGITPULL_CMAKE_EXTRA_ARGS} )
+    CMAKE_ARGS+=("${EXTRA_ARGS[@]}")
 fi
 
-###############################################################################
-# 4. Compile sources
-###############################################################################
-echo "[4/4] Compiling sources..."
+echo "==> Configuring (${BUILD_TYPE})"
+cmake -S "${ROOT_DIR}" -B "${BUILD_DIR}" "${CMAKE_ARGS[@]}"
 
-SRCS=(
-    "${ROOT_DIR}/src/autogitpull.cpp"
-    "${ROOT_DIR}/src/scanner.cpp"
-    "${ROOT_DIR}/src/ui_loop.cpp"
-    "${ROOT_DIR}/src/file_watch.cpp"
-    "${ROOT_DIR}/src/git_utils.cpp"
-    "${ROOT_DIR}/src/tui.cpp"
-    "${ROOT_DIR}/src/logger.cpp"
-    "${ROOT_DIR}/src/resource_utils.cpp"
-    "${ROOT_DIR}/src/system_utils.cpp"
-    "${ROOT_DIR}/src/time_utils.cpp"
-    "${ROOT_DIR}/src/config_utils.cpp"
-    "${ROOT_DIR}/src/ignore_utils.cpp"
-    "${ROOT_DIR}/src/debug_utils.cpp"
-    "${ROOT_DIR}/src/options.cpp"
-    "${ROOT_DIR}/src/parse_utils.cpp"
-    "${ROOT_DIR}/src/history_utils.cpp"
-    "${ROOT_DIR}/src/mutant_mode.cpp"
-    "${ROOT_DIR}/src/lock_utils_posix.cpp"
-    "${ROOT_DIR}/src/process_monitor.cpp"
-    "${ROOT_DIR}/src/help_text.cpp"
-    "${ROOT_DIR}/src/cli_commands.cpp"
-    "${ROOT_DIR}/src/linux_daemon.cpp"
-    "${ROOT_DIR}/src/windows_service.cpp"
-    "${ROOT_DIR}/src/linux_commands.cpp"
-    "${ROOT_DIR}/src/windows_commands.cpp"
-)
+PARALLEL=${AUTOGITPULL_BUILD_PARALLEL:-}
+if [[ -z "${PARALLEL}" ]]; then
+    if command -v sysctl >/dev/null 2>&1; then
+        PARALLEL=$(sysctl -n hw.logicalcpu 2>/dev/null || echo 4)
+    elif command -v nproc >/dev/null 2>&1; then
+        PARALLEL=$(nproc)
+    else
+        PARALLEL=4
+    fi
+fi
 
-mkdir -p "${ROOT_DIR}/dist"
-"$CXX" -std=c++20 -O2 -DNDEBUG -DYAML_CPP_STATIC_DEFINE \
-    -I "${ROOT_DIR}/include" ${PKG_CFLAGS} "${SRCS[@]}" ${PKG_LIBS} \
-    -o "${ROOT_DIR}/dist/autogitpull"
+echo "==> Building (${PARALLEL} jobs)"
+cmake --build "${BUILD_DIR}" --config "${BUILD_TYPE}" --parallel "${PARALLEL}"
 
-echo "Build complete: ${ROOT_DIR}/dist/autogitpull"
+BIN_SUBDIR="${BUILD_DIR}"
+if [[ -d "${BUILD_DIR}/${BUILD_TYPE}" ]]; then
+    BIN_SUBDIR="${BUILD_DIR}/${BUILD_TYPE}"
+fi
+
+EXEC_NAME="autogitpull"
+case "${OSTYPE:-}" in
+    msys*|cygwin*|win32*) EXEC_NAME="autogitpull.exe" ;;
+    *) EXEC_NAME="autogitpull" ;;
+esac
+
+if [[ -f "${BIN_SUBDIR}/${EXEC_NAME}" ]]; then
+    cmake -E make_directory "${ROOT_DIR}/dist"
+    cmake -E copy "${BIN_SUBDIR}/${EXEC_NAME}" "${ROOT_DIR}/dist/${EXEC_NAME}"
+    echo "Binary copied to dist/${EXEC_NAME}"
+else
+    echo "Build completed; binary located under ${BIN_SUBDIR}" >&2
+fi

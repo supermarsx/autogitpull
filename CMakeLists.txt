@@ -100,21 +100,61 @@ set(ZLIB_USE_STATIC_LIBS TRUE)
 # Prefer letting libgit2 build with its bundled zlib to avoid
 # clashes and system libz.a (non-PIC) on Linux.
 set(AUTOGITPULL_EMBED_ZLIB ON)
-option(AUTOGITPULL_USE_SYSTEM_ZLIB "Use a pre-installed zlib instead of the bundled static build" OFF)
+set(_autogitpull_use_system_zlib_default OFF)
+if(APPLE)
+    set(_autogitpull_use_system_zlib_default ON)
+endif()
+option(AUTOGITPULL_USE_SYSTEM_ZLIB "Use a pre-installed zlib instead of the bundled static build" ${_autogitpull_use_system_zlib_default})
+unset(_autogitpull_use_system_zlib_default)
+
+set(_autogitpull_app_zlib_default ON)
+if(APPLE)
+    set(_autogitpull_app_zlib_default OFF)
+endif()
+option(AUTOGITPULL_APP_BUNDLED_ZLIB "Fetch and build a bundled zlib for autogitpull features" ${_autogitpull_app_zlib_default})
+unset(_autogitpull_app_zlib_default)
 if(AUTOGITPULL_USE_SYSTEM_LIBGIT2 AND NOT AUTOGITPULL_USE_SYSTEM_ZLIB)
     set(AUTOGITPULL_USE_SYSTEM_ZLIB ON CACHE BOOL "" FORCE)
 endif()
 
 set(_autogitpull_zlib_target "")
-if(AUTOGITPULL_EMBED_ZLIB)
-    message(STATUS "Skipping top-level zlib; libgit2 will use bundled zlib")
-elseif(AUTOGITPULL_USE_SYSTEM_ZLIB)
-    find_package(ZLIB REQUIRED)
-    if(NOT TARGET ZLIB::ZLIB)
-        message(FATAL_ERROR "System zlib must export the ZLIB::ZLIB target")
+if(AUTOGITPULL_USE_SYSTEM_ZLIB)
+    find_package(ZLIB QUIET)
+    if(NOT ZLIB_FOUND)
+        set(_autogitpull_zlib_search_paths)
+        if(DEFINED CMAKE_OSX_SYSROOT)
+            list(APPEND _autogitpull_zlib_search_paths "${CMAKE_OSX_SYSROOT}/usr/lib")
+            list(APPEND _autogitpull_zlib_search_paths "${CMAKE_OSX_SYSROOT}/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks")
+        endif()
+        list(APPEND _autogitpull_zlib_search_paths "/usr/lib")
+        find_library(ZLIB_LIBRARY z NAMES z zlib PATHS ${_autogitpull_zlib_search_paths})
+        if(ZLIB_LIBRARY)
+            find_path(ZLIB_INCLUDE_DIR zlib.h
+                PATHS
+                    ${CMAKE_OSX_SYSROOT}/usr/include
+                    ${CMAKE_OSX_SYSROOT}/usr/include/zlib
+                    /usr/include
+                    /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include
+                    /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/zlib)
+            if(ZLIB_INCLUDE_DIR)
+                set(ZLIB_FOUND TRUE)
+                set(ZLIB_LIBRARIES ${ZLIB_LIBRARY})
+                set(ZLIB_INCLUDE_DIRS ${ZLIB_INCLUDE_DIR})
+            endif()
+        endif()
+        unset(_autogitpull_zlib_search_paths)
     endif()
-else()
-    message(STATUS "Configuring bundled static zlib...")
+    if(NOT ZLIB_FOUND)
+        message(FATAL_ERROR "System zlib not found; install zlib or disable AUTOGITPULL_USE_SYSTEM_ZLIB")
+    endif()
+    if(NOT TARGET ZLIB::ZLIB)
+        add_library(ZLIB::ZLIB UNKNOWN IMPORTED)
+        set_target_properties(ZLIB::ZLIB PROPERTIES
+            IMPORTED_LOCATION "${ZLIB_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIR}")
+    endif()
+elseif(AUTOGITPULL_APP_BUNDLED_ZLIB)
+    message(STATUS "Configuring bundled static zlib for autogitpull")
     FetchContent_Declare(
         autogitpull_zlib
         GIT_REPOSITORY https://github.com/madler/zlib.git
@@ -196,6 +236,8 @@ else()
         endif()
         set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
     endif()
+else()
+    message(STATUS "Skipping app-level zlib configuration; expecting external linkage")
 endif()
 unset(_autogitpull_zlib_target)
 unset(_autogitpull_zlib_include_dirs)
@@ -207,6 +249,8 @@ unset(_autogitpull_zlib_release_dir)
 unset(_autogitpull_zlib_debug_dir)
 unset(_autogitpull_zlib_debug_postfix)
 unset(_autogitpull_zlib_release_lib)
+unset(_autogitpull_zlib_debug_lib)
+
 unset(_autogitpull_zlib_debug_lib)
 
 find_package(yaml-cpp CONFIG QUIET)
@@ -297,15 +341,27 @@ if(NOT LIBGIT2_TARGET)
         -DNTLMCLIENT_FOUND:BOOL=OFF
         -DUSE_REGEX=builtin
         -DUSE_COMPRESSION=zlib
-        -DUSE_BUNDLED_ZLIB:BOOL=ON
-        -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=TRUE
-        -DZLIB_FOUND:BOOL=OFF
-        -DZLIB_LIBRARY:FILEPATH=
-        -DZLIB_INCLUDE_DIR:PATH=
         -DLINK_WITH_STATIC_LIBRARIES:BOOL=ON
         -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
         -DCMAKE_POLICY_DEFAULT_CMP0077:STRING=NEW
     )
+
+
+    if(TARGET ZLIB::ZLIB)
+        list(APPEND _autogitpull_libgit2_args
+            -DUSE_BUNDLED_ZLIB:BOOL=OFF
+            -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=FALSE
+            -DZLIB_FOUND:BOOL=ON
+            -DZLIB_LIBRARY:FILEPATH=${ZLIB_LIBRARY}
+            -DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIR})
+    else()
+        list(APPEND _autogitpull_libgit2_args
+            -DUSE_BUNDLED_ZLIB:BOOL=ON
+            -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=TRUE
+            -DZLIB_FOUND:BOOL=OFF
+            -DZLIB_LIBRARY:FILEPATH=
+            -DZLIB_INCLUDE_DIR:PATH=)
+    endif()
 
     if(WIN32)
         # Work around MSVC/Windows struct stat nsec detection issues by disabling USE_NSEC.
@@ -347,6 +403,11 @@ if(NOT LIBGIT2_TARGET)
         CMAKE_ARGS ${_autogitpull_libgit2_args}
     )
     FetchContent_MakeAvailable(autogitpull_libgit2)
+
+    if(DEFINED LIBGIT2_SYSTEM_LIBS)
+        list(APPEND LIBGIT2_DEPENDENCIES ${LIBGIT2_SYSTEM_LIBS})
+    endif()
+
     # Restore project-level testing setting; our tests are handled below
     set(BUILD_TESTING ON CACHE BOOL "" FORCE)
 
@@ -419,8 +480,43 @@ if(APPLE)
     find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
     find_library(CORESERVICES_FRAMEWORK CoreServices REQUIRED)
     find_library(SECURITY_FRAMEWORK Security)
-    # FSEvents may be unavailable on some SDKs; treat as optional
+
+    # FSEvents lives under CoreServices.framework; provide explicit hints for newer SDK layouts
+    unset(_autogitpull_fsevents_hints)
+    if(DEFINED CMAKE_OSX_SYSROOT)
+        set(_autogitpull_sysroot_fsevents
+            "${CMAKE_OSX_SYSROOT}/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks")
+        if(EXISTS "${_autogitpull_sysroot_fsevents}")
+            list(APPEND _autogitpull_fsevents_hints "${_autogitpull_sysroot_fsevents}")
+        endif()
+    endif()
+    if(EXISTS "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks")
+        list(APPEND _autogitpull_fsevents_hints
+            "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks")
+    endif()
+    if(_autogitpull_fsevents_hints)
+        find_library(FSEVENTS_FRAMEWORK FSEvents
+            HINTS ${_autogitpull_fsevents_hints}
+            NO_DEFAULT_PATH)
+    endif()
+    # Fallback to standard search paths when explicit hints fail (older SDKs)
     find_library(FSEVENTS_FRAMEWORK FSEvents)
+    unset(_autogitpull_fsevents_hints)
+    unset(_autogitpull_sysroot_fsevents)
+
+    if(NOT AUTOGITPULL_USE_SYSTEM_ZLIB)
+        # Always link the macOS platform zlib to get gzip helpers for logging.
+        find_library(AUTOGITPULL_APPLE_ZLIB z PATHS
+            ${CMAKE_OSX_SYSROOT}/usr/lib
+            /usr/lib
+            NO_DEFAULT_PATH)
+        if(NOT AUTOGITPULL_APPLE_ZLIB)
+            find_library(AUTOGITPULL_APPLE_ZLIB z)
+        endif()
+        if(NOT AUTOGITPULL_APPLE_ZLIB)
+            message(FATAL_ERROR "Failed to locate system zlib on macOS; install Command Line Tools or enable AUTOGITPULL_USE_SYSTEM_ZLIB")
+        endif()
+    endif()
 endif()
 
 add_library(autogitpull_lib STATIC
@@ -450,6 +546,15 @@ else()
     target_sources(autogitpull_lib PRIVATE src/linux_daemon.cpp src/linux_commands.cpp src/lock_utils_posix.cpp)
 endif()
 target_include_directories(autogitpull_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
+if(DEFINED LIBGIT2_INCLUDES)
+    target_include_directories(autogitpull_lib PRIVATE ${LIBGIT2_INCLUDES})
+endif()
+if(DEFINED LIBGIT2_SYSTEM_INCLUDES)
+    target_include_directories(autogitpull_lib SYSTEM PRIVATE ${LIBGIT2_SYSTEM_INCLUDES})
+endif()
+if(DEFINED LIBGIT2_DEPENDENCY_INCLUDES)
+    target_include_directories(autogitpull_lib PRIVATE ${LIBGIT2_DEPENDENCY_INCLUDES})
+endif()
 target_link_libraries(autogitpull_lib
     PUBLIC ${LIBGIT2_TARGET} ${LIBGIT2_DEPENDENCIES} yaml-cpp::yaml-cpp nlohmann_json::nlohmann_json Threads::Threads)
 if(TARGET ZLIB::ZLIB)
@@ -462,6 +567,9 @@ elseif(TARGET zlib)
 endif()
 if(TARGET autogitpull_zlib)
     target_link_libraries(autogitpull_lib PUBLIC autogitpull_zlib)
+endif()
+if(APPLE AND AUTOGITPULL_APPLE_ZLIB)
+    target_link_libraries(autogitpull_lib PUBLIC ${AUTOGITPULL_APPLE_ZLIB})
 endif()
 if(APPLE)
     target_link_libraries(autogitpull_lib PUBLIC
