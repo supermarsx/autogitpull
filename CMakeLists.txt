@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(BUILD_SHARED_LIBS OFF)
+include(CTest)
 if(MSVC)
     # Link the static runtime to satisfy "static everything" on Windows
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -731,7 +732,28 @@ if(APPLE)
         target_link_libraries(autogitpull_tests PRIVATE ${FSEVENTS_FRAMEWORK})
     endif()
 endif()
-add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
+set(_catch2_extra_search_paths)
+if(DEFINED Catch2_SOURCE_DIR)
+    list(APPEND _catch2_extra_search_paths "${Catch2_SOURCE_DIR}/extras")
+endif()
+if(DEFINED Catch2_DIR)
+    list(APPEND _catch2_extra_search_paths
+        "${Catch2_DIR}/../extras"
+        "${Catch2_DIR}/../../share/Catch2"
+        "${Catch2_DIR}/../../Catch2")
+endif()
+find_path(CATCH2_EXTRA_DIR Catch.cmake HINTS ${_catch2_extra_search_paths} NO_DEFAULT_PATH)
+if(CATCH2_EXTRA_DIR)
+    list(APPEND CMAKE_MODULE_PATH "${CATCH2_EXTRA_DIR}")
+    include(Catch)
+    catch_discover_tests(autogitpull_tests
+        TEST_PREFIX autogitpull_tests::
+        EXTRA_ARGS --durations=yes --skip-benchmarks)
+else()
+    add_test(NAME autogitpull_tests COMMAND autogitpull_tests)
+endif()
+unset(CATCH2_EXTRA_DIR)
+unset(_catch2_extra_search_paths)
 if(WIN32)
     add_custom_command(TARGET autogitpull_tests POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different

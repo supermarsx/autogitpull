@@ -324,7 +324,7 @@ TEST_CASE("Logger outputs JSON when enabled") {
     FS_REMOVE(log);
 }
 
-TEST_CASE("--log-file without value creates file") {
+TEST_CASE("log-file flag without value creates file", "[logger]") {
     const char* argv[] = {"prog", "--log-file"};
     ArgParser parser(2, const_cast<char**>(argv), {"--log-file"});
     REQUIRE(parser.has_flag("--log-file"));
