@@ -17,3 +17,8 @@ logs/
 
 # Generated icon files
 */.bld
+/build-macos-x86_64
+autogitpull
+.DS_Store
+git_auto_pull_all
+/autogitpull.dSYM
