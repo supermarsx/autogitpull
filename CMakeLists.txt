@@ -452,9 +452,14 @@ if(NOT LIBGIT2_TARGET)
     set(ENABLE_NTLM OFF CACHE BOOL "" FORCE)
     set(NTLMCLIENT_FOUND OFF CACHE BOOL "" FORCE)
     # Force libgit2 to ignore any top-level zlib and use its bundled one
-    set(ZLIB_FOUND OFF CACHE BOOL "" FORCE)
-    unset(ZLIB_LIBRARY CACHE)
-    unset(ZLIB_INCLUDE_DIR CACHE)
+    # only when we have not already provisioned a ZLIB::ZLIB target. On
+    # Windows we ship a standalone zlib for our binaries, and libgit2 should
+    # reuse that archive instead of trying to add another `zlib` target.
+    if(NOT TARGET ZLIB::ZLIB)
+        set(ZLIB_FOUND OFF CACHE BOOL "" FORCE)
+        unset(ZLIB_LIBRARY CACHE)
+        unset(ZLIB_INCLUDE_DIR CACHE)
+    endif()
     # Disable nanosecond mtimes at the subproject level for stability across toolchains
     set(USE_NSEC OFF CACHE BOOL "Disable nanosecond mtimes in libgit2" FORCE)
     FetchContent_Declare(
