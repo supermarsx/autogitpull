@@ -455,6 +455,18 @@ if(NOT LIBGIT2_TARGET)
         # This avoids: "GIT_USE_NSEC defined but unknown struct stat nanosecond type" during libgit2 build.
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=WinHTTP -DSTATIC_CRT=ON)
         list(APPEND LIBGIT2_DEPENDENCIES winhttp rpcrt4 crypt32 ole32 ws2_32 secur32 bcrypt)
+        # Force libgit2 to use its bundled zlib on Windows; do not let it
+        # pick up the top-level ZLIB settings, as MSVC .vcxproj can end up
+        # with malformed AdditionalDependencies paths in certain CI caches.
+        set(USE_BUNDLED_ZLIB ON CACHE BOOL "" FORCE)
+        set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB TRUE CACHE BOOL "" FORCE)
+        set(ZLIB_FOUND OFF CACHE BOOL "" FORCE)
+        unset(ZLIB_LIBRARY CACHE)
+        unset(ZLIB_LIBRARY_RELEASE CACHE)
+        unset(ZLIB_LIBRARY_DEBUG CACHE)
+        unset(ZLIB_LIBRARIES CACHE)
+        unset(ZLIB_INCLUDE_DIR CACHE)
+        unset(ZLIB_INCLUDE_DIRS CACHE)
     elseif(APPLE)
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=SecureTransport)
     else()
