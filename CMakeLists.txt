@@ -122,7 +122,7 @@ option(AUTOGITPULL_APP_BUNDLED_ZLIB "Fetch and build a bundled zlib for autogitp
 unset(_autogitpull_app_zlib_default)
 
 set(_autogitpull_reuse_libgit2_zlib OFF)
-if(WIN32 AND AUTOGITPULL_APP_BUNDLED_ZLIB AND NOT AUTOGITPULL_USE_SYSTEM_LIBGIT2)
+if(WIN32 AND AUTOGITPULL_APP_BUNDLED_ZLIB)
     set(_autogitpull_reuse_libgit2_zlib ON)
 endif()
 
@@ -288,14 +288,16 @@ elseif(AUTOGITPULL_APP_BUNDLED_ZLIB AND NOT _autogitpull_reuse_libgit2_zlib)
             set(ZLIB_LIBRARY_RELEASE "${_autogitpull_zlib_release_lib}" CACHE FILEPATH "" FORCE)
             if(_autogitpull_zlib_debug_postfix STREQUAL "")
                 set(ZLIB_LIBRARY_DEBUG "${_autogitpull_zlib_release_lib}" CACHE FILEPATH "" FORCE)
-                set(ZLIB_LIBRARIES "${ZLIB_LIBRARY_RELEASE}" CACHE STRING "" FORCE)
+                set(_autogitpull_zlib_multi_config "optimized;${ZLIB_LIBRARY_RELEASE};debug;${ZLIB_LIBRARY_RELEASE}")
             else()
                 set(ZLIB_LIBRARY_DEBUG "${_autogitpull_zlib_debug_lib}" CACHE FILEPATH "" FORCE)
-                set(ZLIB_LIBRARIES "optimized;${ZLIB_LIBRARY_RELEASE};debug;${ZLIB_LIBRARY_DEBUG}" CACHE STRING "" FORCE)
+                set(_autogitpull_zlib_multi_config "optimized;${ZLIB_LIBRARY_RELEASE};debug;${ZLIB_LIBRARY_DEBUG}")
             endif()
-            set(ZLIB_LIBRARY "${ZLIB_LIBRARY_RELEASE}" CACHE FILEPATH "" FORCE)
+            set(ZLIB_LIBRARIES "${_autogitpull_zlib_multi_config}" CACHE STRING "" FORCE)
+            set(ZLIB_LIBRARY "${ZLIB_LIBRARIES}" CACHE STRING "" FORCE)
+            unset(_autogitpull_zlib_multi_config)
         else()
-            set(ZLIB_LIBRARY "${_autogitpull_zlib_release_lib}" CACHE FILEPATH "" FORCE)
+            set(ZLIB_LIBRARY "${_autogitpull_zlib_release_lib}" CACHE STRING "" FORCE)
             set(ZLIB_LIBRARIES "${ZLIB_LIBRARY}" CACHE STRING "" FORCE)
         endif()
         set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
@@ -424,37 +426,26 @@ if(NOT LIBGIT2_TARGET)
     )
 
 
-    # On Windows, force libgit2 to use its own bundled zlib to avoid
-    # MSVC AdditionalDependencies path formatting issues in CI.
-    if(WIN32)
+    if(TARGET ZLIB::ZLIB)
+        list(APPEND _autogitpull_libgit2_args
+            -DUSE_BUNDLED_ZLIB:BOOL=OFF
+            -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=FALSE
+            -DZLIB_FOUND:BOOL=ON
+            -DZLIB_LIBRARY:STRING=${ZLIB_LIBRARY}
+            -DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIR})
+        if(DEFINED ZLIB_LIBRARY_RELEASE AND ZLIB_LIBRARY_RELEASE)
+            list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_RELEASE:FILEPATH=${ZLIB_LIBRARY_RELEASE})
+        endif()
+        if(DEFINED ZLIB_LIBRARY_DEBUG AND ZLIB_LIBRARY_DEBUG)
+            list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_DEBUG:FILEPATH=${ZLIB_LIBRARY_DEBUG})
+        endif()
+    else()
         list(APPEND _autogitpull_libgit2_args
             -DUSE_BUNDLED_ZLIB:BOOL=ON
             -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=TRUE
             -DZLIB_FOUND:BOOL=OFF
-            -DZLIB_LIBRARY:FILEPATH=
+            -DZLIB_LIBRARY:STRING=
             -DZLIB_INCLUDE_DIR:PATH=)
-    else()
-        if(TARGET ZLIB::ZLIB)
-            list(APPEND _autogitpull_libgit2_args
-                -DUSE_BUNDLED_ZLIB:BOOL=OFF
-                -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=FALSE
-                -DZLIB_FOUND:BOOL=ON
-                -DZLIB_LIBRARY:FILEPATH=${ZLIB_LIBRARY}
-                -DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIR})
-            if(DEFINED ZLIB_LIBRARY_RELEASE AND ZLIB_LIBRARY_RELEASE)
-                list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_RELEASE:FILEPATH=${ZLIB_LIBRARY_RELEASE})
-            endif()
-            if(DEFINED ZLIB_LIBRARY_DEBUG AND ZLIB_LIBRARY_DEBUG)
-                list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_DEBUG:FILEPATH=${ZLIB_LIBRARY_DEBUG})
-            endif()
-        else()
-            list(APPEND _autogitpull_libgit2_args
-                -DUSE_BUNDLED_ZLIB:BOOL=ON
-                -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=TRUE
-                -DZLIB_FOUND:BOOL=OFF
-                -DZLIB_LIBRARY:FILEPATH=
-                -DZLIB_INCLUDE_DIR:PATH=)
-        endif()
     endif()
 
     if(WIN32)
@@ -462,18 +453,17 @@ if(NOT LIBGIT2_TARGET)
         # This avoids: "GIT_USE_NSEC defined but unknown struct stat nanosecond type" during libgit2 build.
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=WinHTTP -DSTATIC_CRT=ON)
         list(APPEND LIBGIT2_DEPENDENCIES winhttp rpcrt4 crypt32 ole32 ws2_32 secur32 bcrypt)
-        # Force libgit2 to use its bundled zlib on Windows; do not let it
-        # pick up the top-level ZLIB settings, as MSVC .vcxproj can end up
-        # with malformed AdditionalDependencies paths in certain CI caches.
-        set(USE_BUNDLED_ZLIB ON CACHE BOOL "" FORCE)
-        set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB TRUE CACHE BOOL "" FORCE)
-        set(ZLIB_FOUND OFF CACHE BOOL "" FORCE)
-        unset(ZLIB_LIBRARY CACHE)
-        unset(ZLIB_LIBRARY_RELEASE CACHE)
-        unset(ZLIB_LIBRARY_DEBUG CACHE)
-        unset(ZLIB_LIBRARIES CACHE)
-        unset(ZLIB_INCLUDE_DIR CACHE)
-        unset(ZLIB_INCLUDE_DIRS CACHE)
+        if(NOT TARGET ZLIB::ZLIB)
+            set(USE_BUNDLED_ZLIB ON CACHE BOOL "" FORCE)
+            set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB TRUE CACHE BOOL "" FORCE)
+            set(ZLIB_FOUND OFF CACHE BOOL "" FORCE)
+            unset(ZLIB_LIBRARY CACHE)
+            unset(ZLIB_LIBRARY_RELEASE CACHE)
+            unset(ZLIB_LIBRARY_DEBUG CACHE)
+            unset(ZLIB_LIBRARIES CACHE)
+            unset(ZLIB_INCLUDE_DIR CACHE)
+            unset(ZLIB_INCLUDE_DIRS CACHE)
+        endif()
     elseif(APPLE)
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=SecureTransport)
     else()
@@ -589,12 +579,35 @@ if(NOT LIBGIT2_TARGET)
     if(NOT TARGET ZLIB::ZLIB)
         message(STATUS "libgit2 did not expose a zlib target; proceeding without top-level ZLIB::ZLIB")
     endif()
+    if(_autogitpull_reuse_libgit2_zlib)
+        if(TARGET zlibstatic)
+            set(_autogitpull_reused_zlib_target zlibstatic)
+        elseif(TARGET zlib)
+            set(_autogitpull_reused_zlib_target zlib)
+        endif()
+        if(DEFINED _autogitpull_reused_zlib_target)
+            get_target_property(_autogitpull_zlib_include_dirs ${_autogitpull_reused_zlib_target} INTERFACE_INCLUDE_DIRECTORIES)
+            if(NOT _autogitpull_zlib_include_dirs)
+                set(_autogitpull_zlib_include_dirs "${autogitpull_libgit2_SOURCE_DIR}/deps/zlib")
+            endif()
+            set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
+            set(ZLIB_LIBRARIES "ZLIB::ZLIB" CACHE STRING "" FORCE)
+            set(ZLIB_LIBRARY "ZLIB::ZLIB" CACHE STRING "" FORCE)
+            set(ZLIB_INCLUDE_DIR "${_autogitpull_zlib_include_dirs}" CACHE STRING "" FORCE)
+            set(ZLIB_INCLUDE_DIRS "${_autogitpull_zlib_include_dirs}" CACHE STRING "" FORCE)
+            unset(_autogitpull_zlib_include_dirs)
+        else()
+            message(FATAL_ERROR "Expected libgit2 to expose a zlib target, but none was found")
+        endif()
+        unset(_autogitpull_reused_zlib_target)
+    endif()
     unset(_autogitpull_libgit2_build_target)
 endif()
 unset(OPENSSL_USE_STATIC_LIBS)
 unset(_libgit2_is_static)
 unset(_libgit2_type)
 unset(_libgit2_location)
+unset(_autogitpull_reuse_libgit2_zlib)
 
 find_package(Threads REQUIRED)
 
