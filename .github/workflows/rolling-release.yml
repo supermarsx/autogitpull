@@ -45,11 +45,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          SINCE="$(python3 - <<'PY'
-from datetime import datetime, timedelta
-print((datetime.utcnow() - timedelta(hours=24)).strftime('%Y-%m-%dT%H:%M:%SZ'))
-PY
-)"
+          SINCE="$(python3 -c 'from datetime import datetime, timedelta; print((datetime.utcnow() - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ"))')"
           COUNT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/releases?per_page=100" \
             | jq "[.[] | select(.created_at >= \"$SINCE\")] | length")
