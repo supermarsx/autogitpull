@@ -1,5 +1,6 @@
 #include "test_common.hpp"
 #include "git_utils.hpp"
+#include <nlohmann/json.hpp>
 
 namespace git {
 int credential_cb(git_credential** out, const char* url, const char* username_from_url,
@@ -119,6 +120,29 @@ TEST_CASE("parse_options daemon name flag") {
     const char* argv[] = {"prog", "path", "--daemon-name", "dname"};
     Options opts = parse_options(4, const_cast<char**>(argv));
     REQUIRE(opts.service.daemon_name == std::string("dname"));
+}
+
+TEST_CASE("parse_options pull ref flag") {
+    const char* argv[] = {"prog", "path", "--pull-ref", "v1.2.3"};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    REQUIRE(opts.pull_ref);
+    REQUIRE(*opts.pull_ref == std::string("v1.2.3"));
+}
+
+TEST_CASE("parse_options per-repo pull ref override") {
+    fs::path cfg = fs::temp_directory_path() / "pull_ref_override.json";
+    nlohmann::json j;
+    j["repositories"]["repo1"]["pull-ref"] = "release-branch";
+    std::ofstream(cfg) << j.dump();
+    const std::string cfg_str = cfg.string();
+    const char* argv[] = {"prog", "repo1", "--config-json", cfg_str.c_str()};
+    Options opts = parse_options(4, const_cast<char**>(argv));
+    auto it = opts.repo_settings.find(fs::path("repo1"));
+    REQUIRE(it != opts.repo_settings.end());
+    REQUIRE(it->second.pull_ref);
+    REQUIRE(*it->second.pull_ref == std::string("release-branch"));
+    std::error_code ec;
+    fs::remove(cfg, ec);
 }
 
 TEST_CASE("parse_options install daemon name override") {

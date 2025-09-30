@@ -17,6 +17,7 @@ struct RepoOptions {
     std::optional<std::chrono::seconds> max_runtime;
     std::optional<std::chrono::seconds> pull_timeout;
     std::optional<std::filesystem::path> post_pull_hook;
+    std::optional<std::string> pull_ref;
 };
 
 #endif // REPO_OPTIONS_HPP

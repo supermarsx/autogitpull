@@ -45,8 +45,8 @@ TEST_CASE("scan_repos honors dry run") {
 
     scan_repos(repos, infos, skip, mtx, scanning, running, action, action_mtx, false, "origin",
                fs::path(), false, true, 1, 0, 0, 0, 0, 0, false, false, true, false, false, false,
-               false, fs::path(), std::chrono::seconds(0), false, std::chrono::seconds(0), false,
-               false, {}, false);
+               false, fs::path(), std::nullopt, std::chrono::seconds(0), false,
+               std::chrono::seconds(0), false, false, {}, false);
 
     REQUIRE(infos[repo].status != RS_PULL_OK);
     std::string local_hash = git::get_local_hash(repo).value_or("");

@@ -6,6 +6,7 @@
 #include <chrono>
 #include <map>
 #include <functional>
+#include <optional>
 #include "logger.hpp"
 #include "repo_options.hpp"
 #include "tui.hpp"
@@ -83,6 +84,7 @@ struct ResourceLimits {
 struct Options {
     std::filesystem::path root;
     std::string remote_name = "origin";
+    std::optional<std::string> pull_ref;
     bool include_private = false;
     bool show_skipped = false;
     bool show_notgit = false;

@@ -155,7 +155,8 @@ bool clone_repo(const fs::path& dest, const std::string& url,
 int try_pull(const fs::path& repo, const std::string& remote, std::string& out_pull_log,
              const std::function<void(int)>* progress_cb = nullptr, bool use_credentials = false,
              bool* auth_failed = nullptr, size_t down_limit_kbps = 0, size_t up_limit_kbps = 0,
-             size_t disk_limit_kbps = 0, bool force_pull = false);
+             size_t disk_limit_kbps = 0, bool force_pull = false,
+             const std::string* target_ref = nullptr);
 
 constexpr int TRY_PULL_TIMEOUT = 4;
 constexpr int TRY_PULL_RATE_LIMIT = 5;

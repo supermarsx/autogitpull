@@ -7,6 +7,7 @@
 #include <ctime>
 #include <algorithm>
 #include <cctype>
+#include <vector>
 #include "resource_utils.hpp"
 #include "options.hpp"
 
@@ -565,7 +566,7 @@ bool clone_repo(const fs::path& dest, const std::string& url,
 int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_log,
              const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed,
              size_t down_limit_kbps, size_t up_limit_kbps, size_t disk_limit_kbps,
-             bool force_pull) {
+             bool force_pull, const std::string* target_ref) {
 
     if (progress_cb)
         (*progress_cb)(0); // begin progress reporting
@@ -573,6 +574,8 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
         if (progress_cb)
             (*progress_cb)(100); // ensure 100% on completion
     };
+
+    const bool use_target = target_ref && !target_ref->empty();
 
     git_repository* raw_repo = nullptr;
 
@@ -583,7 +586,7 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
     }
     repo_ptr r(raw_repo);
     string branch;
-    {
+    if (!use_target) {
         string err;
         auto br = get_current_branch(repo, &err);
         if (!br) {
@@ -601,6 +604,7 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
     }
     remote_ptr remote_handle(raw_remote);
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    fetch_opts.download_tags = GIT_REMOTE_DOWNLOAD_TAGS_ALL;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
     ProgressData progress{nullptr, std::chrono::steady_clock::now(), down_limit_kbps, up_limit_kbps,
                           disk_limit_kbps};
@@ -665,6 +669,86 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
             return 2;
         }
     }
+    auto perform_reset = [&](const git_oid& oid, const std::string& success_msg) -> int {
+        git_object* raw_target = nullptr;
+        if (git_object_lookup(&raw_target, r.get(), &oid, GIT_OBJECT_COMMIT) != 0) {
+            out_pull_log = "Lookup failed";
+            finalize();
+            return 2;
+        }
+        object_ptr target(raw_target);
+        if (git_reset(r.get(), target.get(), GIT_RESET_HARD, nullptr) != 0) {
+            out_pull_log = "Reset failed";
+            finalize();
+            return 2;
+        }
+        out_pull_log = success_msg;
+        finalize();
+        return 0;
+    };
+
+    auto resolve_target_oid = [&](const std::string& ref, git_oid& out) -> bool {
+        std::vector<std::string> candidates;
+        candidates.push_back(ref);
+        if (ref.rfind("refs/", 0) != 0) {
+            candidates.push_back("refs/tags/" + ref);
+            candidates.push_back("refs/heads/" + ref);
+            if (!(ref.rfind(remote_name + "/", 0) == 0))
+                candidates.push_back("refs/remotes/" + remote_name + "/" + ref);
+        }
+        for (const auto& cand : candidates) {
+            git_object* parsed = nullptr;
+            if (git_revparse_single(&parsed, r.get(), cand.c_str()) != 0)
+                continue;
+            object_ptr parsed_obj(parsed);
+            git_object* commit_obj = nullptr;
+            if (git_object_peel(&commit_obj, parsed_obj.get(), GIT_OBJECT_COMMIT) != 0)
+                continue;
+            object_ptr commit(commit_obj);
+            const git_oid* peeled = git_object_id(commit.get());
+            if (!peeled)
+                continue;
+            out = *peeled;
+            return true;
+        }
+        git_oid tmp;
+        if (git_oid_fromstrp(&tmp, ref.c_str()) == 0) {
+            git_object* commit_obj = nullptr;
+            if (git_object_lookup(&commit_obj, r.get(), &tmp, GIT_OBJECT_COMMIT) == 0) {
+                object_ptr commit(commit_obj);
+                out = tmp;
+                return true;
+            }
+        }
+        return false;
+    };
+
+    if (use_target) {
+        git_oid desired_oid;
+        if (!resolve_target_oid(*target_ref, desired_oid)) {
+            out_pull_log = "Target ref not found";
+            finalize();
+            return 2;
+        }
+        git_oid local_oid;
+        if (git_reference_name_to_id(&local_oid, r.get(), "HEAD") != 0) {
+            out_pull_log = "Local HEAD not found";
+            finalize();
+            return 2;
+        }
+        if (git_oid_cmp(&local_oid, &desired_oid) == 0) {
+            out_pull_log = std::string("Already at ") + *target_ref;
+            finalize();
+            return 0;
+        }
+        if (!force_pull && has_uncommitted_changes(repo)) {
+            out_pull_log = "Local changes present";
+            finalize();
+            return 3;
+        }
+        return perform_reset(desired_oid, std::string("Checked out ") + *target_ref);
+    }
+
     git_oid remote_oid;
     string refname = string("refs/remotes/") + remote_name + "/" + branch;
     if (git_reference_name_to_id(&remote_oid, r.get(), refname.c_str()) != 0) {
@@ -688,21 +772,7 @@ int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_l
         finalize();
         return 3;
     }
-    git_object* raw_target = nullptr;
-    if (git_object_lookup(&raw_target, r.get(), &remote_oid, GIT_OBJECT_COMMIT) != 0) {
-        out_pull_log = "Lookup failed";
-        finalize();
-        return 2;
-    }
-    object_ptr target(raw_target);
-    if (git_reset(r.get(), target.get(), GIT_RESET_HARD, nullptr) != 0) {
-        out_pull_log = "Reset failed";
-        finalize();
-        return 2;
-    }
-    out_pull_log = "Fast-forwarded";
-    finalize();
-    return 0;
+    return perform_reset(remote_oid, "Fast-forwarded");
 }
 
 /**

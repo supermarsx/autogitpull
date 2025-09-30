@@ -358,6 +358,7 @@ Options parse_options(int argc, char* argv[]) {
                                       "--version",
                                       "--root",
                                       "--remote",
+                                      "--pull-ref",
                                       "--interval",
                                       "--refresh-rate",
                                       "--cpu-poll",
@@ -1027,6 +1028,14 @@ Options parse_options(int argc, char* argv[]) {
             throw std::runtime_error("--remote requires a name");
         opts.remote_name = val;
     }
+    if (parser.has_flag("--pull-ref") || cfg_opts.count("--pull-ref")) {
+        std::string val = parser.get_option("--pull-ref");
+        if (val.empty())
+            val = cfg_opt("--pull-ref");
+        if (val.empty())
+            throw std::runtime_error("--pull-ref requires a ref name or commit hash");
+        opts.pull_ref = val;
+    }
     if (parser.has_flag("--root") || cfg_opts.count("--root")) {
         std::string val = parser.get_option("--root");
         if (val.empty())
@@ -1117,6 +1126,12 @@ Options parse_options(int argc, char* argv[]) {
         }
         if (values.count("--post-pull-hook")) {
             ro.post_pull_hook = fs::path(ropt("--post-pull-hook"));
+        }
+        if (values.count("--pull-ref")) {
+            std::string val = ropt("--pull-ref");
+            if (val.empty())
+                throw std::runtime_error("Invalid per-repo pull-ref");
+            ro.pull_ref = val;
         }
         opts.repo_settings[fs::path(repo)] = ro;
     }

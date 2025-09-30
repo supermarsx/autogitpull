@@ -8,6 +8,7 @@
 #include <iostream>
 #include <ctime>
 #include <vector>
+#include <optional>
 #ifndef _WIN32
 #include <sys/wait.h>
 #include <unistd.h>
@@ -249,6 +250,7 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
                          size_t disk_limit, bool force_pull, bool was_accessible, bool skip_timeout,
                          bool skip_unavailable, bool skip_accessible_errors, bool cli_mode,
                          bool silent, const fs::path& post_pull_hook,
+                         const std::optional<std::string>& pull_ref,
                          std::chrono::seconds pull_timeout) {
     (void)skip_timeout;
     {
@@ -268,8 +270,11 @@ static void execute_pull(const fs::path& p, RepoInfo& ri, std::map<fs::path, Rep
     bool pull_auth_fail = false;
     if (pull_timeout.count() > 0)
         git::set_libgit_timeout(static_cast<unsigned int>(pull_timeout.count()));
+    const std::string* target_ref_ptr = nullptr;
+    if (pull_ref && !pull_ref->empty())
+        target_ref_ptr = &(*pull_ref);
     int code = git::try_pull(p, remote, pull_log, &progress_cb, include_private, &pull_auth_fail,
-                             down_limit, up_limit, disk_limit, force_pull);
+                             down_limit, up_limit, disk_limit, force_pull, target_ref_ptr);
     ri.auth_failed = pull_auth_fail;
     ri.last_pull_log = pull_log;
 
@@ -354,8 +359,9 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                   bool hash_check, size_t down_limit, size_t up_limit, size_t disk_limit,
                   bool silent, bool cli_mode, bool dry_run, bool force_pull, bool skip_timeout,
                   bool skip_unavailable, bool skip_accessible_errors,
-                  const fs::path& post_pull_hook, std::chrono::seconds updated_since,
-                  bool show_pull_author, std::chrono::seconds pull_timeout, bool mutant_mode) {
+                  const fs::path& post_pull_hook, const std::optional<std::string>& pull_ref,
+                  std::chrono::seconds updated_since, bool show_pull_author,
+                  std::chrono::seconds pull_timeout, bool mutant_mode) {
     if (!running)
         return;
     if (logger_initialized())
@@ -454,7 +460,7 @@ void process_repo(const fs::path& p, std::map<fs::path, RepoInfo>& repo_infos,
                 execute_pull(p, ri, repo_infos, skip_repos, mtx, action, action_mtx, log_dir,
                              include_private, remote, down_limit, up_limit, disk_limit, force_pull,
                              was_accessible, skip_timeout, skip_unavailable, skip_accessible_errors,
-                             cli_mode, silent, post_pull_hook, effective_timeout);
+                             cli_mode, silent, post_pull_hook, pull_ref, effective_timeout);
                 auto end_time = std::chrono::steady_clock::now();
                 if (mutant_mode)
                     mutant_record_result(
@@ -510,7 +516,8 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t mem_limit, size_t down_limit, size_t up_limit, size_t disk_limit,
                 bool silent, bool cli_mode, bool dry_run, bool force_pull, bool skip_timeout,
                 bool skip_unavailable, bool skip_accessible_errors, const fs::path& post_pull_hook,
-                std::chrono::seconds updated_since, bool show_pull_author,
+                const std::optional<std::string>& pull_ref, std::chrono::seconds updated_since,
+                bool show_pull_author,
                 std::chrono::seconds pull_timeout, bool retry_skipped, bool reset_skipped,
                 const std::map<std::filesystem::path, RepoOptions>& repo_settings,
                 bool mutant_mode) {
@@ -581,11 +588,14 @@ void scan_repos(const std::vector<fs::path>& all_repos, std::map<fs::path, RepoI
                 size_t disk = ro.disk_limit.value_or(disk_limit);
                 bool fp = ro.force_pull.value_or(force_pull);
                 std::chrono::seconds pt = ro.pull_timeout.value_or(pull_timeout);
+                std::optional<std::string> repo_target = ro.pull_ref;
+                if (!repo_target && pull_ref)
+                    repo_target = pull_ref;
                 process_repo(p, repo_infos, skip_repos, mtx, running, action, action_mtx,
                              include_private, remote, log_dir, co, hash_check, dl, ul, disk, silent,
                              cli_mode, dry_run, fp, skip_timeout, skip_unavailable,
-                             skip_accessible_errors, repo_hook, updated_since, show_pull_author, pt,
-                             mutant_mode);
+                             skip_accessible_errors, repo_hook, repo_target, updated_since,
+                             show_pull_author, pt, mutant_mode);
                 if (mem_limit > 0 && procutil::get_memory_usage_mb() > mem_limit) {
                     log_error("Memory limit exceeded");
                     running = false;
