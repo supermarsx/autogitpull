@@ -565,8 +565,8 @@ bool clone_repo(const fs::path& dest, const std::string& url,
  */
 int try_pull(const fs::path& repo, const string& remote_name, string& out_pull_log,
              const std::function<void(int)>* progress_cb, bool use_credentials, bool* auth_failed,
-             size_t down_limit_kbps, size_t up_limit_kbps, size_t disk_limit_kbps,
-             bool force_pull, const std::string* target_ref) {
+             size_t down_limit_kbps, size_t up_limit_kbps, size_t disk_limit_kbps, bool force_pull,
+             const std::string* target_ref) {
 
     if (progress_cb)
         (*progress_cb)(0); // begin progress reporting

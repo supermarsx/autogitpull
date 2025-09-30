@@ -29,8 +29,7 @@ void process_repo(const std::filesystem::path& p,
                   bool dry_run, bool force_pull, bool skip_timeout, bool skip_unavailable,
                   bool skip_accessible_errors, const std::filesystem::path& post_pull_hook,
                   const std::optional<std::string>& pull_ref, std::chrono::seconds updated_since,
-                  bool show_pull_author,
-                  std::chrono::seconds pull_timeout, bool mutant_mode);
+                  bool show_pull_author, std::chrono::seconds pull_timeout, bool mutant_mode);
 
 void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 std::map<std::filesystem::path, RepoInfo>& repo_infos,
@@ -43,8 +42,8 @@ void scan_repos(const std::vector<std::filesystem::path>& all_repos,
                 bool force_pull, bool skip_timeout, bool skip_unavailable,
                 bool skip_accessible_errors, const std::filesystem::path& post_pull_hook,
                 const std::optional<std::string>& pull_ref, std::chrono::seconds updated_since,
-                bool show_pull_author,
-                std::chrono::seconds pull_timeout, bool retry_skipped, bool reset_skipped,
+                bool show_pull_author, std::chrono::seconds pull_timeout, bool retry_skipped,
+                bool reset_skipped,
                 const std::map<std::filesystem::path, RepoOptions>& repo_settings,
                 bool mutant_mode);
 
