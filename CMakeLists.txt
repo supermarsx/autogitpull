@@ -121,11 +121,6 @@ endif()
 option(AUTOGITPULL_APP_BUNDLED_ZLIB "Fetch and build a bundled zlib for autogitpull features" ${_autogitpull_app_zlib_default})
 unset(_autogitpull_app_zlib_default)
 
-set(_autogitpull_reuse_libgit2_zlib OFF)
-if(WIN32 AND AUTOGITPULL_APP_BUNDLED_ZLIB AND NOT AUTOGITPULL_USE_SYSTEM_LIBGIT2)
-    set(_autogitpull_reuse_libgit2_zlib ON)
-endif()
-
 if(AUTOGITPULL_USE_SYSTEM_ZLIB)
     set(ZLIB_USE_STATIC_LIBS OFF)
 else()
@@ -185,7 +180,7 @@ if(AUTOGITPULL_USE_SYSTEM_ZLIB)
             IMPORTED_LOCATION "${ZLIB_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIR}")
     endif()
-elseif(AUTOGITPULL_APP_BUNDLED_ZLIB AND NOT _autogitpull_reuse_libgit2_zlib)
+elseif(AUTOGITPULL_APP_BUNDLED_ZLIB)
     message(STATUS "Configuring bundled static zlib for autogitpull")
     FetchContent_Declare(
         autogitpull_zlib
@@ -303,8 +298,6 @@ elseif(AUTOGITPULL_APP_BUNDLED_ZLIB AND NOT _autogitpull_reuse_libgit2_zlib)
     if(_autogitpull_zlib_target)
         set(_autogitpull_zlib_primary_target "${_autogitpull_zlib_target}")
     endif()
-elseif(_autogitpull_reuse_libgit2_zlib)
-    message(STATUS "Reusing libgit2 bundled zlib for autogitpull targets on Windows")
 else()
     message(STATUS "Skipping app-level zlib configuration; expecting external linkage")
 endif()
@@ -424,37 +417,26 @@ if(NOT LIBGIT2_TARGET)
     )
 
 
-    # On Windows, force libgit2 to use its own bundled zlib to avoid
-    # MSVC AdditionalDependencies path formatting issues in CI.
-    if(WIN32)
+    if(TARGET ZLIB::ZLIB)
+        list(APPEND _autogitpull_libgit2_args
+            -DUSE_BUNDLED_ZLIB:BOOL=OFF
+            -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=FALSE
+            -DZLIB_FOUND:BOOL=ON
+            -DZLIB_LIBRARY:FILEPATH=${ZLIB_LIBRARY}
+            -DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIR})
+        if(DEFINED ZLIB_LIBRARY_RELEASE AND ZLIB_LIBRARY_RELEASE)
+            list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_RELEASE:FILEPATH=${ZLIB_LIBRARY_RELEASE})
+        endif()
+        if(DEFINED ZLIB_LIBRARY_DEBUG AND ZLIB_LIBRARY_DEBUG)
+            list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_DEBUG:FILEPATH=${ZLIB_LIBRARY_DEBUG})
+        endif()
+    else()
         list(APPEND _autogitpull_libgit2_args
             -DUSE_BUNDLED_ZLIB:BOOL=ON
             -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=TRUE
             -DZLIB_FOUND:BOOL=OFF
             -DZLIB_LIBRARY:FILEPATH=
             -DZLIB_INCLUDE_DIR:PATH=)
-    else()
-        if(TARGET ZLIB::ZLIB)
-            list(APPEND _autogitpull_libgit2_args
-                -DUSE_BUNDLED_ZLIB:BOOL=OFF
-                -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=FALSE
-                -DZLIB_FOUND:BOOL=ON
-                -DZLIB_LIBRARY:FILEPATH=${ZLIB_LIBRARY}
-                -DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIR})
-            if(DEFINED ZLIB_LIBRARY_RELEASE AND ZLIB_LIBRARY_RELEASE)
-                list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_RELEASE:FILEPATH=${ZLIB_LIBRARY_RELEASE})
-            endif()
-            if(DEFINED ZLIB_LIBRARY_DEBUG AND ZLIB_LIBRARY_DEBUG)
-                list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_DEBUG:FILEPATH=${ZLIB_LIBRARY_DEBUG})
-            endif()
-        else()
-            list(APPEND _autogitpull_libgit2_args
-                -DUSE_BUNDLED_ZLIB:BOOL=ON
-                -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=TRUE
-                -DZLIB_FOUND:BOOL=OFF
-                -DZLIB_LIBRARY:FILEPATH=
-                -DZLIB_INCLUDE_DIR:PATH=)
-        endif()
     endif()
 
     if(WIN32)
@@ -462,18 +444,17 @@ if(NOT LIBGIT2_TARGET)
         # This avoids: "GIT_USE_NSEC defined but unknown struct stat nanosecond type" during libgit2 build.
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=WinHTTP -DSTATIC_CRT=ON)
         list(APPEND LIBGIT2_DEPENDENCIES winhttp rpcrt4 crypt32 ole32 ws2_32 secur32 bcrypt)
-        # Force libgit2 to use its bundled zlib on Windows; do not let it
-        # pick up the top-level ZLIB settings, as MSVC .vcxproj can end up
-        # with malformed AdditionalDependencies paths in certain CI caches.
-        set(USE_BUNDLED_ZLIB ON CACHE BOOL "" FORCE)
-        set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB TRUE CACHE BOOL "" FORCE)
-        set(ZLIB_FOUND OFF CACHE BOOL "" FORCE)
-        unset(ZLIB_LIBRARY CACHE)
-        unset(ZLIB_LIBRARY_RELEASE CACHE)
-        unset(ZLIB_LIBRARY_DEBUG CACHE)
-        unset(ZLIB_LIBRARIES CACHE)
-        unset(ZLIB_INCLUDE_DIR CACHE)
-        unset(ZLIB_INCLUDE_DIRS CACHE)
+        if(NOT TARGET ZLIB::ZLIB)
+            set(USE_BUNDLED_ZLIB ON CACHE BOOL "" FORCE)
+            set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB TRUE CACHE BOOL "" FORCE)
+            set(ZLIB_FOUND OFF CACHE BOOL "" FORCE)
+            unset(ZLIB_LIBRARY CACHE)
+            unset(ZLIB_LIBRARY_RELEASE CACHE)
+            unset(ZLIB_LIBRARY_DEBUG CACHE)
+            unset(ZLIB_LIBRARIES CACHE)
+            unset(ZLIB_INCLUDE_DIR CACHE)
+            unset(ZLIB_INCLUDE_DIRS CACHE)
+        endif()
     elseif(APPLE)
         list(APPEND _autogitpull_libgit2_args -DUSE_HTTPS=SecureTransport)
     else()
@@ -690,6 +671,9 @@ endif()
 if(TARGET autogitpull_zlib)
     target_link_libraries(autogitpull_lib PUBLIC autogitpull_zlib)
 endif()
+if(ZLIB_LIBRARIES)
+    target_link_libraries(autogitpull_lib PUBLIC ${ZLIB_LIBRARIES})
+endif()
 if(APPLE AND AUTOGITPULL_APPLE_ZLIB)
     target_link_libraries(autogitpull_lib PUBLIC ${AUTOGITPULL_APPLE_ZLIB})
 endif()
@@ -734,6 +718,9 @@ elseif(TARGET zlib)
 endif()
 if(TARGET autogitpull_zlib)
     target_link_libraries(autogitpull PRIVATE autogitpull_zlib)
+endif()
+if(ZLIB_LIBRARIES)
+    target_link_libraries(autogitpull PRIVATE ${ZLIB_LIBRARIES})
 endif()
 if(APPLE)
     target_link_libraries(autogitpull PRIVATE
@@ -806,6 +793,9 @@ elseif(TARGET zlib)
 endif()
 if(TARGET autogitpull_zlib)
     target_link_libraries(autogitpull_tests PRIVATE autogitpull_zlib)
+endif()
+if(ZLIB_LIBRARIES)
+    target_link_libraries(autogitpull_tests PRIVATE ${ZLIB_LIBRARIES})
 endif()
 set_property(TARGET autogitpull_tests PROPERTY LINK_LIBRARY_DEPENDENCIES ON)
 if(UNIX AND NOT APPLE)
