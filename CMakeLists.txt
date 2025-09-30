@@ -317,8 +317,6 @@ unset(_autogitpull_zlib_debug_postfix)
 unset(_autogitpull_zlib_release_lib)
 unset(_autogitpull_zlib_debug_lib)
 
-unset(_autogitpull_zlib_debug_lib)
-
 find_package(yaml-cpp CONFIG QUIET)
 if(NOT yaml-cpp_FOUND)
     message(STATUS "yaml-cpp not found, fetching via FetchContent...")
@@ -420,6 +418,12 @@ if(NOT LIBGIT2_TARGET)
             -DZLIB_FOUND:BOOL=ON
             -DZLIB_LIBRARY:FILEPATH=${ZLIB_LIBRARY}
             -DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIR})
+        if(DEFINED ZLIB_LIBRARY_RELEASE AND ZLIB_LIBRARY_RELEASE)
+            list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_RELEASE:FILEPATH=${ZLIB_LIBRARY_RELEASE})
+        endif()
+        if(DEFINED ZLIB_LIBRARY_DEBUG AND ZLIB_LIBRARY_DEBUG)
+            list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_DEBUG:FILEPATH=${ZLIB_LIBRARY_DEBUG})
+        endif()
     else()
         list(APPEND _autogitpull_libgit2_args
             -DUSE_BUNDLED_ZLIB:BOOL=ON
@@ -497,6 +501,32 @@ if(NOT LIBGIT2_TARGET)
     if(NOT TARGET libgit2::libgit2)
         add_library(libgit2::libgit2 ALIAS ${_autogitpull_libgit2_build_target})
     endif()
+
+    set(_autogitpull_zlib_link_targets "")
+    if(TARGET zlibstatic)
+        list(APPEND _autogitpull_zlib_link_targets zlibstatic)
+    endif()
+    if(TARGET autogitpull_zlib)
+        list(APPEND _autogitpull_zlib_link_targets autogitpull_zlib)
+    endif()
+    if(TARGET zlib)
+        list(APPEND _autogitpull_zlib_link_targets zlib)
+    endif()
+    list(REMOVE_DUPLICATES _autogitpull_zlib_link_targets)
+    if(_autogitpull_zlib_link_targets)
+        foreach(_libgit2_dep_target IN ITEMS
+            ${_autogitpull_libgit2_build_target}
+            git2
+            libgit2
+            libgit2package
+            git2_cli)
+            if(TARGET ${_libgit2_dep_target})
+                target_link_libraries(${_libgit2_dep_target} PRIVATE ${_autogitpull_zlib_link_targets})
+            endif()
+        endforeach()
+        unset(_libgit2_dep_target)
+    endif()
+    unset(_autogitpull_zlib_link_targets)
 
     # Scope feature macros to libgit2; ensure no stray GIT_USE_NSEC leaks in
     foreach(_t libgit2 libgit2_static git2 ${_autogitpull_libgit2_build_target})
