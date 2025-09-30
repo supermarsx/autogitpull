@@ -257,6 +257,7 @@ TEST_CASE("init_syslog routes messages") {
     init_logger(log.string());
     init_syslog(LOG_USER);
     log_info("syslog entry");
+    flush_logger();
     shutdown_logger();
     REQUIRE_FALSE(g_syslog_messages.empty());
     REQUIRE(g_syslog_messages.back().find("syslog entry") != std::string::npos);
