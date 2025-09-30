@@ -417,26 +417,37 @@ if(NOT LIBGIT2_TARGET)
     )
 
 
-    if(TARGET ZLIB::ZLIB)
-        list(APPEND _autogitpull_libgit2_args
-            -DUSE_BUNDLED_ZLIB:BOOL=OFF
-            -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=FALSE
-            -DZLIB_FOUND:BOOL=ON
-            -DZLIB_LIBRARY:FILEPATH=${ZLIB_LIBRARY}
-            -DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIR})
-        if(DEFINED ZLIB_LIBRARY_RELEASE AND ZLIB_LIBRARY_RELEASE)
-            list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_RELEASE:FILEPATH=${ZLIB_LIBRARY_RELEASE})
-        endif()
-        if(DEFINED ZLIB_LIBRARY_DEBUG AND ZLIB_LIBRARY_DEBUG)
-            list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_DEBUG:FILEPATH=${ZLIB_LIBRARY_DEBUG})
-        endif()
-    else()
+    # On Windows, force libgit2 to use its own bundled zlib to avoid
+    # MSVC AdditionalDependencies path formatting issues in CI.
+    if(WIN32)
         list(APPEND _autogitpull_libgit2_args
             -DUSE_BUNDLED_ZLIB:BOOL=ON
             -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=TRUE
             -DZLIB_FOUND:BOOL=OFF
             -DZLIB_LIBRARY:FILEPATH=
             -DZLIB_INCLUDE_DIR:PATH=)
+    else()
+        if(TARGET ZLIB::ZLIB)
+            list(APPEND _autogitpull_libgit2_args
+                -DUSE_BUNDLED_ZLIB:BOOL=OFF
+                -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=FALSE
+                -DZLIB_FOUND:BOOL=ON
+                -DZLIB_LIBRARY:FILEPATH=${ZLIB_LIBRARY}
+                -DZLIB_INCLUDE_DIR:PATH=${ZLIB_INCLUDE_DIR})
+            if(DEFINED ZLIB_LIBRARY_RELEASE AND ZLIB_LIBRARY_RELEASE)
+                list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_RELEASE:FILEPATH=${ZLIB_LIBRARY_RELEASE})
+            endif()
+            if(DEFINED ZLIB_LIBRARY_DEBUG AND ZLIB_LIBRARY_DEBUG)
+                list(APPEND _autogitpull_libgit2_args -DZLIB_LIBRARY_DEBUG:FILEPATH=${ZLIB_LIBRARY_DEBUG})
+            endif()
+        else()
+            list(APPEND _autogitpull_libgit2_args
+                -DUSE_BUNDLED_ZLIB:BOOL=ON
+                -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB:BOOL=TRUE
+                -DZLIB_FOUND:BOOL=OFF
+                -DZLIB_LIBRARY:FILEPATH=
+                -DZLIB_INCLUDE_DIR:PATH=)
+        endif()
     endif()
 
     if(WIN32)
