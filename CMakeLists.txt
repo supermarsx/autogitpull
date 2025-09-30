@@ -453,13 +453,15 @@ if(NOT LIBGIT2_TARGET)
         list(APPEND LIBGIT2_DEPENDENCIES OpenSSL::SSL OpenSSL::Crypto)
     endif()
 
-    # Prevent libgit2 from registering its own tests/examples/programs in our build
+    # Prevent libgit2 from registering its own tests/examples/programs/CLI in our build
+    # Use cache variables so the subproject's option() calls pick up our values.
     set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
     set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(BUILD_CLAR OFF CACHE BOOL "" FORCE)
     set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
     set(BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+    set(BUILD_CLI OFF CACHE BOOL "" FORCE)
     # Disable optional NTLM client to avoid missing ntlm_client_* symbols on Linux
     set(USE_NTLMCLIENT OFF CACHE BOOL "" FORCE)
     set(USE_NTLM OFF CACHE BOOL "" FORCE)
@@ -513,31 +515,9 @@ if(NOT LIBGIT2_TARGET)
         add_library(libgit2::libgit2 ALIAS ${_autogitpull_libgit2_build_target})
     endif()
 
-    set(_autogitpull_zlib_link_targets "")
-    if(TARGET zlibstatic)
-        list(APPEND _autogitpull_zlib_link_targets zlibstatic)
-    endif()
-    if(TARGET autogitpull_zlib)
-        list(APPEND _autogitpull_zlib_link_targets autogitpull_zlib)
-    endif()
-    if(TARGET zlib)
-        list(APPEND _autogitpull_zlib_link_targets zlib)
-    endif()
-    list(REMOVE_DUPLICATES _autogitpull_zlib_link_targets)
-    if(_autogitpull_zlib_link_targets)
-        foreach(_libgit2_dep_target IN ITEMS
-            ${_autogitpull_libgit2_build_target}
-            git2
-            libgit2
-            libgit2package
-            git2_cli)
-            if(TARGET ${_libgit2_dep_target})
-                target_link_libraries(${_libgit2_dep_target} PRIVATE ${_autogitpull_zlib_link_targets})
-            endif()
-        endforeach()
-        unset(_libgit2_dep_target)
-    endif()
-    unset(_autogitpull_zlib_link_targets)
+    # Do not mutate libgit2's own targets with additional link interfaces;
+    # we pass ZLIB paths via CMAKE_ARGS above so libgit2 wires itself
+    # correctly. Avoid mixing keyword/plain signatures across subprojects.
 
     # Scope feature macros to libgit2; ensure no stray GIT_USE_NSEC leaks in
     foreach(_t libgit2 libgit2_static git2 ${_autogitpull_libgit2_build_target})
