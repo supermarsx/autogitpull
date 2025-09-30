@@ -24,7 +24,7 @@ jobs:
             runner: ubuntu-latest
             shell: bash
           - name: ubuntu-arm64
-            runner: ubuntu-24.04-arm64
+            runner: ubuntu-24.04-arm
             shell: bash
           - name: macos-x64
             runner: macos-13
