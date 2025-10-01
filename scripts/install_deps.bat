@@ -1,104 +1,123 @@
 @echo off
-setlocal enableextensions enabledelayedexpansion
+setlocal EnableExtensions EnableDelayedExpansion
+
 echo Installing dependencies...
 
-rem Detect architecture for vcpkg triplet (x64 vs arm64)
+call :detect_triplet
+call :ensure_tool_in_path "cmake" "C:\\Program Files\\CMake\\bin" "C:\\Program Files (x86)\\CMake\\bin"
+call :ensure_tool_in_path "make" "%ProgramFiles%\\Git\\usr\\bin" "%ProgramFiles(x86)%\\GnuWin32\\bin"
+call :ensure_cpplint
+call :install_vcpkg_deps
+
+goto :script_end
+
+:detect_triplet
 set "TRIPLET=x64-windows-static"
 if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "TRIPLET=arm64-windows-static"
-if /i "%PROCESSOR_ARCHITEW6432%"=="ARM64" set "TRIPLET=arm64-windows-static"
-
-rem Auto-detect cmake and make if they are not in PATH
-where cmake >nul 2>nul
-if errorlevel 1 (
-    if exist "C:\Program Files\CMake\bin\cmake.exe" (
-        set "PATH=C:\Program Files\CMake\bin;%PATH%"
-    ) else if exist "C:\Program Files (x86)\CMake\bin\cmake.exe" (
-        set "PATH=C:\Program Files (x86)\CMake\bin;%PATH%"
-    )
+if defined PROCESSOR_ARCHITEW6432 (
+    if /i "%PROCESSOR_ARCHITEW6432%"=="ARM64" set "TRIPLET=arm64-windows-static"
 )
-where make >nul 2>nul
-if errorlevel 1 (
-    if exist "%ProgramFiles%\Git\usr\bin\make.exe" (
-        set "PATH=%ProgramFiles%\Git\usr\bin;%PATH%"
-    ) else if exist "%ProgramFiles(x86)%\GnuWin32\bin\make.exe" (
-        set "PATH=%ProgramFiles(x86)%\GnuWin32\bin;%PATH%"
-    )
-)
-rem Install cpplint if missing, avoiding system-wide pip installs
-where cpplint >nul 2>nul
-if errorlevel 1 (
-    rem Prefer winget/choco/pipx, fall back to local venv under .tools\venv
-    where pipx >nul 2>nul
-    if not errorlevel 1 (
-        echo Installing cpplint via pipx...
-        pipx install --include-deps cpplint || goto :cpplint_venv
-        goto :cpplint_done
-    )
+exit /b 0
 
-    rem Try winget to install pipx if available
-    where winget >nul 2>nul
-    if not errorlevel 1 (
-        echo Installing pipx via winget...
-        winget install --id=pipxproject.pipx -e --silent || echo Skipping winget pipx install.
-        where pipx >nul 2>nul && (
-            echo Installing cpplint via pipx...
-            pipx install --include-deps cpplint && goto :cpplint_done
-        )
-    )
-
-    rem Try Chocolatey to install pipx if available
-    where choco >nul 2>nul
-    if not errorlevel 1 (
-        echo Installing pipx via choco...
-        choco install -y pipx || echo Skipping choco pipx install.
-        refreshenv >nul 2>nul
-        where pipx >nul 2>nul && (
-            echo Installing cpplint via pipx...
-            pipx install --include-deps cpplint && goto :cpplint_done
-        )
-    )
-
-    :cpplint_venv
-    echo Setting up local venv for cpplint (no system pip changes)...
-    set "TOOLS_DIR=.tools"
-    set "VENV_DIR=%TOOLS_DIR%\venv"
-    if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
-    where py >nul 2>nul
-    if errorlevel 1 (
-        where python >nul 2>nul || (
-            echo Python not found. Please install Python 3 and re-run. & exit /b 1
-        )
-        python -m venv "%VENV_DIR%" || (
-            echo Failed to create virtual environment. & exit /b 1
-        )
-        call "%VENV_DIR%\Scripts\activate.bat" && (
-            python -m pip install --upgrade pip >nul 2>nul
-            python -m pip install cpplint || echo Warning: cpplint installation in venv failed.
-        )
+:ensure_tool_in_path
+set "TOOL_NAME=%~1"
+for %%P in (%*) do (
+    if /i "%%~P"=="%TOOL_NAME%" (
+        rem skip the tool name
     ) else (
-        py -3 -m venv "%VENV_DIR%" || (
-            echo Failed to create virtual environment. & exit /b 1
-        )
-        call "%VENV_DIR%\Scripts\activate.bat" && (
-            py -3 -m pip install --upgrade pip >nul 2>nul
-            py -3 -m pip install cpplint || echo Warning: cpplint installation in venv failed.
+        if exist "%%~P\%TOOL_NAME%.exe" (
+            set "PATH=%%~P;%PATH%"
+            goto :tool_check_done
         )
     )
-    set "PATH=%CD%\%VENV_DIR%\Scripts;%PATH%"
+)
+:tool_check_done
+where %TOOL_NAME% >nul 2>nul
+exit /b 0
+
+:ensure_cpplint
+where cpplint >nul 2>nul && exit /b 0
+
+where pipx >nul 2>nul
+if not errorlevel 1 (
+    echo Installing cpplint via pipx...
+    if pipx install --include-deps cpplint >nul 2>nul exit /b 0
 )
 
-:cpplint_done
-rem Check if each dependency is installed under vcpkg
+where winget >nul 2>nul
+if not errorlevel 1 (
+    echo Installing pipx via winget...
+    winget install --id=pipxproject.pipx -e --silent >nul 2>nul
+    where pipx >nul 2>nul && (
+        echo Installing cpplint via pipx...
+        if pipx install --include-deps cpplint >nul 2>nul exit /b 0
+    )
+)
+
+where choco >nul 2>nul
+if not errorlevel 1 (
+    echo Installing pipx via choco...
+    choco install -y pipx >nul 2>nul
+    refreshenv >nul 2>nul
+    where pipx >nul 2>nul && (
+        echo Installing cpplint via pipx...
+        if pipx install --include-deps cpplint >nul 2>nul exit /b 0
+    )
+)
+
+echo Setting up local venv for cpplint (no system pip changes)...
+set "TOOLS_DIR=.tools"
+set "VENV_DIR=%TOOLS_DIR%\venv"
+if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
+set "PYTHON_EXE="
+set "PYTHON_ARGS="
+where py >nul 2>nul
+if not errorlevel 1 (
+    set "PYTHON_EXE=py"
+    set "PYTHON_ARGS=-3"
+    goto :found_python
+)
+
+where python >nul 2>nul || (
+    echo Python not found. Please install Python 3 and re-run.
+    exit /b 1
+)
+for /f "delims=" %%I in ('where python') do (
+    set "PYTHON_EXE=%%I"
+    goto :found_python
+)
+
+:found_python
+if not defined PYTHON_EXE (
+    echo Python not found. Please install Python 3 and re-run.
+    exit /b 1
+)
+
+if exist "%VENV_DIR%" rd /s /q "%VENV_DIR%" >nul 2>nul
+"%PYTHON_EXE%" %PYTHON_ARGS% -m venv "%VENV_DIR%" || (
+    echo Failed to create virtual environment.
+    exit /b 1
+)
+call "%VENV_DIR%\Scripts\activate.bat" || (
+    echo Failed to activate virtual environment.
+    exit /b 1
+)
+"%PYTHON_EXE%" %PYTHON_ARGS% -m pip install --upgrade pip >nul 2>nul
+"%PYTHON_EXE%" %PYTHON_ARGS% -m pip install cpplint >nul 2>nul || echo Warning: cpplint installation in venv failed.
+set "PATH=%CD%\%VENV_DIR%\Scripts;%PATH%"
+exit /b 0
+
+:install_vcpkg_deps
 set "LIBGIT2_INSTALLED=false"
 set "YAMLCPP_INSTALLED=false"
 set "JSON_INSTALLED=false"
 set "ZLIB_INSTALLED=false"
 
 if not defined VCPKG_ROOT (
-    rem Try common locations
     if exist "%CD%\vcpkg" set "VCPKG_ROOT=%CD%\vcpkg"
     if not defined VCPKG_ROOT if exist "%LOCALAPPDATA%\vcpkg" set "VCPKG_ROOT=%LOCALAPPDATA%\vcpkg"
 )
+
 if defined VCPKG_ROOT (
     if exist "%VCPKG_ROOT%\installed\%TRIPLET%\lib\git2.lib" set "LIBGIT2_INSTALLED=true"
     if exist "%VCPKG_ROOT%\installed\%TRIPLET%\lib\yaml-cpp.lib" set "YAMLCPP_INSTALLED=true"
@@ -106,36 +125,60 @@ if defined VCPKG_ROOT (
     if exist "%VCPKG_ROOT%\installed\%TRIPLET%\lib\zlib.lib" set "ZLIB_INSTALLED=true"
 )
 
-if "%LIBGIT2_INSTALLED%"=="true" if "%YAMLCPP_INSTALLED%"=="true" if "%JSON_INSTALLED%"=="true" if "%ZLIB_INSTALLED%"=="true" (
+set "ALL_DEPS_INSTALLED=true"
+if /i not "%LIBGIT2_INSTALLED%"=="true" set "ALL_DEPS_INSTALLED=false"
+if /i not "%YAMLCPP_INSTALLED%"=="true" set "ALL_DEPS_INSTALLED=false"
+if /i not "%JSON_INSTALLED%"=="true" set "ALL_DEPS_INSTALLED=false"
+if /i not "%ZLIB_INSTALLED%"=="true" set "ALL_DEPS_INSTALLED=false"
+
+if /i "%ALL_DEPS_INSTALLED%"=="true" (
     echo libgit2, yaml-cpp, nlohmann-json and zlib already installed.
-    goto :eof
+    exit /b 0
 )
 
 set "PKGS="
-if "%LIBGIT2_INSTALLED%"=="false" set "PKGS=!PKGS! libgit2:%TRIPLET%"
-if "%YAMLCPP_INSTALLED%"=="false" set "PKGS=!PKGS! yaml-cpp:%TRIPLET%"
-if "%JSON_INSTALLED%"=="false" set "PKGS=!PKGS! nlohmann-json:%TRIPLET%"
-if "%ZLIB_INSTALLED%"=="false" set "PKGS=!PKGS! zlib:%TRIPLET%"
+call :append_pkg_if_missing "%LIBGIT2_INSTALLED%" "libgit2:%TRIPLET%"
+call :append_pkg_if_missing "%YAMLCPP_INSTALLED%" "yaml-cpp:%TRIPLET%"
+call :append_pkg_if_missing "%JSON_INSTALLED%" "nlohmann-json:%TRIPLET%"
+call :append_pkg_if_missing "%ZLIB_INSTALLED%" "zlib:%TRIPLET%"
 
 if exist vcpkg (
-    echo Installing%PKGS% via vcpkg...
-    vcpkg\vcpkg install%PKGS%
-    goto :eof
+    echo Installing %PKGS% via vcpkg...
+    vcpkg\vcpkg install %PKGS%
+    exit /b %ERRORLEVEL%
 )
 
 echo Dependencies not fully installed. Downloading vcpkg to install missing ones...
-where git >nul 2>nul
-if errorlevel 1 (
+where git >nul 2>nul || (
     echo Git is required to download vcpkg. Please install Git and retry.
     exit /b 1
 )
 
-git clone https://github.com/microsoft/vcpkg
+git clone https://github.com/microsoft/vcpkg >nul
+if errorlevel 1 (
+    echo Failed to clone vcpkg.
+    exit /b 1
+)
 cd vcpkg
-call bootstrap-vcpkg.bat
+call bootstrap-vcpkg.bat || (
+    echo Failed to bootstrap vcpkg.
+    cd ..
+    exit /b 1
+)
 cd ..
-vcpkg\vcpkg install%PKGS%
 
+echo Installing %PKGS% via vcpkg...
+vcpkg\vcpkg install %PKGS%
+exit /b %ERRORLEVEL%
+
+:append_pkg_if_missing
+if /i "%~1"=="true" exit /b 0
+if defined PKGS (
+    set "PKGS=%PKGS% %~2"
+) else (
+    set "PKGS=%~2"
+)
+exit /b 0
+
+:script_end
 endlocal
-
-
