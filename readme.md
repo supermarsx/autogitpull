@@ -3,6 +3,7 @@
 # autogitpull
 
 [![CI](https://github.com/supermarsx/autogitpull/actions/workflows/ci.yml/badge.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/ci.yml)
+[![Rolling Release](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml/badge.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml)
 [![Coverage](https://raw.githubusercontent.com/supermarsx/autogitpull/badges/coverage.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/github/downloads/supermarsx/autogitpull/total)](https://github.com/supermarsx/autogitpull/releases)
 [![Stars](https://img.shields.io/github/stars/supermarsx/autogitpull?style=social)](https://github.com/supermarsx/autogitpull/stargazers)
