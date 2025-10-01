@@ -44,6 +44,7 @@ jobs:
         id: check_releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           SINCE="$(python3 -c 'from datetime import datetime, timedelta; print((datetime.utcnow() - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ"))')"
           COUNT=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
