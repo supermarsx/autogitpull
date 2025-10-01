@@ -4,6 +4,16 @@ IFS=$'\n\t'
 
 echo "Installing dependencies..."
 
+# Resolve repo root (for local venv tools if needed)
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+ensure_path() {
+  case ":$PATH:" in
+    *":$1:"*) ;;
+    *) export PATH="$1:$PATH" ;;
+  esac
+}
+
 # Auto-detect make and cmake if missing from PATH
 for tool in make cmake; do
     if ! command -v "$tool" >/dev/null 2>&1; then
@@ -19,18 +29,52 @@ for tool in make cmake; do
     fi
 done
 
-# Install cpplint if missing
-if ! command -v cpplint >/dev/null; then
-    if command -v pip3 >/dev/null; then
-        pip3 install --user cpplint
-        export PATH="$HOME/.local/bin:$PATH"
-    elif command -v pip >/dev/null; then
-        pip install --user cpplint
-        export PATH="$HOME/.local/bin:$PATH"
-    else
-        echo "pip not found. Please install cpplint manually." >&2
+install_cpplint() {
+  if command -v cpplint >/dev/null 2>&1; then
+    return 0
+  fi
+
+  case "$(uname -s)" in
+    Darwin*)
+      if command -v brew >/dev/null 2>&1; then
+        echo "Installing cpplint via Homebrew..."
+        if brew install cpplint; then
+          return 0
+        fi
+      fi
+      ;;
+  esac
+
+  if command -v pipx >/dev/null 2>&1; then
+    echo "Installing cpplint via pipx..."
+    if pipx install --include-deps cpplint; then
+      # pipx installs shims into ~/.local/bin by default
+      ensure_path "$HOME/.local/bin"
+      return 0
     fi
-fi
+  fi
+
+  # Fallback: create a local venv under .tools and install cpplint there
+  echo "Setting up local venv for cpplint (no system pip changes)..."
+  TOOLS_DIR="$REPO_ROOT/.tools"
+  VENV_DIR="$TOOLS_DIR/venv"
+  mkdir -p "$TOOLS_DIR"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -m venv "$VENV_DIR"
+  else
+    echo "python3 not found. Cannot create virtual environment for cpplint." >&2
+    return 1
+  fi
+  # shellcheck disable=SC1090
+  source "$VENV_DIR/bin/activate"
+  python -m pip install --upgrade pip >/dev/null 2>&1 || true
+  python -m pip install cpplint
+  # Prefer using the venv bin on PATH for this session
+  ensure_path "$VENV_DIR/bin"
+}
+
+# Install cpplint if missing (without breaking externally-managed Python envs)
+install_cpplint || echo "Warning: cpplint installation failed; ensure it is available before committing." >&2
 
 # Check if libgit2, yaml-cpp, nlohmann-json and zlib are installed
 libgit2_installed=false
@@ -114,4 +158,3 @@ case "$os" in
         exit 1
         ;;
 esac
-
