@@ -198,14 +198,16 @@ jobs:
         run: |
           mkdir -p coverage/report
           gcovr --root . \
-                --branches \
                 --exclude 'tests/' \
                 --exclude 'examples/' \
                 --exclude 'build/_deps/' \
                 --xml coverage/report/coverage.xml \
                 --txt coverage/report/coverage.txt \
+                --txt-metric branch \
                 --html coverage/report/coverage.html \
-                --html-details coverage/report/coverage-details.html
+                --html-details coverage/report/coverage-details.html \
+                --gcov-ignore-errors source_not_found \
+                --gcov-ignore-errors no_working_dir_found
           genbadge coverage -i coverage/report/coverage.xml -o coverage/report/coverage.svg
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
