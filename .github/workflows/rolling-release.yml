@@ -32,11 +32,11 @@ jobs:
           - name: macos-arm64
             runner: macos-14
             shell: bash
-          - name: windows-arm64
-            runner: windows-11-arm
-            shell: powershell
           - name: windows-x64
             runner: windows-latest
+            shell: powershell
+          - name: windows-arm64
+            runner: windows-11-arm
             shell: powershell
     runs-on: ${{ matrix.runner }}
     steps:

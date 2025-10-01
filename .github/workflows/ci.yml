@@ -184,16 +184,16 @@ jobs:
             shell: bash
             generator: "Unix Makefiles"
             cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64"
-          - name: windows-arm64
-            runner: windows-11-arm
-            shell: powershell
-            generator: "Visual Studio 17 2022"
-            cmake_args: "-A ARM64"
           - name: windows-x64
             runner: windows-latest
             shell: powershell
             generator: "Visual Studio 17 2022"
             cmake_args: ""
+          - name: windows-arm64
+            runner: windows-11-arm
+            shell: powershell
+            generator: "Visual Studio 17 2022"
+            cmake_args: "-A ARM64"
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
