@@ -103,7 +103,7 @@ jobs:
             generator: "Unix Makefiles"
             cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
           - name: windows-arm64
-            runner: windows-2025-arm
+            runner: windows-11-arm
             shell: powershell
             generator: "Visual Studio 17 2022"
             cmake_args: "-A ARM64"
@@ -175,7 +175,7 @@ jobs:
             generator: "Unix Makefiles"
             cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64"
           - name: windows-arm64
-            runner: windows-2025-arm
+            runner: windows-11-arm
             shell: powershell
             generator: "Visual Studio 17 2022"
             cmake_args: "-A ARM64"

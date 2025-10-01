@@ -35,7 +35,7 @@ jobs:
             runner: macos-14
             shell: bash
           - name: windows-arm64
-            runner: windows-2025-arm
+            runner: windows-11-arm
             shell: powershell
           - name: windows-x64
             runner: windows-latest
