@@ -32,6 +32,9 @@ jobs:
           - name: macos-arm64
             runner: macos-14
             shell: bash
+          - name: windows-arm64
+            runner: windows-2025-arm
+            shell: powershell
           - name: windows-x64
             runner: windows-latest
             shell: powershell
@@ -82,7 +85,12 @@ jobs:
       - name: Configure (Windows)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
         shell: powershell
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
+        run: |
+          if "%PROCESSOR_ARCHITECTURE%"=="ARM64" (
+            cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON -A ARM64
+          ) else (
+            cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
+          )
       - name: Configure (*nix)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
         shell: bash
