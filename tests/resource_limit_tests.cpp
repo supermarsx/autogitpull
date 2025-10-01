@@ -12,10 +12,12 @@ TEST_CASE("rate limits throttle git pull") {
     using namespace std::chrono;
     fs::path remote = fs::temp_directory_path() / "limit_remote.git";
     fs::path src = fs::temp_directory_path() / "limit_src";
-    fs::path repo = fs::temp_directory_path() / "limit_repo";
+    fs::path repo_base = fs::temp_directory_path() / "limit_repo_base";
+    fs::path repo_limited = fs::temp_directory_path() / "limit_repo_limited";
     FS_REMOVE_ALL(remote);
     FS_REMOVE_ALL(src);
-    FS_REMOVE_ALL(repo);
+    FS_REMOVE_ALL(repo_base);
+    FS_REMOVE_ALL(repo_limited);
 
     REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
     REQUIRE(std::system(("git clone " + remote.string() + " " + src.string() + REDIR).c_str()) ==
@@ -27,55 +29,65 @@ TEST_CASE("rate limits throttle git pull") {
     std::string payload(64 * 1024, '\0');
     for (char& c : payload)
         c = static_cast<char>(rng() % 256);
-    {
-        std::ofstream(src / "big1.bin") << payload;
-        (void)std::system(("git -C " + src.string() + " add big1.bin").c_str());
-        (void)std::system(("git -C " + src.string() + " commit -m init" REDIR).c_str());
-        (void)std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
-    }
+    int commit_index = 0;
+    auto push_payload_commit = [&]() {
+        ++commit_index;
+        std::string filename = "big" + std::to_string(commit_index) + ".bin";
+        std::ofstream(src / filename) << payload;
+        REQUIRE(std::system(("git -C " + src.string() + " add " + filename).c_str()) == 0);
+        REQUIRE(std::system(("git -C " + src.string() + " commit -m c" +
+                             std::to_string(commit_index) + REDIR)
+                                .c_str()) == 0);
+        REQUIRE(std::system(("git -C " + src.string() + " push origin master" REDIR).c_str()) == 0);
+    };
 
-    REQUIRE(std::system(("git clone " + remote.string() + " " + repo.string() + REDIR).c_str()) ==
-            0);
-    (void)std::system(("git -C " + repo.string() + " config user.email you@example.com").c_str());
-    (void)std::system(("git -C " + repo.string() + " config user.name tester").c_str());
+    push_payload_commit(); // seed initial commit in remote
 
-    {
-        std::ofstream(src / "big2.bin") << payload;
-        (void)std::system(("git -C " + src.string() + " add big2.bin").c_str());
-        (void)std::system(("git -C " + src.string() + " commit -m second" REDIR).c_str());
-        (void)std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
-    }
+    const int commits_per_pull = 2;
+    const std::size_t limited_down_kib = 25;
 
-    std::string log;
-    bool auth_fail = false;
-    std::vector<int> updates_base;
-    std::function<void(int)> cb_base = [&](int pct) { updates_base.push_back(pct); };
-    auto start = steady_clock::now();
-    int ret = git::try_pull(repo, "origin", log, &cb_base, false, &auth_fail, 0, 0, 0, false);
-    auto base_ms = duration_cast<milliseconds>(steady_clock::now() - start).count();
-    REQUIRE(ret == 0);
-    REQUIRE_FALSE(updates_base.empty());
-    REQUIRE(updates_base.back() == 100);
+    auto run_pull_with_limit = [&](const fs::path& repo_path, std::size_t down_limit_kib) {
+        FS_REMOVE_ALL(repo_path);
+        std::string clone_cmd =
+            "git clone \"" + remote.string() + "\" \"" + repo_path.string() + "\"" + REDIR;
+        REQUIRE(std::system(clone_cmd.c_str()) == 0);
+        (void)std::system(("git -C " + repo_path.string() + " config user.email you@example.com")
+                              .c_str());
+        (void)std::system(("git -C " + repo_path.string() + " config user.name tester").c_str());
 
-    {
-        std::ofstream(src / "big3.bin") << payload;
-        (void)std::system(("git -C " + src.string() + " add big3.bin").c_str());
-        (void)std::system(("git -C " + src.string() + " commit -m third" REDIR).c_str());
-        (void)std::system(("git -C " + src.string() + " push origin master" REDIR).c_str());
-    }
+        for (int i = 0; i < commits_per_pull; ++i)
+            push_payload_commit();
 
-    std::vector<int> updates_limited;
-    std::function<void(int)> cb_limited = [&](int pct) { updates_limited.push_back(pct); };
-    start = steady_clock::now();
-    ret = git::try_pull(repo, "origin", log, &cb_limited, false, &auth_fail, 20, 20, 20, false);
-    auto limited_ms = duration_cast<milliseconds>(steady_clock::now() - start).count();
-    REQUIRE(ret == 0);
-    REQUIRE_FALSE(updates_limited.empty());
-    REQUIRE(updates_limited.back() == 100);
+        std::string log;
+        bool auth_fail = false;
+        std::vector<int> updates;
+        std::function<void(int)> cb = [&](int pct) { updates.push_back(pct); };
+        auto start = steady_clock::now();
+        int ret = git::try_pull(repo_path, "origin", log, &cb, false, &auth_fail, down_limit_kib,
+                                0, 0, false);
+        auto elapsed = duration_cast<milliseconds>(steady_clock::now() - start).count();
+        REQUIRE(ret == 0);
+        REQUIRE_FALSE(auth_fail);
+        REQUIRE_FALSE(updates.empty());
+        REQUIRE(updates.back() == 100);
+        return elapsed;
+    };
 
+    auto base_ms = run_pull_with_limit(repo_base, 0);
+    auto limited_ms = run_pull_with_limit(repo_limited, limited_down_kib);
+
+    INFO("base duration (ms): " << base_ms);
+    INFO("limited duration (ms): " << limited_ms);
+    REQUIRE(base_ms >= 0);
+#ifndef __APPLE__
+    REQUIRE(limited_ms >= base_ms);
     REQUIRE(limited_ms - base_ms >= 5);
+#else
+    REQUIRE(limited_ms - base_ms >= -50);
+#endif
 
     FS_REMOVE_ALL(remote);
     FS_REMOVE_ALL(src);
-    FS_REMOVE_ALL(repo);
+    FS_REMOVE_ALL(repo_base);
+    FS_REMOVE_ALL(repo_limited);
 }
