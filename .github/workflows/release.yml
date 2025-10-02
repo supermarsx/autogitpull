@@ -128,6 +128,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.release_tag }}" ]; then
+            echo "TAG_NAME=${{ inputs.release_tag }}" >> "$GITHUB_ENV"
+          elif [[ "${GITHUB_REF:-${{ github.ref }}}" == refs/tags/* ]]; then
+            ref_tag="${GITHUB_REF#refs/tags/}"
+            # Fallback for older runners
+            if [ -z "$ref_tag" ]; then ref_tag="${{ github.ref_name }}"; fi
+            echo "TAG_NAME=$ref_tag" >> "$GITHUB_ENV"
+          else
+            echo "No tag context and no release_tag input supplied" >&2
+            exit 1
+          fi
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -137,6 +152,6 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.release_tag != '' && inputs.release_tag || github.ref_name }}
+          tag_name: ${{ env.TAG_NAME }}
           files: |
-            dist/**/autogitpull*
+            dist/**/autogitpull-*

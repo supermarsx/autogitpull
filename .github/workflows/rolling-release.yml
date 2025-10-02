@@ -151,7 +151,7 @@ jobs:
           : "${ROLLING_BIN_DIR:?ROLLING_BIN_DIR must be set by the resolve step}"
           DEST="dist/${{ matrix.name }}"
           mkdir -p "$DEST"
-          install -m 755 "$ROLLING_BIN_DIR/autogitpull" "$DEST/autogitpull"
+          install -m 755 "$ROLLING_BIN_DIR/autogitpull" "$DEST/autogitpull-${{ matrix.name }}"
           install -m 644 readme.md "$DEST/README.md"
           install -m 644 license.md "$DEST/LICENSE.md"
       - name: Stage artifact (Windows)
@@ -160,7 +160,7 @@ jobs:
         run: |
           $dest = "dist/${{ matrix.name }}"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Copy-Item -Path "build/RelWithDebInfo/autogitpull.exe" -Destination (Join-Path $dest 'autogitpull.exe') -Force
+          Copy-Item -Path "build/RelWithDebInfo/autogitpull.exe" -Destination (Join-Path $dest 'autogitpull-${{ matrix.name }}.exe') -Force
           Copy-Item -Path readme.md -Destination (Join-Path $dest 'README.md') -Force
           Copy-Item -Path license.md -Destination (Join-Path $dest 'LICENSE.md') -Force
       - name: Upload artifact
@@ -213,6 +213,6 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            dist/**/autogitpull*
+            dist/**/autogitpull-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
