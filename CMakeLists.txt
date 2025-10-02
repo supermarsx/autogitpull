@@ -69,6 +69,20 @@ endif()
 
 # --- END: flag normalization ---
 
+# --- BEGIN: host-arch flag sanitization ---
+# Some CI environments inject target-specific flags (e.g., RISC-V -mabi=lp64)
+# via environment/toolchain wrappers. Strip such flags on non-RISC-V hosts.
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "riscv")
+  foreach(_var IN ITEMS CMAKE_C_FLAGS CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS)
+    if(DEFINED ${_var})
+      string(REGEX REPLACE "(^| )-mabi=[^ ]+" "" ${_var} "${${_var}}")
+      string(REGEX REPLACE "(^| )-march=[^ ]+" "" ${_var} "${${_var}}")
+      set(${_var} "${${_var}}" CACHE STRING "" FORCE)
+    endif()
+  endforeach()
+endif()
+# --- END: host-arch flag sanitization ---
+
 # Make option() honor cache values in subprojects
 cmake_policy(SET CMP0077 NEW)
 

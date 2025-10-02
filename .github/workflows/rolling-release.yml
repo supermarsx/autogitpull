@@ -98,6 +98,13 @@ jobs:
         env:
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
+          set -euo pipefail
+          if [[ "${RUNNER_OS}" == "Linux" ]]; then
+            export CC=gcc CXX=g++
+          else
+            export CC=clang CXX=clang++
+          fi
+          unset CFLAGS CXXFLAGS LDFLAGS
           cmake --preset rolling -DCODEX_FORCE_NO_NSEC=ON
       - name: Resolve binary directory (Linux/macOS)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'

@@ -75,6 +75,14 @@ jobs:
         env:
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
+          set -euo pipefail
+          if [[ "${RUNNER_OS}" == "Linux" ]]; then
+            export CC=gcc CXX=g++
+          else
+            export CC=clang CXX=clang++
+          fi
+          # Sanitize inherited flags that can break host builds
+          unset CFLAGS CXXFLAGS LDFLAGS
           cmake --preset release -DCMAKE_EXE_LINKER_FLAGS_RELEASE=-s -DUSE_NTLMCLIENT=OFF
       - name: Build (Linux/macOS)
         if: runner.os != 'Windows'
