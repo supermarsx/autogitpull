@@ -267,19 +267,22 @@ void parse_limits(Options& opts, ArgParser& parser,
 
 /**
  * Parse per-repository overrides from configuration maps and populate
- * opts.repo_settings. CLI does not specify per-repo values; only config
+ * opts.repo_settings.
+ * CLI does not specify per-repo values; only config
  * maps are considered here.
  *
- * @param opts           Options to receive per-repo settings.
- * @param cfg_repo_opts  Map of repo path -> option map parsed from config.
+ * @param opts
+ * Options to receive per-repo settings.
+ * @param cfg_repo_opts  Map of repo path -> option map
+ * parsed from config.
  */
-void parse_repo_settings(Options& opts,
-                         const std::map<std::string, std::map<std::string, std::string>>&
-                             cfg_repo_opts);
+void parse_repo_settings(
+    Options& opts, const std::map<std::string, std::map<std::string, std::string>>& cfg_repo_opts);
 
 /**
  * Parse logging (files, size, syslog) and UI (colors, theme, row order,
- * commit display) related options from CLI/config.
+ * commit display)
+ * related options from CLI/config.
  */
 void parse_logging_and_ui(Options& opts, ArgParser& parser,
                           const std::function<bool(const std::string&)>& cfg_flag,
@@ -295,26 +298,28 @@ void parse_timing_options(Options& opts, ArgParser& parser,
 
 /**
  * Load config files specified via CLI and optional auto-discovery.
- * Populates cfg_opts and cfg_repo_opts, and returns the resolved config path.
+ * Populates cfg_opts and
+ * cfg_repo_opts, and returns the resolved config path.
  */
-void load_config_and_auto(int argc, char* argv[],
-                          std::map<std::string, std::string>& cfg_opts,
+void load_config_and_auto(int argc, char* argv[], std::map<std::string, std::string>& cfg_opts,
                           std::map<std::string, std::map<std::string, std::string>>& cfg_repo_opts,
                           std::filesystem::path& config_file);
 
 /**
  * Apply persist/attach defaults and resolve history file location.
- * Also validates root presence when required.
+ * Also validates root
+ * presence when required.
  */
 void finalize_persist_and_history(Options& opts, ArgParser& parser,
                                   const std::function<bool(const std::string&)>& cfg_flag,
                                   const std::function<std::string(const std::string&)>& cfg_opt,
-                                  const std::map<std::string, std::string>& cfg_opts,
-                                  int argc, char* argv[]);
+                                  const std::map<std::string, std::string>& cfg_opts, int argc,
+                                  char* argv[]);
 
 /**
  * Parse miscellaneous behavior and safety flags, including resets, mutant
- * mode, ignore editing, and depth.
+ * mode, ignore
+ * editing, and depth.
  */
 void parse_behavior_flags(Options& opts, ArgParser& parser,
                           const std::function<bool(const std::string&)>& cfg_flag,

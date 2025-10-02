@@ -477,10 +477,9 @@ Options parse_options(int argc, char* argv[]) {
         parser.has_flag("--exit-on-timeout") || cfg_flag("--exit-on-timeout");
     parse_root_and_repo_filters(opts, parser, cfg_opt, cfg_opts);
     finalize_persist_and_history(opts, parser, cfg_flag, cfg_opt, cfg_opts, argc, argv);
-    
 
     parse_repo_settings(opts, cfg_repo_opts);
-    
+
     opts.config_file = config_file;
     opts.original_args.clear();
     for (int i = 0; i < argc; ++i) {
