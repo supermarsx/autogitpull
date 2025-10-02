@@ -17,7 +17,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Ensure only one release per tag (or input) runs at a time
+  group: ${{ github.workflow }}-${{ inputs.release_tag || github.ref_name || github.ref }}
   cancel-in-progress: true
 
 jobs:

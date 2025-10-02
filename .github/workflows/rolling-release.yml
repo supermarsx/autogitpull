@@ -10,11 +10,14 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Cancel earlier rolling runs for the same source branch
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch || github.ref_name || github.ref }}
   cancel-in-progress: true
 
 jobs:
   build-test-release:
+    outputs:
+      NEXT_TAG: ${{ steps.rolling_tag.outputs.NEXT_TAG }}
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     strategy:
       fail-fast: false
@@ -177,10 +180,12 @@ jobs:
           name: autogitpull-${{ matrix.name }}
           path: dist/${{ matrix.name }}/*
 
-      - name: Get next rolling tag
-        if: steps.check_releases.outputs.skip_build != 'true'
+      - name: Get next rolling tag (*nix)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
         id: rolling_tag
+        shell: bash
         run: |
+          set -euo pipefail
           TODAY=$(date +'%Y.%m.%d')
           git fetch --tags
           LAST=$(git tag --list "${TODAY}-*" | grep -E "^${TODAY}-[0-9]+$" | sed "s/^${TODAY}-//" | sort -n | tail -1)
@@ -190,17 +195,39 @@ jobs:
             NEXT_NUM=$((LAST + 1))
             NEXT="${TODAY}-${NEXT_NUM}"
           fi
-          echo "NEXT_TAG=$NEXT" >> $GITHUB_ENV
+          echo "NEXT_TAG=$NEXT" >> "$GITHUB_ENV"
+          echo "NEXT_TAG=$NEXT" >> "$GITHUB_OUTPUT"
           echo "Rolling tag: $NEXT"
+      - name: Get next rolling tag (Windows)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        id: rolling_tag_win
+        shell: powershell
+        run: |
+          $today = Get-Date -Format "yyyy.MM.dd"
+          git fetch --tags
+          $tags = git tag --list "$today-*"
+          $last = ($tags | ForEach-Object { ($_ -split '-')[-1] } | Where-Object { $_ -match '^[0-9]+$' } | Sort-Object {[int]$_} | Select-Object -Last 1)
+          if (-not $last) { $next = "$today-1" } else { $next = "$today-$([int]$last + 1)" }
+          "NEXT_TAG=$next" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "NEXT_TAG=$next" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Rolling tag: $next"
 
-      - name: Tag commit
-        if: steps.check_releases.outputs.skip_build != 'true'
+      - name: Tag commit (*nix)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
         shell: bash
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git tag "$NEXT_TAG"
           git push origin "$NEXT_TAG"
+      - name: Tag commit (Windows)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        shell: powershell
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag $env:NEXT_TAG
+          git push origin $env:NEXT_TAG
 
   publish:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
@@ -214,9 +241,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.NEXT_TAG }}
-          name: Rolling Release ${{ env.NEXT_TAG }}
-          body: Automated rolling release for ${{ env.NEXT_TAG }}
+          tag_name: ${{ needs.build-test-release.outputs.NEXT_TAG }}
+          name: Rolling Release ${{ needs.build-test-release.outputs.NEXT_TAG }}
+          body: Automated rolling release for ${{ needs.build-test-release.outputs.NEXT_TAG }}
           draft: false
           prerelease: true
           files: |

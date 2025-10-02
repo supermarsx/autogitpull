@@ -697,10 +697,24 @@ add_library(autogitpull_lib STATIC
     src/ignore_utils.cpp
     src/debug_utils.cpp
     src/help_text.cpp
-    src/scanner.cpp
+    src/scanner/hook.cpp
+    src/scanner/list.cpp
+    src/scanner/pull.cpp
+    src/scanner/repo.cpp
+    src/scanner/scan.cpp
     src/file_watch.cpp
     src/ui_loop.cpp
     src/options.cpp
+    src/options/service.cpp
+    src/options/tracker.cpp
+    src/options/limits.cpp
+    src/options/repo_settings.cpp
+    src/options/ui.cpp
+    src/options/config.cpp
+    src/options/history.cpp
+    src/options/timing.cpp
+    src/options/behavior.cpp
+    src/options/repo_args.cpp
     src/parse_utils.cpp
     src/history_utils.cpp
     src/process_monitor.cpp
@@ -917,7 +931,11 @@ if(NOT MSVC)
     add_executable(memory_leak_test
         tests/memory_leak.cpp
         src/autogitpull.cpp
-        src/scanner.cpp
+        src/scanner/hook.cpp
+        src/scanner/list.cpp
+        src/scanner/pull.cpp
+        src/scanner/repo.cpp
+        src/scanner/scan.cpp
         src/file_watch.cpp
         src/ui_loop.cpp
         src/git_utils.cpp
