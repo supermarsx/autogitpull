@@ -54,10 +54,9 @@ jobs:
         uses: aminya/setup-cpp@v1
       - name: Enable ccache
         if: runner.os != 'Windows'
-        uses: actions/setup-ccache@v1
+        uses: hendrikmuhs/ccache-action@v1.2.19
         with:
-          key: ${{ runner.os }}-release-ccache-${{ github.run_id }}
-          restore-keys: ${{ runner.os }}-release-ccache-
+          key: ${{ runner.os }}-release-ccache-${{ github.ref_name }}
       - name: Cache CMake dependencies
         uses: actions/cache@v4
         with:
