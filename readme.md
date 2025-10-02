@@ -308,6 +308,19 @@ succeeds without manual tweaks.
 
 ## Building
 
+### One-liner cross-platform build
+
+Prefer CMake directly, but for convenience a single script wraps it on Linux/macOS/Windows:
+
+```bash
+python3 scripts/build.py                 # Release build into ./build
+python3 scripts/build.py --config Debug  # Debug build
+python3 scripts/build.py --test          # Build + run tests (ctest)
+```
+
+It only invokes CMake/CTest under the hood (no custom build logic). On Windows,
+run it from Developer PowerShell or a shell with CMake in PATH.
+
 ### Using the provided scripts
 
 Run `make` (Linux/macOS), `scripts/compile.bat` (MinGW) or `scripts/compile-cl.bat` (MSVC) to
