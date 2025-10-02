@@ -90,8 +90,8 @@ bool matches(const std::filesystem::path& path,
         const bool has_dirsep = pat_str.find('/') != std::string::npos;
 
         // Fast path: no glob characters -> exact match against name or full path
-        const bool has_glob = pat_str.find('*') != std::string::npos ||
-                              pat_str.find('?') != std::string::npos;
+        const bool has_glob =
+            pat_str.find('*') != std::string::npos || pat_str.find('?') != std::string::npos;
         if (!has_glob) {
             if (has_dirsep) {
                 if (full == pat_str)
