@@ -7,6 +7,11 @@ on:
       - 'v*'
       - '*/release'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Tag name to publish assets to (e.g., v0.1.0)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -70,6 +75,14 @@ jobs:
         env:
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
+          set -euo pipefail
+          if [[ "${RUNNER_OS}" == "Linux" ]]; then
+            export CC=gcc CXX=g++
+          else
+            export CC=clang CXX=clang++
+          fi
+          # Sanitize inherited flags that can break host builds
+          unset CFLAGS CXXFLAGS LDFLAGS
           cmake --preset release -DCMAKE_EXE_LINKER_FLAGS_RELEASE=-s -DUSE_NTLMCLIENT=OFF
       - name: Build (Linux/macOS)
         if: runner.os != 'Windows'
@@ -91,10 +104,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BIN_DIR="build/release/$(uname)-$(uname -m)"
           DEST="dist/${{ matrix.name }}"
           mkdir -p "$DEST"
-          install -m 755 "$BIN_DIR/autogitpull" "$DEST/autogitpull"
+          # Locate the built binary; presets place it under build/release/$(uname)
+          BIN_FILE="$(find build -type f -name autogitpull -print -quit)"
+          if [[ -z "${BIN_FILE}" ]]; then
+            echo "Could not locate built autogitpull binary under build/" >&2
+            find build -maxdepth 4 -type f -printf "  %p\n" || true
+            exit 1
+          fi
+          install -m 755 "${BIN_FILE}" "$DEST/autogitpull-${{ matrix.name }}"
           install -m 644 readme.md "$DEST/README.md"
           install -m 644 license.md "$DEST/LICENSE.md"
       - name: Stage artifact (Windows)
@@ -103,7 +122,7 @@ jobs:
         run: |
           $dest = "dist/${{ matrix.name }}"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Copy-Item -Path "build/Release/autogitpull.exe" -Destination (Join-Path $dest 'autogitpull.exe') -Force
+          Copy-Item -Path "build/Release/autogitpull.exe" -Destination (Join-Path $dest 'autogitpull-${{ matrix.name }}.exe') -Force
           Copy-Item -Path readme.md -Destination (Join-Path $dest 'README.md') -Force
           Copy-Item -Path license.md -Destination (Join-Path $dest 'LICENSE.md') -Force
       - name: Upload artifact
@@ -117,6 +136,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.release_tag }}" ]; then
+            echo "TAG_NAME=${{ inputs.release_tag }}" >> "$GITHUB_ENV"
+          elif [[ "${GITHUB_REF:-${{ github.ref }}}" == refs/tags/* ]]; then
+            ref_tag="${GITHUB_REF#refs/tags/}"
+            # Fallback for older runners
+            if [ -z "$ref_tag" ]; then ref_tag="${{ github.ref_name }}"; fi
+            echo "TAG_NAME=$ref_tag" >> "$GITHUB_ENV"
+          else
+            echo "No tag context and no release_tag input supplied" >&2
+            exit 1
+          fi
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -126,5 +160,6 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG_NAME }}
           files: |
-            dist/**/autogitpull*
+            dist/**/autogitpull-*
