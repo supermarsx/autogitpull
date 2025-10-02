@@ -310,16 +310,23 @@ succeeds without manual tweaks.
 
 ### One-liner cross-platform build
 
-Prefer CMake directly, but for convenience a single script wraps it on Linux/macOS/Windows:
+Prefer CMake directly, but for convenience single-file wrappers are provided:
 
 ```bash
+# Python wrapper (Linux/macOS/Windows)
 python3 scripts/build.py                 # Release build into ./build
 python3 scripts/build.py --config Debug  # Debug build
 python3 scripts/build.py --test          # Build + run tests (ctest)
+
+# Shell wrapper (Linux/macOS) — delegates to Python if present
+bash scripts/build.sh --config RelWithDebInfo -j 8
+
+# PowerShell wrapper (Windows)
+pwsh -File scripts/build.ps1 -Config Release -Test
 ```
 
-It only invokes CMake/CTest under the hood (no custom build logic). On Windows,
-run it from Developer PowerShell or a shell with CMake in PATH.
+All wrappers only invoke CMake/CTest (no custom build logic). On Windows,
+run from Developer PowerShell (or any shell with CMake in PATH).
 
 ### Using the provided scripts
 
