@@ -105,7 +105,7 @@ jobs:
             find build -maxdepth 4 -type f -printf "  %p\n" || true
             exit 1
           fi
-          install -m 755 "${BIN_FILE}" "$DEST/autogitpull"
+          install -m 755 "${BIN_FILE}" "$DEST/autogitpull-${{ matrix.name }}"
           install -m 644 readme.md "$DEST/README.md"
           install -m 644 license.md "$DEST/LICENSE.md"
       - name: Stage artifact (Windows)
@@ -114,7 +114,7 @@ jobs:
         run: |
           $dest = "dist/${{ matrix.name }}"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Copy-Item -Path "build/Release/autogitpull.exe" -Destination (Join-Path $dest 'autogitpull.exe') -Force
+          Copy-Item -Path "build/Release/autogitpull.exe" -Destination (Join-Path $dest 'autogitpull-${{ matrix.name }}.exe') -Force
           Copy-Item -Path readme.md -Destination (Join-Path $dest 'README.md') -Force
           Copy-Item -Path license.md -Destination (Join-Path $dest 'LICENSE.md') -Force
       - name: Upload artifact
