@@ -81,11 +81,30 @@ void write_ignore_file(const std::filesystem::path& file,
 
 bool matches(const std::filesystem::path& path,
              const std::vector<std::filesystem::path>& patterns) {
-    std::string full = path.generic_string();
-    std::string name = path.filename().generic_string();
+    // Use inexpensive string forms once
+    const std::string full = path.generic_string();
+    const std::string name = path.filename().generic_string();
+
     for (const auto& pat : patterns) {
-        std::string pat_str = pat.generic_string();
-        if (pat_str.find('/') == std::string::npos) {
+        const std::string pat_str = pat.generic_string();
+        const bool has_dirsep = pat_str.find('/') != std::string::npos;
+
+        // Fast path: no glob characters -> exact match against name or full path
+        const bool has_glob = pat_str.find('*') != std::string::npos ||
+                              pat_str.find('?') != std::string::npos;
+        if (!has_glob) {
+            if (has_dirsep) {
+                if (full == pat_str)
+                    return true;
+            } else {
+                if (name == pat_str)
+                    return true;
+            }
+            continue;
+        }
+
+        // Glob path: fallback to platform-appropriate matching
+        if (!has_dirsep) {
 #ifdef _WIN32
             std::regex re(glob_to_regex(pat_str));
             if (std::regex_match(name, re))

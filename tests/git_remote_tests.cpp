@@ -20,8 +20,10 @@ static std::string run_cmd(const std::string& cmd) {
 }
 
 static void setup_repo(fs::path& repo, fs::path& remote, std::string& hash, std::time_t& ctime) {
-    remote = fs::temp_directory_path() / "fetch_remote.git";
-    repo = fs::temp_directory_path() / "fetch_local";
+    auto suffix = std::to_string(
+        static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+    remote = fs::temp_directory_path() / ("fetch_remote_" + suffix + ".git");
+    repo = fs::temp_directory_path() / ("fetch_local_" + suffix);
     FS_REMOVE_ALL(remote);
     FS_REMOVE_ALL(repo);
     REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);

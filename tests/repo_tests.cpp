@@ -63,8 +63,10 @@ TEST_CASE("Git utils GitHub url detection") {
 }
 
 static void create_seed_remote(fs::path& remote, fs::path& seed, const std::string& content) {
-    remote = fs::temp_directory_path() / "clone_remote.git";
-    seed = fs::temp_directory_path() / "clone_seed";
+    auto suffix = std::to_string(
+        static_cast<unsigned long long>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+    remote = fs::temp_directory_path() / ("clone_remote_" + suffix + ".git");
+    seed = fs::temp_directory_path() / ("clone_seed_" + suffix);
     FS_REMOVE_ALL(remote);
     FS_REMOVE_ALL(seed);
     REQUIRE(std::system(("git init --bare " + remote.string() + REDIR).c_str()) == 0);
