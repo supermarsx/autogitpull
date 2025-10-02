@@ -5,6 +5,7 @@
 
 #include <map>
 #include <string>
+#include <climits>
 
 #include "arg_parser.hpp"
 #include "options.hpp"
