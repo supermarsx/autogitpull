@@ -4,7 +4,7 @@ set -euo pipefail
 echo "[autogitpull] Dependency install script is deprecated."
 echo "CMake (FetchContent) now builds third-party libs automatically."
 
-declare -a missing
+missing=()
 for tool in cmake git; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     missing+=("$tool")
