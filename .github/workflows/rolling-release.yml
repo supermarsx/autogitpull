@@ -23,21 +23,27 @@ jobs:
           - name: ubuntu-x64
             runner: ubuntu-latest
             shell: bash
+            cmake_arch: x86_64
           - name: ubuntu-arm64
             runner: ubuntu-24.04-arm
             shell: bash
+            cmake_arch: aarch64
           - name: macos-x64
             runner: macos-13
             shell: bash
+            cmake_arch: x86_64
           - name: macos-arm64
             runner: macos-14
             shell: bash
+            cmake_arch: arm64
           - name: windows-x64
             runner: windows-latest
             shell: powershell
+            cmake_arch: x64
           - name: windows-arm64
             runner: windows-11-arm
             shell: powershell
+            cmake_arch: arm64
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout code
@@ -69,64 +75,81 @@ jobs:
         if: steps.check_releases.outputs.skip_build != 'true'
         uses: aminya/setup-cpp@v1
 
-      - name: Install dependencies (*nix)
+      - name: Enable ccache
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        uses: actions/setup-ccache@v1
+        with:
+          key: ${{ runner.os }}-rolling-ccache-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-rolling-ccache-
+
+      - name: Cache CMake dependencies
+        if: steps.check_releases.outputs.skip_build != 'true'
+        uses: actions/cache@v4
+        with:
+          path: build/**/_deps
+          key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt', 'cmake/**', '**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-
+
+      - name: Configure (Linux/macOS)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
         shell: bash
-        run: ./scripts/install_deps.sh
-      - name: Install dependencies (Windows)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
-        shell: powershell
-        run: scripts/install_deps.bat
-
-      - name: Install lint tools
-        if: steps.check_releases.outputs.skip_build != 'true'
-        run: pip install cpplint
-
+        env:
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+        run: |
+          cmake --preset rolling -DCODEX_FORCE_NO_NSEC=ON
+      - name: Build (Linux/macOS)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        shell: bash
+        run: cmake --build --preset rolling --parallel
+      - name: Run tests (Linux/macOS)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN_DIR="build/rolling/$(uname)-$(uname -m)"
+          ctest --test-dir "$BIN_DIR" -C RelWithDebInfo --output-on-failure --parallel
       - name: Configure (Windows)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
         shell: powershell
         run: |
-          if "%PROCESSOR_ARCHITECTURE%"=="ARM64" (
-            cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON -A ARM64
-          ) else (
-            cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
-          )
-      - name: Configure (*nix)
+          $arch = '${{ matrix.cmake_arch }}'
+          $generatorArgs = if ($arch -eq 'arm64') { '-A ARM64' } else { '-A x64' }
+          cmake -S . -B build -G "Visual Studio 17 2022" $generatorArgs -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCODEX_FORCE_NO_NSEC=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - name: Build (Windows)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        shell: powershell
+        run: cmake --build build --config RelWithDebInfo --parallel
+      - name: Run tests (Windows)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        shell: powershell
+        run: ctest --test-dir build -C RelWithDebInfo --output-on-failure || true
+      - name: Stage artifact (Linux/macOS)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
         shell: bash
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODEX_FORCE_NO_NSEC=ON
-      - name: Build
-        if: steps.check_releases.outputs.skip_build != 'true'
-        shell: bash
-        run: cmake --build build --config Release -j
-      - name: Run tests
-        if: steps.check_releases.outputs.skip_build != 'true'
-        shell: bash
-        run: ctest --test-dir build -C Release -R autogitpull_tests --output-on-failure || true
-      - name: Copy artifact to dist
-        if: steps.check_releases.outputs.skip_build != 'true'
-        shell: bash
         run: |
-          mkdir -p dist/${{ matrix.name }}
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            cp build/Release/autogitpull.exe dist/${{ matrix.name }}/autogitpull.exe || true
-          else
-            cp build/autogitpull dist/${{ matrix.name }}/autogitpull || true
-          fi
+          set -euo pipefail
+          BIN_DIR="build/rolling/$(uname)-$(uname -m)"
+          DEST="dist/${{ matrix.name }}"
+          mkdir -p "$DEST"
+          install -m 755 "$BIN_DIR/autogitpull" "$DEST/autogitpull"
+          install -m 644 readme.md "$DEST/README.md"
+          install -m 644 license.md "$DEST/LICENSE.md"
+      - name: Stage artifact (Windows)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $dest = "dist/${{ matrix.name }}"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item -Path "build/RelWithDebInfo/autogitpull.exe" -Destination (Join-Path $dest 'autogitpull.exe') -Force
+          Copy-Item -Path readme.md -Destination (Join-Path $dest 'README.md') -Force
+          Copy-Item -Path license.md -Destination (Join-Path $dest 'LICENSE.md') -Force
       - name: Upload artifact
         if: steps.check_releases.outputs.skip_build != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: autogitpull-${{ matrix.name }}
           path: dist/${{ matrix.name }}/*
-
-      - name: Build
-        if: steps.check_releases.outputs.skip_build != 'true'
-        run: make
-
-      - name: Run Tests
-        if: steps.check_releases.outputs.skip_build != 'true'
-        run: make test
 
       - name: Get next rolling tag
         if: steps.check_releases.outputs.skip_build != 'true'

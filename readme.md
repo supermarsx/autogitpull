@@ -255,20 +255,17 @@ JSON example:
 
 ## Build requirements
 
-This tool relies on [libgit2](https://libgit2.org/). The helper scripts
-`scripts/install_deps.sh` (Linux/macOS) and `scripts/install_deps.bat` (Windows) automatically
-download and install `libgit2` when needed. You can also run `make deps` on
-Unix-like systems to invoke the installer. The build requires the development
-package (named `libgit2-dev` on Debian/Ubuntu). The Makefile tries to link
-statically but falls back to dynamic linking when static libraries are
-unavailable. If you prefer to install the library yourself, follow the
-instructions below.
+This tool relies on [libgit2](https://libgit2.org/) together with
+`yaml-cpp`, [nlohmann/json](https://github.com/nlohmann/json), `zlib` and
+[Catch2](https://github.com/catchorg/Catch2) for testing. CMake fetches and
+builds these third-party libraries automatically through `FetchContent`, so a
+supported compiler plus CMake ≥ 3.20 and Git are the only prerequisites for a
+standard build. The legacy helper scripts `scripts/install_deps.sh`
+(Linux/macOS) and `scripts/install_deps.bat` (Windows) now simply verify that
+those tools are available on your `PATH`.
 
-Running the unit tests (`make test`) additionally requires the development
-headers and libraries for `yaml-cpp` and
-[nlohmann/json](https://github.com/nlohmann/json). The same installer scripts
-(`scripts/install_deps.sh` or `scripts/install_deps.bat`) will install these packages along with
-`libgit2`.
+If you prefer to provide system packages manually, follow the optional
+instructions below.
 
 ### Installing libgit2 on Linux
 
@@ -323,6 +320,8 @@ The repository also ships with `scripts/compile.sh` for Unix-like environments w
 will attempt to install a C++ compiler if one isn't present. Windows users get
 `scripts/compile.bat` (MinGW) and `scripts/compile-cl.bat` (MSVC) along with
 `scripts/install_deps.bat`, `scripts/install_libgit2_mingw.bat` and `scripts/run.bat`.
+The dependency installers remain for backwards compatibility but only perform
+basic tool checks now that CMake manages third-party libraries internally.
 
 Clean up intermediate files with `make clean`. Dedicated cleanup scripts are also
 available under `scripts/` as `scripts/clean.sh` (Unix-like systems) and `scripts/clean.bat`
@@ -375,24 +374,26 @@ These commands mirror what the scripts do internally.
 
 ### Building with CMake
 
-Alternatively, configure the project with CMake:
+Alternatively, configure the project with the bundled presets:
 
 ```bash
-cmake -S . -B build
-cmake --build build
+cmake --preset release -DCMAKE_EXE_LINKER_FLAGS_RELEASE=-s
+cmake --build --preset release -j
+# optional install
+cmake --install build/release/$(uname)-$(uname -m) --prefix /usr/local
 ```
 
-The resulting executable will appear in the `dist/` directory.
+The resulting executable will appear in the preset's binary directory
+(`build/release/<platform>`). Use `cmake --preset rolling` and `cmake --build
+--preset rolling` to create a `RelWithDebInfo` build that matches the
+rolling-release pipeline.
 
 ### Running tests
 
-Unit tests use [Catch2](https://github.com/catchorg/Catch2). If the library is
-not installed, CMake will automatically download it using `FetchContent`.
-`make test` requires the development packages for `libgit2`, `yaml-cpp`,
-`nlohmann-json` and `zlib`. Use `scripts/install_deps.sh` (Linux/macOS) or
-`scripts/install_deps.bat` (Windows) to install them before configuring and
-building the tests.
-Once the dependencies are in place, run `ctest`:
+Unit tests use [Catch2](https://github.com/catchorg/Catch2) together with the
+core dependencies handled by CMake's `FetchContent` flow, so no manual
+installation is required for standard builds. After configuring the project,
+run `ctest`:
 
 ```bash
 make test
@@ -431,8 +432,8 @@ make lint
 
 The CI workflow also executes this command and will fail on formatting or lint errors.
 
-`scripts/install_deps.sh` and `scripts/install_deps.bat` automatically install
-`cpplint` if it is missing.
+Install `cpplint` via your preferred package manager (e.g. `pipx install
+cpplint` or `brew install cpplint`) if it is not already available.
 
 ### Status labels
 
