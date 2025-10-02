@@ -91,10 +91,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BIN_DIR="build/release/$(uname)-$(uname -m)"
           DEST="dist/${{ matrix.name }}"
           mkdir -p "$DEST"
-          install -m 755 "$BIN_DIR/autogitpull" "$DEST/autogitpull"
+          # Locate the built binary; presets place it under build/release/$(uname)
+          BIN_FILE="$(find build -type f -name autogitpull -print -quit)"
+          if [[ -z "${BIN_FILE}" ]]; then
+            echo "Could not locate built autogitpull binary under build/" >&2
+            find build -maxdepth 4 -type f -printf "  %p\n" || true
+            exit 1
+          fi
+          install -m 755 "${BIN_FILE}" "$DEST/autogitpull"
           install -m 644 readme.md "$DEST/README.md"
           install -m 644 license.md "$DEST/LICENSE.md"
       - name: Stage artifact (Windows)
