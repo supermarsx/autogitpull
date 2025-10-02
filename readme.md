@@ -6,6 +6,8 @@
 [![Rolling Release](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml/badge.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml)
 [![Coverage](https://raw.githubusercontent.com/supermarsx/autogitpull/badges/coverage.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/github/downloads/supermarsx/autogitpull/total)](https://github.com/supermarsx/autogitpull/releases)
+[![Download Latest](https://img.shields.io/github/downloads/supermarsx/autogitpull/latest/total)](https://github.com/supermarsx/autogitpull/releases/latest)
+[![Issues](https://img.shields.io/github/issues/supermarsx/autogitpull)](https://github.com/supermarsx/autogitpull/issues)
 [![Stars](https://img.shields.io/github/stars/supermarsx/autogitpull?style=social)](https://github.com/supermarsx/autogitpull/stargazers)
 [![Forks](https://img.shields.io/github/forks/supermarsx/autogitpull?style=social)](https://github.com/supermarsx/autogitpull/network/members)
 [![Watchers](https://img.shields.io/github/watchers/supermarsx/autogitpull?style=social)](https://github.com/supermarsx/autogitpull/watchers)
