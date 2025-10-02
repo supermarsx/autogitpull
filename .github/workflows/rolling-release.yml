@@ -77,10 +77,11 @@ jobs:
 
       - name: Enable ccache
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
-        uses: actions/setup-ccache@v1
+        uses: hendrikmuhs/ccache-action@v1.2.19
         with:
-          key: ${{ runner.os }}-rolling-ccache-${{ github.run_id }}
-          restore-keys: ${{ runner.os }}-rolling-ccache-
+          key: ${{ runner.os }}-${{ matrix.name }}-rolling-ccache-${{ github.event.workflow_run.head_sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.name }}-rolling-ccache-
 
       - name: Cache CMake dependencies
         if: steps.check_releases.outputs.skip_build != 'true'
