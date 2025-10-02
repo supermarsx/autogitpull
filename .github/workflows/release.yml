@@ -7,6 +7,11 @@ on:
       - 'v*'
       - '*/release'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Tag name to publish assets to (e.g., v0.1.0)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -132,5 +137,6 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release_tag != '' && inputs.release_tag || github.ref_name }}
           files: |
             dist/**/autogitpull*
