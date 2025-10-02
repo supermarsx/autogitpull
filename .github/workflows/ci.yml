@@ -201,6 +201,7 @@ jobs:
                 --exclude 'tests/' \
                 --exclude 'examples/' \
                 --exclude 'build/_deps/' \
+                --gcov-ignore-parse-errors negative_hits.warn_once_per_file \
                 --xml coverage/report/coverage.xml \
                 --txt coverage/report/coverage.txt \
                 --txt-metric branch \
