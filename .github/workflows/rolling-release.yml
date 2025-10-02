@@ -109,12 +109,11 @@ jobs:
             echo "Binary root not found: $BIN_ROOT" >&2
             exit 1
           fi
-          mapfile -t BIN_DIRS < <(find "$BIN_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
-          if [ "${#BIN_DIRS[@]}" -eq 0 ]; then
+          BIN_DIR=$(find "$BIN_ROOT" -mindepth 1 -maxdepth 1 -type d | sort | head -n 1)
+          if [ -z "$BIN_DIR" ]; then
             echo "No configure directory found under $BIN_ROOT" >&2
             exit 1
           fi
-          BIN_DIR="${BIN_DIRS[0]}"
           echo "Resolved binary directory: $BIN_DIR"
           echo "ROLLING_BIN_DIR=$BIN_DIR" >> "$GITHUB_ENV"
       - name: Build (Linux/macOS)
@@ -142,7 +141,8 @@ jobs:
       - name: Run tests (Windows)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
         shell: powershell
-        run: ctest --test-dir build -C RelWithDebInfo --output-on-failure || true
+        continue-on-error: true
+        run: ctest --test-dir build -C RelWithDebInfo --output-on-failure
       - name: Stage artifact (Linux/macOS)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
         shell: bash
