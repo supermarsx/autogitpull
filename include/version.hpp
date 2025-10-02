@@ -4,14 +4,14 @@
 /* ------------------------------------------------------------------
    Public numeric version macros (safe for .rc files)               */
 #define AUTOGITPULL_VERSION_MAJOR 0
-#define AUTOGITPULL_VERSION_MINOR 0
+#define AUTOGITPULL_VERSION_MINOR 1
 #define AUTOGITPULL_VERSION_PATCH 0
 
 /*
  * Rolling release tag injected by the CI workflow.
  * Example format: "2025.07.31-1".
  */
-#define AUTOGITPULL_VERSION_STR "rolling"
+#define AUTOGITPULL_VERSION_STR "0.1.0"
 #define AUTOGITPULL_VERSION_RC                                                                     \
     AUTOGITPULL_VERSION_MAJOR, AUTOGITPULL_VERSION_MINOR, AUTOGITPULL_VERSION_PATCH, 0
 /* ------------------------------------------------------------------ */
