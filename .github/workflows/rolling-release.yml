@@ -99,6 +99,24 @@ jobs:
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
           cmake --preset rolling -DCODEX_FORCE_NO_NSEC=ON
+      - name: Resolve binary directory (Linux/macOS)
+        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN_ROOT="build/rolling"
+          if [ ! -d "$BIN_ROOT" ]; then
+            echo "Binary root not found: $BIN_ROOT" >&2
+            exit 1
+          fi
+          mapfile -t BIN_DIRS < <(find "$BIN_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
+          if [ "${#BIN_DIRS[@]}" -eq 0 ]; then
+            echo "No configure directory found under $BIN_ROOT" >&2
+            exit 1
+          fi
+          BIN_DIR="${BIN_DIRS[0]}"
+          echo "Resolved binary directory: $BIN_DIR"
+          echo "ROLLING_BIN_DIR=$BIN_DIR" >> "$GITHUB_ENV"
       - name: Build (Linux/macOS)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
         shell: bash
@@ -108,8 +126,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BIN_DIR="build/rolling/$(uname)-$(uname -m)"
-          ctest --test-dir "$BIN_DIR" -C RelWithDebInfo --output-on-failure --parallel
+          : "${ROLLING_BIN_DIR:?ROLLING_BIN_DIR must be set by the resolve step}"
+          ctest --test-dir "$ROLLING_BIN_DIR" -C RelWithDebInfo --output-on-failure --parallel
       - name: Configure (Windows)
         if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
         shell: powershell
@@ -130,10 +148,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BIN_DIR="build/rolling/$(uname)-$(uname -m)"
+          : "${ROLLING_BIN_DIR:?ROLLING_BIN_DIR must be set by the resolve step}"
           DEST="dist/${{ matrix.name }}"
           mkdir -p "$DEST"
-          install -m 755 "$BIN_DIR/autogitpull" "$DEST/autogitpull"
+          install -m 755 "$ROLLING_BIN_DIR/autogitpull" "$DEST/autogitpull"
           install -m 644 readme.md "$DEST/README.md"
           install -m 644 license.md "$DEST/LICENSE.md"
       - name: Stage artifact (Windows)
