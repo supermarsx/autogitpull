@@ -1,6 +1,6 @@
 : 1
 name: autogitpull
-version: rolling
+version: 0.1.0
 summary: Automatic Git Puller & Monitor
 depends: libgit2
 depends: yaml-cpp
