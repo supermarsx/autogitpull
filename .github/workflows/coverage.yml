@@ -1,0 +1,87 @@
+---
+name: Coverage
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: gcovr coverage (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: aminya/setup-cpp@v1
+      - name: Install coverage tooling
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install gcovr "genbadge[coverage]"
+      - name: Configure with coverage flags
+        shell: bash
+        env:
+          CC: gcc
+          CXX: g++
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DUSE_NTLMCLIENT=OFF \
+            -DCMAKE_C_FLAGS="--coverage" \
+            -DCMAKE_CXX_FLAGS="--coverage" \
+            -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+      - name: Build
+        shell: bash
+        run: cmake --build build --config Debug -j
+      - name: Test with coverage
+        shell: bash
+        env:
+          CTEST_OUTPUT_ON_FAILURE: "1"
+          CTEST_PARALLEL_LEVEL: "1"
+          GIT_TERMINAL_PROMPT: "0"
+        run: ctest --test-dir build -C Debug -R autogitpull_tests -VV --timeout 900
+      - name: Generate reports
+        shell: bash
+        run: |
+          mkdir -p coverage/report
+          gcovr --root . \
+                --exclude 'tests/' \
+                --exclude 'examples/' \
+                --exclude 'build/_deps/' \
+                --gcov-ignore-parse-errors negative_hits.warn_once_per_file \
+                --xml coverage/report/coverage.xml \
+                --txt coverage/report/coverage.txt \
+                --txt-metric branch \
+                --html coverage/report/coverage.html \
+                --html-details coverage/report/coverage-details.html \
+                --gcov-ignore-errors source_not_found \
+                --gcov-ignore-errors no_working_dir_found
+          genbadge coverage -i coverage/report/coverage.xml -o coverage/report/coverage.svg
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/report
+      - name: Prepare badge publish directory
+        if: github.event_name == 'push' && github.ref_protected != 'true' && github.repository == github.event.repository.full_name
+        shell: bash
+        run: |
+          mkdir -p coverage/badge
+          cp coverage/report/coverage.svg coverage/badge/coverage.svg
+      - name: Publish coverage badge (push on non-protected branches)
+        if: github.event_name == 'push' && github.ref_protected != 'true' && github.repository == github.event.repository.full_name
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: badges
+          publish_dir: coverage/badge
+          destination_dir: .
+          keep_files: true

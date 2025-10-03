@@ -1,0 +1,40 @@
+---
+name: Format Check
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format-check:
+    name: clang-format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: aminya/setup-cpp@v1
+      - name: Run clang-format (check)
+        shell: bash
+        run: cmake -DPROJECT_ROOT=. -DACTION=check -P scripts/clang_format.cmake
+      - name: Generate patch artifact (PRs)
+        if: failure() && github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          git diff > format.patch || true
+      - name: Upload patch
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: format-patch
+          path: format.patch
+          if-no-files-found: ignore

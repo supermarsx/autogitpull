@@ -1,0 +1,86 @@
+---
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+            shell: bash
+            generator: "Unix Makefiles"
+            cmake_args: ""
+          - name: ubuntu-arm64
+            runner: ubuntu-24.04-arm
+            shell: bash
+            generator: "Unix Makefiles"
+            cmake_args: ""
+          - name: macos-x64
+            runner: macos-13
+            shell: bash
+            generator: "Unix Makefiles"
+            cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+          - name: macos-arm64
+            runner: macos-14
+            shell: bash
+            generator: "Unix Makefiles"
+            cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64"
+          - name: windows-arm64
+            runner: windows-11-arm
+            shell: powershell
+            generator: "Visual Studio 17 2022"
+            cmake_args: "-A ARM64"
+          - name: windows-x64
+            runner: windows-latest
+            shell: powershell
+            generator: "Visual Studio 17 2022"
+            cmake_args: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aminya/setup-cpp@v1
+      - name: Clean build directory
+        if: runner.os != 'Windows'
+        shell: bash
+        run: rm -rf build
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: cmake -S . -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release -DUSE_NTLMCLIENT=OFF ${{ matrix.cmake_args }}
+      - name: Configure (*nix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_NTLMCLIENT=OFF ${{ matrix.cmake_args }}
+      - name: Build
+        shell: bash
+        run: cmake --build build --config Release -j
+      - name: Run tests (*nix)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          CTEST_OUTPUT_ON_FAILURE: "1"
+          CTEST_PARALLEL_LEVEL: "1"
+          GIT_TERMINAL_PROMPT: "0"
+        run: ctest --test-dir build -C Release -R autogitpull_tests -VV --timeout 900
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        env:
+          CTEST_OUTPUT_ON_FAILURE: "1"
+        run: ctest --test-dir build -C Release -R autogitpull_tests -VV --timeout 600

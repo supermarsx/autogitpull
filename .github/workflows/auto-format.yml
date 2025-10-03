@@ -1,0 +1,42 @@
+---
+name: Auto Format
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  auto-format:
+    name: clang-format fix & push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: aminya/setup-cpp@v1
+      - name: Apply clang-format
+        shell: bash
+        run: cmake -DPROJECT_ROOT=. -DACTION=fix -P scripts/clang_format.cmake
+      - name: Commit & push formatting changes (non-protected)
+        if: github.ref_protected != 'true' && github.repository == github.event.repository.full_name
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No formatting changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(format): auto-apply clang-format"
+          git push

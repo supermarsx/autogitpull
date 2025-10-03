@@ -1,0 +1,37 @@
+---
+name: Lint
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpplint:
+    name: cpplint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aminya/setup-cpp@v1
+      - name: Run cpplint
+        shell: bash
+        env:
+          # Keep strictly blocking by default per guidelines
+          CPPLINT_NON_BLOCKING: OFF
+        run: |
+          cmake -DPROJECT_ROOT=. -P scripts/run_cpplint.cmake
+      - name: Upload cpplint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpplint-report
+          path: cpplint.txt
+          if-no-files-found: ignore
