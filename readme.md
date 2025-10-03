@@ -11,8 +11,7 @@ and shows progress either in an interactive TUI or with plain console output.
 
 <img width="625" height="646" alt="image" src="https://github.com/user-attachments/assets/678db386-a9b8-4e39-9ae5-ef1ea762ae7d" />
 
-
-
+**General**
 
 [![Downloads](https://img.shields.io/github/downloads/supermarsx/autogitpull/total)](https://github.com/supermarsx/autogitpull/releases)
 [![Download Latest](https://img.shields.io/github/downloads/supermarsx/autogitpull/latest/total)](https://github.com/supermarsx/autogitpull/releases/latest)
@@ -516,4 +515,5 @@ autogitpull is licensed under the MIT license (see `LICENSE`). The project
 bundles the license texts for its third-party dependencies under
 the `licenses/` directory, including `libgit2.txt`, `yaml-cpp.txt`,
 `nlohmann-json.txt` and `zlib.txt`.
+
 
