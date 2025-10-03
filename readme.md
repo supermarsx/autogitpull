@@ -10,6 +10,7 @@
 [![Watchers](https://img.shields.io/github/watchers/supermarsx/autogitpull?style=social)](https://github.com/supermarsx/autogitpull/watchers)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/supermarsx/autogitpull)](https://github.com/supermarsx/autogitpull/graphs/commit-activity)
 [![Commit total](https://img.shields.io/github/commit-activity/t/supermarsx/autogitpull)](https://github.com/supermarsx/autogitpull/graphs/commit-activity)
+[![Coverage](https://raw.githubusercontent.com/supermarsx/autogitpull/badges/coverage.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/coverage.yml)
 [![Made with C++](https://img.shields.io/badge/Made%20with-C%2B%2B-1f425f.svg)](https://isocpp.org/)
 [![License](https://img.shields.io/github/license/supermarsx/autogitpull)](license.md)
 
@@ -20,7 +21,7 @@ CI Status
 [![Lint](https://github.com/supermarsx/autogitpull/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/lint.yml)
 [![Tests](https://github.com/supermarsx/autogitpull/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/tests.yml)
 [![Build](https://github.com/supermarsx/autogitpull/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/build.yml)
-[![Coverage](https://raw.githubusercontent.com/supermarsx/autogitpull/badges/coverage.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/coverage.yml)
+
 
 [![Rolling Release](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml)
 [![Release](https://github.com/supermarsx/autogitpull/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/release.yml)
