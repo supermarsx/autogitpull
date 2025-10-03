@@ -186,15 +186,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TODAY=$(date +'%Y.%m.%d')
-          git fetch --tags
-          LAST=$(git tag --list "${TODAY}-*" | grep -E "^${TODAY}-[0-9]+$" | sed "s/^${TODAY}-//" | sort -n | tail -1)
-          if [ -z "$LAST" ]; then
-            NEXT="${TODAY}-1"
-          else
-            NEXT_NUM=$((LAST + 1))
-            NEXT="${TODAY}-${NEXT_NUM}"
-          fi
+          TODAY=$(date +'%y.%m.%d')
+          NEXT="rolling-v-${TODAY}"
           echo "NEXT_TAG=$NEXT" >> "$GITHUB_ENV"
           echo "NEXT_TAG=$NEXT" >> "$GITHUB_OUTPUT"
           echo "Rolling tag: $NEXT"
@@ -203,11 +196,8 @@ jobs:
         id: rolling_tag_win
         shell: powershell
         run: |
-          $today = Get-Date -Format "yyyy.MM.dd"
-          git fetch --tags
-          $tags = git tag --list "$today-*"
-          $last = ($tags | ForEach-Object { ($_ -split '-')[-1] } | Where-Object { $_ -match '^[0-9]+$' } | Sort-Object {[int]$_} | Select-Object -Last 1)
-          if (-not $last) { $next = "$today-1" } else { $next = "$today-$([int]$last + 1)" }
+          $today = Get-Date -Format "yy.MM.dd"
+          $next = "rolling-v-$today"
           "NEXT_TAG=$next" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "NEXT_TAG=$next" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           Write-Host "Rolling tag: $next"
@@ -242,8 +232,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build-test-release.outputs.NEXT_TAG }}
-          name: Rolling Release ${{ needs.build-test-release.outputs.NEXT_TAG }}
-          body: Automated rolling release for ${{ needs.build-test-release.outputs.NEXT_TAG }}
+          name: ${{ needs.build-test-release.outputs.NEXT_TAG }}
+          body: Automated rolling release ${{ needs.build-test-release.outputs.NEXT_TAG }}
           draft: false
           prerelease: true
           files: |
