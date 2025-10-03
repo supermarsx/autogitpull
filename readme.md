@@ -12,6 +12,8 @@ and shows progress either in an interactive TUI or with plain console output.
 <img width="625" height="646" alt="image" src="https://github.com/user-attachments/assets/678db386-a9b8-4e39-9ae5-ef1ea762ae7d" />
 
 
+
+
 [![Downloads](https://img.shields.io/github/downloads/supermarsx/autogitpull/total)](https://github.com/supermarsx/autogitpull/releases)
 [![Download Latest](https://img.shields.io/github/downloads/supermarsx/autogitpull/latest/total)](https://github.com/supermarsx/autogitpull/releases/latest)
 [![Issues](https://img.shields.io/github/issues/supermarsx/autogitpull)](https://github.com/supermarsx/autogitpull/issues)
