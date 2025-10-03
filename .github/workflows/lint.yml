@@ -21,6 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: aminya/setup-cpp@v1
+      - name: Install cpplint
+        shell: bash
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install cpplint
       - name: Run cpplint
         shell: bash
         env:
