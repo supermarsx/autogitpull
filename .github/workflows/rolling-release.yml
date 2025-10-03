@@ -3,7 +3,7 @@ name: Rolling Release
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ["Format Check", "Lint", "Tests", "Build"]
     types: [completed]
 
 permissions:
@@ -52,6 +52,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Gate: require format/lint/tests/build success
+        id: gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          REQUIRED: '["Format Check","Lint","Tests","Build"]'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo='${{ github.repository }}'
+          total=$(echo "$REQUIRED" | jq 'length')
+          ok=0
+          for name in $(echo "$REQUIRED" | jq -r '.[]'); do
+            wid=$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$repo/actions/workflows" | jq -r --arg n "$name" '.workflows[] | select(.name==$n) | .id' | head -n1)
+            if [ -z "$wid" ] || [ "$wid" = "null" ]; then
+              echo "workflow '$name' not found" >&2
+              continue
+            fi
+            conclusion=$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$repo/actions/workflows/$wid/runs?per_page=50&branch=$BRANCH" | \
+              jq -r --arg sha "$HEAD_SHA" '.workflow_runs[] | select(.head_sha==$sha) | .conclusion' | head -n1)
+            if [ "$conclusion" = "success" ]; then
+              ok=$((ok+1))
+            else
+              echo "workflow '$name' not successful yet (conclusion=${conclusion:-none})"
+            fi
+          done
+          ready=false
+          if [ "$ok" -eq "$total" ]; then ready=true; fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
       - name: Check recent releases
         id: check_releases
         env:
@@ -75,11 +108,11 @@ jobs:
           echo 'Skipping build: daily release threshold reached.'
 
       - name: Set up C++ build environment
-        if: steps.check_releases.outputs.skip_build != 'true'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true'
         uses: aminya/setup-cpp@v1
 
       - name: Enable ccache
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os != 'Windows'
         uses: hendrikmuhs/ccache-action@v1.2.19
         with:
           key: ${{ runner.os }}-${{ matrix.name }}-rolling-ccache-${{ github.event.workflow_run.head_sha }}
@@ -87,7 +120,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.name }}-rolling-ccache-
 
       - name: Cache CMake dependencies
-        if: steps.check_releases.outputs.skip_build != 'true'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true'
         uses: actions/cache@v4
         with:
           path: build/**/_deps
@@ -96,7 +129,7 @@ jobs:
             ${{ runner.os }}-cmake-
 
       - name: Configure (Linux/macOS)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os != 'Windows'
         shell: bash
         env:
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
@@ -110,7 +143,7 @@ jobs:
           unset CFLAGS CXXFLAGS LDFLAGS
           cmake --preset rolling -DCODEX_FORCE_NO_NSEC=ON
       - name: Resolve binary directory (Linux/macOS)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
@@ -127,34 +160,34 @@ jobs:
           echo "Resolved binary directory: $BIN_DIR"
           echo "ROLLING_BIN_DIR=$BIN_DIR" >> "$GITHUB_ENV"
       - name: Build (Linux/macOS)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os != 'Windows'
         shell: bash
         run: cmake --build --preset rolling --parallel
       - name: Run tests (Linux/macOS)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
           : "${ROLLING_BIN_DIR:?ROLLING_BIN_DIR must be set by the resolve step}"
           ctest --test-dir "$ROLLING_BIN_DIR" -C RelWithDebInfo --output-on-failure --parallel
       - name: Configure (Windows)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os == 'Windows'
         shell: powershell
         run: |
           $arch = '${{ matrix.cmake_arch }}'
           $generatorArgs = if ($arch -eq 'arm64') { '-A ARM64' } else { '-A x64' }
           cmake -S . -B build -G "Visual Studio 17 2022" $generatorArgs -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCODEX_FORCE_NO_NSEC=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON
       - name: Build (Windows)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os == 'Windows'
         shell: powershell
         run: cmake --build build --config RelWithDebInfo --parallel
       - name: Run tests (Windows)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os == 'Windows'
         shell: powershell
         continue-on-error: true
         run: ctest --test-dir build -C RelWithDebInfo --output-on-failure
       - name: Stage artifact (Linux/macOS)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
@@ -165,7 +198,7 @@ jobs:
           install -m 644 readme.md "$DEST/README.md"
           install -m 644 license.md "$DEST/LICENSE.md"
       - name: Stage artifact (Windows)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os == 'Windows'
         shell: powershell
         run: |
           $dest = "dist/${{ matrix.name }}"
@@ -174,14 +207,14 @@ jobs:
           Copy-Item -Path readme.md -Destination (Join-Path $dest 'README.md') -Force
           Copy-Item -Path license.md -Destination (Join-Path $dest 'LICENSE.md') -Force
       - name: Upload artifact
-        if: steps.check_releases.outputs.skip_build != 'true'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: autogitpull-${{ matrix.name }}
           path: dist/${{ matrix.name }}/*
 
       - name: Get next rolling tag (*nix)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os != 'Windows'
         id: rolling_tag
         shell: bash
         run: |
@@ -192,7 +225,7 @@ jobs:
           echo "NEXT_TAG=$NEXT" >> "$GITHUB_OUTPUT"
           echo "Rolling tag: $NEXT"
       - name: Get next rolling tag (Windows)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os == 'Windows'
         id: rolling_tag_win
         shell: powershell
         run: |
@@ -203,7 +236,7 @@ jobs:
           Write-Host "Rolling tag: $next"
 
       - name: Tag commit (*nix)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os != 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os != 'Windows'
         shell: bash
         run: |
           git config user.name github-actions
@@ -211,7 +244,7 @@ jobs:
           git tag "$NEXT_TAG"
           git push origin "$NEXT_TAG"
       - name: Tag commit (Windows)
-        if: steps.check_releases.outputs.skip_build != 'true' && runner.os == 'Windows'
+        if: steps.check_releases.outputs.skip_build != 'true' && steps.gate.outputs.ready == 'true' && runner.os == 'Windows'
         shell: powershell
         run: |
           git config user.name github-actions
@@ -220,7 +253,7 @@ jobs:
           git push origin $env:NEXT_TAG
 
   publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && needs.build-test-release.outputs.NEXT_TAG != '' }}
     needs: build-test-release
     runs-on: ubuntu-latest
     steps:
