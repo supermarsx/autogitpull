@@ -1049,23 +1049,21 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "riscv|aarch64|arm64")
   unset(_autogitpull_all_targets)
 endif()
 
-# As a last resort, prefix link commands with a filter that strips -mabi
-# for Linux x86_64 host builds where some CI injects cross-arch flags.
+# As a last resort, prefix link commands for executable targets with a filter
+# that strips -mabi on Linux x86_64 host builds, in case CI injects flags late.
 if(UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "riscv|aarch64|arm64")
   set(_filter_py "${CMAKE_SOURCE_DIR}/scripts/rule_launch_filter.py")
   if(EXISTS "${_filter_py}")
-    # Use /usr/bin/env to locate python3 on CI images.
-    set(_launcher "/usr/bin/env;python3;${_filter_py}")
     get_property(_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
     foreach(_t IN LISTS _targets)
       get_target_property(_t_type ${_t} TYPE)
-      if(_t_type AND NOT _t_type STREQUAL "INTERFACE_LIBRARY")
-        set_property(TARGET ${_t} PROPERTY RULE_LAUNCH_LINK "${_launcher}")
+      if(_t_type STREQUAL "EXECUTABLE")
+        # Pass launcher as tokenized property values to avoid shell/semicolon issues.
+        set_property(TARGET ${_t} PROPERTY RULE_LAUNCH_LINK python3 "${_filter_py}")
       endif()
       unset(_t_type)
     endforeach()
     unset(_targets)
-    unset(_launcher)
   endif()
   unset(_filter_py)
 endif()
