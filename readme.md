@@ -14,7 +14,7 @@
 [![Made with C++](https://img.shields.io/badge/Made%20with-C%2B%2B-1f425f.svg)](https://isocpp.org/)
 [![License](https://img.shields.io/github/license/supermarsx/autogitpull)](license.md)
 
-CI Status
+**CI Status**
 
 [![Format Check](https://github.com/supermarsx/autogitpull/actions/workflows/format.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/format.yml)
 [![Auto Format](https://github.com/supermarsx/autogitpull/actions/workflows/auto-format.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/auto-format.yml)
@@ -26,9 +26,9 @@ CI Status
 [![Rolling Release](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml)
 [![Release](https://github.com/supermarsx/autogitpull/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/release.yml)
 
-Quick Downloads
+**Quick Downloads**
 
-Latest Release
+*Latest Release*
 
 [![Windows x64](https://img.shields.io/badge/Download-Windows%20x64-0078D6?logo=windows&logoColor=white)](https://github.com/supermarsx/autogitpull/releases/latest/download/autogitpull-windows-x64.exe)
 [![Windows ARM64](https://img.shields.io/badge/Download-Windows%20ARM64-0078D6?logo=windows&logoColor=white)](https://github.com/supermarsx/autogitpull/releases/latest/download/autogitpull-windows-arm64.exe)
@@ -37,7 +37,7 @@ Latest Release
 [![Linux x64](https://img.shields.io/badge/Download-Linux%20x64-2ea44f?logo=linux&logoColor=white)](https://github.com/supermarsx/autogitpull/releases/latest/download/autogitpull-ubuntu-x64)
 [![Linux ARM64](https://img.shields.io/badge/Download-Linux%20ARM64-2ea44f?logo=linux&logoColor=white)](https://github.com/supermarsx/autogitpull/releases/latest/download/autogitpull-ubuntu-arm64)
 
-Rolling Release (pre-release)
+*Rolling Release (pre-release)*
 
 [![Windows x64 (Rolling)](https://img.shields.io/badge/Rolling-Windows%20x64-FFA500?logo=windows&logoColor=white)](https://github.com/supermarsx/autogitpull/releases?q=rolling-v&expanded=true)
 [![Windows ARM64 (Rolling)](https://img.shields.io/badge/Rolling-Windows%20ARM64-FFA500?logo=windows&logoColor=white)](https://github.com/supermarsx/autogitpull/releases?q=rolling-v&expanded=true)
