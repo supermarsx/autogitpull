@@ -2,9 +2,13 @@
 
 # autogitpull
 
-[![CI](https://github.com/supermarsx/autogitpull/actions/workflows/ci.yml/badge.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/ci.yml)
-[![Rolling Release](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml/badge.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml)
-[![Coverage](https://raw.githubusercontent.com/supermarsx/autogitpull/badges/coverage.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/ci.yml)
+[![Build](https://github.com/supermarsx/autogitpull/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/build.yml)
+[![Tests](https://github.com/supermarsx/autogitpull/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/tests.yml)
+[![Lint](https://github.com/supermarsx/autogitpull/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/lint.yml)
+[![Format Check](https://github.com/supermarsx/autogitpull/actions/workflows/format.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/format.yml)
+[![Auto Format](https://github.com/supermarsx/autogitpull/actions/workflows/auto-format.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/auto-format.yml)
+[![Coverage](https://raw.githubusercontent.com/supermarsx/autogitpull/badges/coverage.svg)](https://github.com/supermarsx/autogitpull/actions/workflows/coverage.yml)
+[![Rolling Release](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml/badge.svg?branch=main)](https://github.com/supermarsx/autogitpull/actions/workflows/rolling-release.yml)
 [![Downloads](https://img.shields.io/github/downloads/supermarsx/autogitpull/total)](https://github.com/supermarsx/autogitpull/releases)
 [![Download Latest](https://img.shields.io/github/downloads/supermarsx/autogitpull/latest/total)](https://github.com/supermarsx/autogitpull/releases/latest)
 [![Issues](https://img.shields.io/github/issues/supermarsx/autogitpull)](https://github.com/supermarsx/autogitpull/issues)
