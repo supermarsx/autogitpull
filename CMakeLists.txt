@@ -1054,16 +1054,11 @@ endif()
 if(UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "riscv|aarch64|arm64")
   set(_filter_py "${CMAKE_SOURCE_DIR}/scripts/rule_launch_filter.py")
   if(EXISTS "${_filter_py}")
-    get_property(_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
-    foreach(_t IN LISTS _targets)
-      get_target_property(_t_type ${_t} TYPE)
-      if(_t_type STREQUAL "EXECUTABLE")
-        # Pass launcher as tokenized property values to avoid shell/semicolon issues.
-        set_property(TARGET ${_t} PROPERTY RULE_LAUNCH_LINK python3 "${_filter_py}")
-      endif()
-      unset(_t_type)
-    endforeach()
-    unset(_targets)
+    # Ensure the filter is executable on CI images
+    file(CHMOD "${_filter_py}"
+      PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ WORLD_READ)
+    # Apply as a directory-level launcher so cmake_link_script prefixes every link command
+    set_property(DIRECTORY PROPERTY RULE_LAUNCH_LINK "${_filter_py}")
   endif()
   unset(_filter_py)
 endif()
