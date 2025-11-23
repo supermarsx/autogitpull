@@ -1,4 +1,10 @@
 @echo off
+echo ----------------------------------------------------------------
+echo NOTE: install_libgit2_mingw.bat is a legacy helper script.
+echo Prefer using the repo's CMake build (FetchContent) instead of
+echo running this script. This file is kept as a fallback for
+echo manual bootstrap/CI scenarios.
+echo ----------------------------------------------------------------
 echo Installing libgit2 and related libraries...
 REM Check for MinGW g++
 where g++ >nul 2>nul

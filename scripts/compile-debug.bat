@@ -1,5 +1,21 @@
 @echo off
 setlocal
+
+rem Prefer the Python/CMake helper when available
+set "PY_EXEC="
+for %%P in ("py -3" python3 python) do (
+    for /f "delims=" %%Q in ('where %%~P 2^>nul') do set "PY_EXEC=%%~P"
+    if defined PY_EXEC goto :USE_PY_DBG
+)
+:USE_PY_DBG
+if defined PY_EXEC (
+    echo [INFO] Found Python wrapper: %PY_EXEC% - delegating to scripts\build.py (Debug)
+    pushd "%~dp0.." >nul 2>&1
+    %PY_EXEC% "%~dp0build.py" --config Debug --build-dir build-debug %*
+    set "rc=%ERRORLEVEL%"
+    popd >nul 2>&1
+    exit /b %rc%
+)
 set "SCRIPT_DIR=%~dp0"
 set "ROOT_DIR=%SCRIPT_DIR%.."
 

@@ -1,4 +1,9 @@
 @echo off
+echo ----------------------------------------------------------------
+echo NOTE: install_yamlcpp_mingw.bat is a legacy helper script.
+echo Prefer the CMake fetch/build flow (FetchContent) instead of
+echo running this script manually; this file is retained as a fallback.
+echo ----------------------------------------------------------------
 setlocal
 
 REM Install yaml-cpp using MinGW and CMake

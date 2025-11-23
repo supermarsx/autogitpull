@@ -34,4 +34,4 @@ rm -rf icon.iconset
 
 printf '\n==========================================\n'
 printf 'Cleanup complete!\n'
-printf '====================
+printf '==========================================\n\n'

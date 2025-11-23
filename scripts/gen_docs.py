@@ -5,7 +5,18 @@ from collections import defaultdict
 
 # parse defaults from include/options.hpp
 def parse_defaults():
-    text = Path('include/options.hpp').read_text()
+    # Accept being run from the repository root or from the scripts/ dir.
+    script_root = Path(__file__).resolve().parents[1]
+    root_candidates = [Path.cwd(), script_root]
+    opts_path = None
+    for p in root_candidates:
+        candidate = p / 'include' / 'options.hpp'
+        if candidate.exists():
+            opts_path = candidate
+            break
+    if not opts_path:
+        raise FileNotFoundError('include/options.hpp not found; run from repo root or scripts/')
+    text = opts_path.read_text()
     pattern_eq = re.compile(r'^\s*[\w:<>\s,{}]+\s+(\w+)\s*=\s*([^;]+);', re.MULTILINE)
     pattern_br = re.compile(r'^\s*[\w:<>\s,{}]+\s+(\w+)\{([^}]+)\};', re.MULTILINE)
     pattern_decl = re.compile(r'^\s*[\w:<>\s,{}]+\s+(\w+);', re.MULTILINE)
@@ -55,7 +66,17 @@ FLAG_MAP = {
 
 # parse options from help_text.cpp
 def parse_entries():
-    text = Path('src/help_text.cpp').read_text()
+    script_root = Path(__file__).resolve().parents[1]
+    root_candidates = [Path.cwd(), script_root]
+    help_path = None
+    for p in root_candidates:
+        candidate = p / 'src' / 'help_text.cpp'
+        if candidate.exists():
+            help_path = candidate
+            break
+    if not help_path:
+        raise FileNotFoundError('src/help_text.cpp not found; run from repo root or scripts/')
+    text = help_path.read_text()
     pattern_opt = re.compile(r'\{"([^"]+)",\s*"([^"]*)",\s*"([^"]*)",\s*"([^"]*)",\s*"([^"]*)"\}', re.MULTILINE)
     return [m.groups() for m in pattern_opt.finditer(text)]
 
@@ -131,6 +152,8 @@ def main():
         lines.append('|--------|---------|-------------|')
         for long_flag, def_str, desc in sorted(by_cat[cat]):
             lines.append(f'| `{long_flag}` | {def_str if def_str else ""} | {desc} |')
+    # Ensure docs and examples directories exist
+    Path('docs').mkdir(parents=True, exist_ok=True)
     Path('docs/cli_options.md').write_text('\n'.join(lines))
     # generate example configs
     json_data = defaultdict(dict)
@@ -138,6 +161,7 @@ def main():
         for long_flag, def_str, desc in items:
             key = long_flag[2:]
             json_data[cat][key] = to_value(def_str if def_str else '')
+    Path('examples').mkdir(parents=True, exist_ok=True)
     Path('examples/example-config.json').write_text(json.dumps(json_data, indent=4))
     try:
         import yaml

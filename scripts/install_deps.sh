@@ -14,9 +14,23 @@ done
 if ((${#missing[@]})); then
   echo "Missing required tools: ${missing[*]}" >&2
   echo "Please install the tools above and ensure they are on your PATH." >&2
-  exit 1
-fi
+  #!/usr/bin/env bash
+  set -euo pipefail
 
-echo "You're good to go: run"
-echo "  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release"
-echo "  cmake --build build -j"
+  cat <<'EOF'
+  DEPRECATED: install_deps.sh
+
+  This repository now uses CMake FetchContent to obtain and build
+  third-party libraries. In most situations you should configure and
+  build the project using CMake directly or the convenience wrapper in
+  scripts/build.py.
+
+  Examples:
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --config Release --parallel 8
+
+  If you need to perform manual installs for an older workflow, see the
+  legacy installers in scripts/ (install_libgit2_mingw.bat, etc.).
+  EOF
+
+  exit 0

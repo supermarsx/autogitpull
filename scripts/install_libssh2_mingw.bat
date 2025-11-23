@@ -1,4 +1,9 @@
 @echo off
+echo ----------------------------------------------------------------
+echo NOTE: install_libssh2_mingw.bat is a legacy helper script.
+echo Prefer using the repo's CMake FetchContent path instead of
+echo running this script. This file is kept as a fallback.
+echo ----------------------------------------------------------------
 setlocal
 
 where cmake >nul 2>nul

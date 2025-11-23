@@ -1,5 +1,26 @@
 @echo off
 setlocal
+
+rem Prefer the cross-platform build.py wrapper for MSVC builds
+set "PY_EXEC="
+for %%P in ("py -3" python3 python) do (
+    for /f "delims=" %%Q in ('where %%~P 2^>nul') do set "PY_EXEC=%%~P"
+    if defined PY_EXEC goto :USE_PY_CL
+)
+:USE_PY_CL
+if defined PY_EXEC (
+        if defined AUTOGITPULL_GENERATOR (
+            set "GENERATOR=%AUTOGITPULL_GENERATOR%"
+        ) else (
+            set "GENERATOR=Visual Studio 17 2022"
+        )
+        echo [INFO] Using Python wrapper: %PY_EXEC% with generator %GENERATOR%
+        pushd "%~dp0.." >nul 2>&1
+        %PY_EXEC% "%~dp0build.py" --config Release --generator "%GENERATOR%" --build-dir build-msvc %*
+        set "rc=%ERRORLEVEL%"
+        popd >nul 2>&1
+        exit /b %rc%
+)
 set "SCRIPT_DIR=%~dp0"
 set "ROOT_DIR=%SCRIPT_DIR%.."
 

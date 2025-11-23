@@ -8,6 +8,23 @@ rem *********************************************************************
 
 setlocal EnableDelayedExpansion
 
+rem Prefer the cross-platform Python/CMake wrapper when available
+set "PY_EXEC="
+for %%P in ("py -3" python3 python) do (
+    for /f "delims=" %%Q in ('where %%~P 2^>nul') do set "PY_EXEC=%%~P"
+    if defined PY_EXEC goto :USE_PY
+)
+:USE_PY
+if defined PY_EXEC (
+    echo [INFO] Found Python wrapper: %PY_EXEC% - delegating to scripts\build.py
+    echo Using Python wrapper: %PY_EXEC% (running from repo root)
+    pushd "%~dp0.." >nul 2>&1
+    %PY_EXEC% "%~dp0build.py" %*
+    set "rc=%ERRORLEVEL%"
+    popd >nul 2>&1
+    exit /b %rc%
+)
+
 rem --------------------------------------------------------------------
 rem Resolve project root directory                                       
 rem --------------------------------------------------------------------

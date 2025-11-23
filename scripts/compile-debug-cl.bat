@@ -4,6 +4,28 @@ set "SCRIPT_DIR=%~dp0"
 set "ROOT_DIR=%SCRIPT_DIR%.."
 
 echo Compiling debug build with MSVC...
+
+rem Prefer the Python/CMake wrapper for debug MSVC builds
+set "PY_EXEC="
+for %%P in ("py -3" python3 python) do (
+    for /f "delims=" %%Q in ('where %%~P 2^>nul') do set "PY_EXEC=%%~P"
+    if defined PY_EXEC goto :USE_PY_DBG_CL
+)
+:USE_PY_DBG_CL
+if defined PY_EXEC (
+        if defined AUTOGITPULL_GENERATOR (
+            set "GENERATOR=%AUTOGITPULL_GENERATOR%"
+        ) else (
+            set "GENERATOR=Visual Studio 17 2022"
+        )
+        echo [INFO] Using Python wrapper: %PY_EXEC% with generator %GENERATOR% (Debug)
+        pushd "%~dp0.." >nul 2>&1
+        %PY_EXEC% "%~dp0build.py" --config Debug --generator "%GENERATOR%" --build-dir build-msvc-debug %*
+        set "rc=%ERRORLEVEL%"
+        popd >nul 2>&1
+        exit /b %rc%
+)
+
 where cl >nul 2>nul || (
     echo MSVC cl compiler not found in PATH.
     exit /b 1
